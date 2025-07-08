@@ -1,17 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { MessageBubble } from './MessageBubble'
 import { ActivityIndicator } from './ActivityIndicator'
-import { ActivityService } from '../../services/supabase/activity'
 import { messageQueue, QueuedMessage } from './MessageQueue'
-import { useSession } from '../session/SessionContext'
 import { Languages, Sparkles } from 'lucide-react'
-import type { UserActivity } from '@/types/database'
 
 export function MessageList() {
-  const { session, userId } = useSession()
+  // Solo mode - simplified without session context
+  const userId = 'single-user'
   const [messages, setMessages] = useState<QueuedMessage[]>([])
-  const [activities, setActivities] = useState<UserActivity[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [activities, setActivities] = useState<any[]>([]) // Keep activities for solo mode feedback
+  const [isLoading, setIsLoading] = useState(false) // No loading needed in solo mode
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const audioRef = useRef<HTMLAudioElement>(null)
 
@@ -30,32 +28,8 @@ export function MessageList() {
     return unsubscribe
   }, [])
 
-  // Load message history and simulate real-time
-  useEffect(() => {
-    if (!session) return
-
-    const loadHistory = async () => {
-      try {
-        // TODO: In real implementation, load from MessageService.getSessionMessages(session.id)
-        // For now, simulate loading complete
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Failed to load message history:', error)
-        setIsLoading(false)
-      }
-    }
-
-    loadHistory()
-
-    // Simulate real-time message updates
-    // TODO: Replace with actual Supabase real-time subscription
-    // const channel = MessageService.subscribeToMessages(session.id, (message) => {
-    //   if (message.user_id !== userId) {
-    //     messageQueue.add(message)
-    //   }
-    // })
-
-  }, [session, userId])
+  // Solo mode - no session loading needed
+  // Messages are handled locally via messageQueue
 
   // Handle audio playback
   const handlePlayAudio = (audioUrl: string) => {
@@ -65,67 +39,8 @@ export function MessageList() {
     }
   }
 
-  // Simulate activity updates
-  useEffect(() => {
-    if (!session) return
-
-    // TODO: Replace with actual ActivityService
-    // const loadActivities = async () => {
-    //   const currentActivities = await ActivityService.getSessionActivities(session.id)
-    //   setActivities(currentActivities)
-    // }
-    
-    // loadActivities()
-
-    // const channel = ActivityService.subscribeToActivities(session.id, (activity) => {
-    //   setActivities(prev => {
-    //     const filtered = prev.filter(a => a.user_id !== activity.user_id)
-    //     if (activity.activity !== 'idle') {
-    //       return [...filtered, activity]
-    //     }
-    //     return filtered
-    //   })
-    // })
-
-    /**
-     * REAL ACTIVITY SERVICE INTEGRATION
-     * 
-     * Subscribe to actual activity updates from the database.
-     * This replaces the mock data that was causing incorrect activity indicators.
-     */
-    if (!session?.id) return
-    
-    const channel = ActivityService.subscribeToActivities(session.id, (activity) => {
-      console.log('📱 Activity update received:', activity)
-      
-      // Only show partner's activities, not our own
-      if (activity.user_id === userId) {
-        console.log('📱 Ignoring own activity:', activity)
-        return
-      }
-      
-      setActivities(prevActivities => {
-        // Remove any existing activity for this user
-        const filtered = prevActivities.filter(a => a.user_id !== activity.user_id)
-        
-        // Add new activity only if it's not idle
-        if (activity.activity !== 'idle') {
-          console.log('📱 Adding partner activity:', activity)
-          return [...filtered, activity]
-        } else {
-          console.log('📱 Removing partner activity (idle):', activity)
-          return filtered
-        }
-      })
-    })
-
-    // Cleanup subscription on unmount
-    return () => {
-      if (channel) {
-        channel.unsubscribe()
-      }
-    }
-  }, [session?.id, userId])
+  // Solo mode - no activity tracking needed
+  // Only one user, so no partner activities to display
 
   if (isLoading) {
     return (
@@ -171,12 +86,12 @@ export function MessageList() {
           />
         ))}
 
-        {/* Activity indicators */}
-        {activities.filter(a => a.user_id !== userId).map((activity) => (
+        {/* Activity indicators for solo mode feedback */}
+        {activities.map((activity, index) => (
           <ActivityIndicator
-            key={activity.user_id}
+            key={`activity-${index}`}
             activity={activity.activity}
-            userName="Partner"
+            userName="You"
           />
         ))}
 

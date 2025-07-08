@@ -9,122 +9,35 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      sessions: {
-        Row: {
-          id: string
-          code: string
-          created_at: string
-          expires_at: string
-          is_active: boolean
-          user_count: number
-          last_activity: string
-        }
-        Insert: {
-          id?: string
-          code: string
-          created_at?: string
-          expires_at?: string
-          is_active?: boolean
-          user_count?: number
-          last_activity?: string
-        }
-        Update: {
-          id?: string
-          code?: string
-          created_at?: string
-          expires_at?: string
-          is_active?: boolean
-          user_count?: number
-          last_activity?: string
-        }
-      }
-      messages: {
-        Row: {
-          id: string
-          session_id: string
-          user_id: string
-          original: string
-          translation: string | null
-          original_lang: string
-          target_lang: string
-          status: 'queued' | 'processing' | 'displayed' | 'failed'
-          queued_at: string
-          processed_at: string | null
-          displayed_at: string | null
-          performance_metrics: Json | null
-          timestamp: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          session_id: string
-          user_id: string
-          original: string
-          translation?: string | null
-          original_lang: string
-          target_lang: string
-          status?: 'queued' | 'processing' | 'displayed' | 'failed'
-          queued_at?: string
-          processed_at?: string | null
-          displayed_at?: string | null
-          performance_metrics?: Json | null
-          timestamp?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          session_id?: string
-          user_id?: string
-          original?: string
-          translation?: string | null
-          original_lang?: string
-          target_lang?: string
-          status?: 'queued' | 'processing' | 'displayed' | 'failed'
-          queued_at?: string
-          processed_at?: string | null
-          displayed_at?: string | null
-          performance_metrics?: Json | null
-          timestamp?: string
-          created_at?: string
-        }
-      }
-      user_activity: {
-        Row: {
-          id: string
-          session_id: string
-          user_id: string
-          activity: 'typing' | 'recording' | 'processing' | 'idle'
-          last_updated: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          session_id: string
-          user_id: string
-          activity: 'typing' | 'recording' | 'processing' | 'idle'
-          last_updated?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          session_id?: string
-          user_id?: string
-          activity?: 'typing' | 'recording' | 'processing' | 'idle'
-          last_updated?: string
-          created_at?: string
-        }
-      }
+      // No Supabase tables needed for solo mode
+      // All data is handled locally in the SingleDeviceTranslator
     }
   }
 }
 
-// Helper types
-export type Session = Database['public']['Tables']['sessions']['Row']
-export type Message = Database['public']['Tables']['messages']['Row']
-export type UserActivity = Database['public']['Tables']['user_activity']['Row']
+// Helper types for solo mode
+export type MessageStatus = 'queued' | 'processing' | 'displayed' | 'failed'
 
-export type MessageStatus = Message['status']
-export type ActivityType = UserActivity['activity']
+/**
+ * Message interface for solo mode
+ * Contains all the fields needed for local message handling
+ */
+export interface Message {
+  id: string
+  session_id: string
+  user_id: string
+  original: string
+  translation: string | null
+  original_lang: string
+  target_lang: string
+  status: MessageStatus
+  queued_at: string
+  processed_at: string | null
+  displayed_at: string | null
+  performance_metrics: Json | null
+  timestamp: string
+  created_at: string
+}
 
 /**
  * Performance Metrics Interface

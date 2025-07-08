@@ -8,7 +8,6 @@ import { MobileContainer } from '@/components/layout/MobileContainer'
 import { MessageBubble } from '@/features/messages/MessageBubble'
 import { ActivityIndicator } from '@/features/messages/ActivityIndicator'
 import { messageQueue, type QueuedMessage } from '@/features/messages/MessageQueue'
-import { SessionProvider } from '@/features/session/SessionContext'
 import { AudioRecorderService, type AudioRecordingResult } from '@/services/audio/recorder'
 import { SecureWhisperService as WhisperService } from '@/services/openai/whisper-secure'
 import { SecureTranslationService as TranslationService } from '@/services/openai/translation-secure'
@@ -17,18 +16,6 @@ import { useTranslation } from '@/lib/i18n/useTranslation'
 import { UserManager } from '@/lib/user/UserManager'
 import { useSounds } from '@/lib/sounds/SoundManager'
 import { ConversationContextManager, type ConversationContextEntry } from '@/lib/conversation/ConversationContext'
-import type { Session } from '@/types/database'
-
-// Mock session for single device mode
-const mockSession: Session = {
-  id: 'single-device-session',
-  code: 'SOLO',
-  created_at: new Date().toISOString(),
-  expires_at: new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
-  is_active: true,
-  user_count: 1,
-  last_activity: new Date().toISOString()
-}
 
 export function SingleDeviceTranslator() {
   const navigate = useNavigate()
@@ -247,7 +234,7 @@ export function SingleDeviceTranslator() {
       // Create initial message in queue
       const initialMessage: QueuedMessage = {
         id: messageId,
-        session_id: mockSession.id,
+        session_id: 'single-device-session',
         user_id: 'single-user',
         original: messageText,
         translation: null,
@@ -439,7 +426,7 @@ export function SingleDeviceTranslator() {
       // Create initial message in queue
       const initialMessage: QueuedMessage = {
         id: messageId,
-        session_id: mockSession.id,
+        session_id: 'single-device-session',
         user_id: 'single-user',
         original: '...',
         translation: null,
@@ -702,7 +689,6 @@ export function SingleDeviceTranslator() {
   }
 
   return (
-    <SessionProvider session={mockSession} userId="single-user" isLeft={true}>
       <div className="min-h-screen bg-app flex flex-col relative overflow-hidden">
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -958,7 +944,6 @@ export function SingleDeviceTranslator() {
           </div>
         </div>
       </div>
-    </SessionProvider>
   )
 }
 

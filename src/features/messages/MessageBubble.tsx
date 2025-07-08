@@ -3,7 +3,6 @@ import { clsx } from 'clsx'
 import { Check, Clock, AlertCircle, Play, Pause, Loader2, Volume2, Edit3 } from 'lucide-react'
 import type { QueuedMessage } from './MessageQueue'
 import { messageQueue } from './MessageQueue'
-import { useSession } from '../session/SessionContext'
 import { SecureTTSService as TTSService } from '../../services/openai/tts-secure'
 import { EmojiReactionPicker } from './EmojiReactionPicker'
 import { MessageReactions } from './MessageReactions'
@@ -18,7 +17,8 @@ export interface MessageBubbleProps {
 type TTSStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'error'
 
 export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
-  const { userId } = useSession()
+  // In solo mode, use a consistent userId for all messages
+  const userId = 'single-user'
   const [ttsStatus, setTtsStatus] = useState<TTSStatus>('idle')
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
