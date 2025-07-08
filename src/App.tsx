@@ -1,6 +1,7 @@
 import { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { Layout } from '@/components/layout/Layout'
+import { ViewportToggle } from '@/components/layout/ViewportToggle'
 import { Spinner } from '@/components/ui/Spinner'
 
 // Lazy load main components for code splitting
@@ -111,9 +112,10 @@ function App() {
       <ThemeProvider>
         <TranslationProvider>
           <ToastProvider>
-            <BrowserRouter>
-            <Suspense fallback={<LoadingFallback />}>
-              <Routes>
+            <ViewportToggle>
+              <BrowserRouter>
+              <Suspense fallback={<LoadingFallback />}>
+                <Routes>
               <Route path="/" element={
                 <Layout>
                   <HomeScreen />
@@ -211,6 +213,7 @@ function App() {
               </Routes>
             </Suspense>
             </BrowserRouter>
+            </ViewportToggle>
           </ToastProvider>
         </TranslationProvider>
       </ThemeProvider>

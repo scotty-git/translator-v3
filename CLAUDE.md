@@ -1,19 +1,16 @@
 # CLAUDE.md - Project Guide
 
-## 🔔 AUTO-PING SYSTEM - CONFIGURED WITH HOOKS
+## 🎺 AUTO-COMPLETE NOTIFICATION - CONFIGURED WITH HOOKS
 
-**AUTOMATIC NOTIFICATIONS NOW ACTIVE!**
+**AUTOMATIC COMPLETION SOUND ACTIVE!**
 
-Claude Code now uses automated hooks for notifications:
-- 🔔 **Mid-conversation ping** (Notification hook): Plays when Claude needs your input
-- 🎺 **Task complete sound** (Stop hook): Plays when all tasks are finished
+Claude Code now uses an automated Stop hook that:
+- 🎺 **Plays "Hero" sound** when ALL tasks are complete (70% louder)
+- 📝 **Logs completions** to `~/.claude/notification-log.txt`
 
-**No manual pinging needed!** The system automatically:
-- Plays "Ping.aiff" when waiting for your response
-- Plays "Hero.aiff" when all work is complete
-- Logs all notifications to `~/.claude/notification-log.txt`
+**Perfect for knowing when Claude is fully done!** No more wondering if work is still in progress.
 
-**Note:** These hooks are configured in `~/.claude/settings.json` and work across ALL projects.
+**Note:** This hook is configured in `~/.claude/settings.json` and works across ALL projects.
 
 ---
 

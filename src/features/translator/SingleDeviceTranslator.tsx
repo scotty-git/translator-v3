@@ -55,7 +55,13 @@ export function SingleDeviceTranslator() {
         audioRecorderRef.current = new AudioRecorderService({
           maxDuration: 60 // 1 minute max
         })
-        console.log('🎙️ Audio recorder initialized for Single Device Mode')
+        
+        // Set up real-time audio visualization callback
+        audioRecorderRef.current.onAudioData = (level: number) => {
+          setAudioLevel(level)
+        }
+        
+        console.log('🎙️ Audio recorder initialized for Single Device Mode with real-time visualization')
       } catch (err) {
         setError('Failed to initialize audio recorder. Please check microphone permissions.')
         console.error('❌ Audio recorder initialization failed:', err)
@@ -66,6 +72,9 @@ export function SingleDeviceTranslator() {
     
     return () => {
       // Cleanup recorder if needed
+      if (audioRecorderRef.current) {
+        audioRecorderRef.current.onAudioData = undefined
+      }
     }
   }, [])
 
@@ -75,27 +84,10 @@ export function SingleDeviceTranslator() {
     console.log(`🎯 Mode switched to: ${newMode}`)
   }
 
-  // Audio level monitoring for visualization
-  const audioLevelIntervalRef = useRef<number>()
-
-  const startAudioLevelMonitoring = () => {
-    // Simulate audio level for visualization
-    // In a real implementation, this would connect to Web Audio API
-    audioLevelIntervalRef.current = window.setInterval(() => {
-      if (isRecording) {
-        // Simulate realistic audio levels with some variation
-        const baseLevel = 0.3 + Math.random() * 0.4
-        const variation = Math.sin(Date.now() * 0.01) * 0.2
-        setAudioLevel(Math.max(0, Math.min(1, baseLevel + variation)))
-      }
-    }, 50) // 20fps updates
-  }
-
-  const stopAudioLevelMonitoring = () => {
-    if (audioLevelIntervalRef.current) {
-      clearInterval(audioLevelIntervalRef.current)
-      audioLevelIntervalRef.current = undefined
-    }
+  // Audio level is now handled by the AudioRecorderService via Web Audio API
+  // The onAudioData callback provides real-time audio levels
+  
+  const resetAudioLevel = () => {
     setAudioLevel(0)
   }
 
@@ -133,7 +125,7 @@ export function SingleDeviceTranslator() {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopAudioLevelMonitoring()
+      resetAudioLevel()
     }
   }, [])
 
@@ -151,8 +143,8 @@ export function SingleDeviceTranslator() {
       performanceLogger.start('single-device-recording')
       await audioRecorderRef.current.startRecording()
       
-      // Start audio level monitoring for visualization
-      startAudioLevelMonitoring()
+      // Audio level monitoring is now handled by the AudioRecorderService
+      console.log('🎤 Recording started with real-time audio visualization')
       
     } catch (err) {
       setError('Failed to start recording: ' + (err as Error).message)
