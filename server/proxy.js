@@ -137,7 +137,17 @@ app.post('/api/openai/tts', async (req, res) => {
     
     // Forward the audio response
     res.setHeader('Content-Type', 'audio/mpeg');
-    response.body.pipe(res);
+    
+    // Convert Web Stream to Node.js stream for Node.js 18+
+    const { Readable } = require('stream');
+    if (response.body instanceof ReadableStream) {
+      // Node.js 18+ with Web Streams API
+      const nodeStream = Readable.fromWeb(response.body);
+      nodeStream.pipe(res);
+    } else {
+      // Fallback for older Node.js versions
+      response.body.pipe(res);
+    }
   } catch (error) {
     console.error('❌ TTS error:', error.message);
     res.status(500).json({ error: error.message });

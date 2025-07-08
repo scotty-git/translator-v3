@@ -49,11 +49,11 @@ export function AudioVisualization({
   const MIN_HEIGHT = 0.1
   const UPDATE_INTERVAL = 16 // ~60fps
   
-  // Size configurations
+  // Size configurations - reduced height by 50%
   const sizeConfig = {
-    sm: { width: 2, maxHeight: 12, gap: 1 },
-    md: { width: 3, maxHeight: 16, gap: 2 },
-    lg: { width: 4, maxHeight: 20, gap: 2 }
+    sm: { width: 2, maxHeight: 6, gap: 1 },
+    md: { width: 3, maxHeight: 8, gap: 2 },
+    lg: { width: 4, maxHeight: 10, gap: 2 }
   }
   
   const config = sizeConfig[size]

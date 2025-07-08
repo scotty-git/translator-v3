@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Mic, MicOff } from 'lucide-react'
+import { ArrowLeft, Mic, MicOff, Settings, Sun, Moon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AudioVisualization } from '@/components/ui/AudioVisualization'
@@ -38,6 +38,12 @@ export function SingleDeviceTranslator() {
   const [conversationContext, setConversationContext] = useState<ConversationContextEntry[]>([])
   const [textMessage, setTextMessage] = useState('')
   const [showTextInput, setShowTextInput] = useState(false)
+  const [showSettingsMenu, setShowSettingsMenu] = useState(false)
+  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large' | 'xl'>(() => UserManager.getFontSize())
+  const [isDarkMode, setIsDarkMode] = useState(() => 
+    localStorage.getItem('theme') === 'dark' || 
+    (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  )
   
   const audioRecorderRef = useRef<AudioRecorderService | null>(null)
 
@@ -76,6 +82,21 @@ export function SingleDeviceTranslator() {
       }
     }
   }, [])
+
+  // Close settings menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('[data-settings-menu]') && !target.closest('[data-settings-button]')) {
+        setShowSettingsMenu(false)
+      }
+    }
+
+    if (showSettingsMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showSettingsMenu])
 
   const handleModeToggle = () => {
     const newMode = UserManager.toggleTranslationMode()
@@ -685,16 +706,79 @@ export function SingleDeviceTranslator() {
         <header className="glass-effect sticky top-0 z-50 border-b border-white/20 backdrop-blur-md">
           <div className="container mx-auto px-4 py-2">
             <div className="flex items-center justify-between">
-              {/* Left side - Just back button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                <span className="hidden sm:inline">{t('common.back', 'Back')}</span>
-              </Button>
+              {/* Left side - Back button and Settings */}
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => navigate('/')}
+                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('common.back', 'Back')}</span>
+                </Button>
+                
+                {/* Settings Button */}
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowSettingsMenu(!showSettingsMenu)}
+                    className="p-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+                    data-settings-button
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                  
+                  {/* Settings Dropdown Menu */}
+                  {showSettingsMenu && (
+                    <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 p-2 z-50" data-settings-menu>
+                      {/* Font Size Setting */}
+                      <div className="mb-3">
+                        <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                          {t('settings.fontSize', 'Font Size')}
+                        </label>
+                        <div className="grid grid-cols-3 gap-1">
+                          {(['small', 'medium', 'large'] as const).map((size) => (
+                            <button
+                              key={size}
+                              onClick={() => {
+                                UserManager.setFontSize(size)
+                                setFontSize(size)
+                              }}
+                              className={`px-2 py-1 text-xs rounded transition-colors ${
+                                fontSize === size
+                                  ? 'bg-blue-500 text-white'
+                                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                              }`}
+                            >
+                              {UserManager.getFontSizeDisplayName(size)}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      
+                      {/* Theme Toggle */}
+                      <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                        <button
+                          onClick={() => {
+                            const newTheme = isDarkMode ? 'light' : 'dark'
+                            localStorage.setItem('theme', newTheme)
+                            setIsDarkMode(!isDarkMode)
+                            document.documentElement.classList.toggle('dark')
+                          }}
+                          className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <span className="text-gray-700 dark:text-gray-300">
+                            {isDarkMode ? t('settings.lightMode', 'Light Mode') : t('settings.darkMode', 'Dark Mode')}
+                          </span>
+                          {isDarkMode ? <Sun className="h-4 w-4 text-yellow-500" /> : <Moon className="h-4 w-4 text-gray-600" />}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               {/* Right side - Mode Toggle & Target Language */}
               <div className="flex items-center gap-4">
@@ -781,10 +865,10 @@ export function SingleDeviceTranslator() {
           </div>
 
           {/* Recording Controls - Compact */}
-          <div className="p-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50">
+          <div className="p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50">
             {/* Error Display */}
             {error && (
-              <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
+              <div className="mb-2 p-2 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
                 <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
               </div>
             )}
@@ -819,7 +903,7 @@ export function SingleDeviceTranslator() {
             )}
 
             {/* Input Mode Toggle - Compact */}
-            <div className="mb-3 flex justify-center">
+            <div className="mb-2 flex justify-center">
               <div className="relative bg-white dark:bg-gray-800 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700">
                 {/* Background indicator */}
                 <div 
@@ -830,7 +914,7 @@ export function SingleDeviceTranslator() {
                 <div className="relative flex">
                   <button
                     onClick={() => setShowTextInput(false)}
-                    className={`relative z-10 px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
+                    className={`relative z-10 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
                       !showTextInput 
                         ? 'text-white'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -841,7 +925,7 @@ export function SingleDeviceTranslator() {
                   </button>
                   <button
                     onClick={() => setShowTextInput(true)}
-                    className={`relative z-10 px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
+                    className={`relative z-10 px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
                       showTextInput 
                         ? 'text-white'
                         : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
@@ -883,7 +967,7 @@ export function SingleDeviceTranslator() {
                 </button>
                 
                 {/* 5-bar audio visualization */}
-                <div className="mt-3">
+                <div className="mt-2">
                   <AudioVisualization
                     audioLevel={audioLevel}
                     isRecording={isRecording}
