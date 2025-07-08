@@ -4,7 +4,7 @@ import { Check, Clock, AlertCircle, Play, Pause, Loader2, Volume2, Edit3 } from 
 import type { QueuedMessage } from './MessageQueue'
 import { messageQueue } from './MessageQueue'
 import { useSession } from '../session/SessionContext'
-import { TTSService } from '../../services/openai/tts'
+import { SecureTTSService as TTSService } from '../../services/openai/tts-secure'
 import { EmojiReactionPicker } from './EmojiReactionPicker'
 import { MessageReactions } from './MessageReactions'
 import { useLongPress } from '../../hooks/useLongPress'

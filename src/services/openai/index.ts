@@ -28,10 +28,15 @@ export type TranslationMode = 'casual' | 'fun';
 //   'Portuguese': 'pt'
 // } as const;
 
-// Export all services
-export * from './transcription';
-export * from './translation';
-export * from './tts';
+// Export all services (secure proxy versions)
+export * from './transcription-secure';
+export * from './translation-secure';
+export * from './tts-secure';
 export * from './prompts';
 export * from './language-detection';
+
+// Legacy exports for backward compatibility
+export { SecureTranscriptionService as TranscriptionService } from './transcription-secure';
+export { SecureTranslationService as TranslationService } from './translation-secure';
+export { SecureTTSService as TTSService } from './tts-secure';
 

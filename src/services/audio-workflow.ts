@@ -1,7 +1,7 @@
 import { AudioRecorderService, type AudioRecordingResult } from './audio/recorder';
-import { TranscriptionService } from './openai/transcription';
-import { TranslationService } from './openai/translation';
-import { TTSService } from './openai/tts';
+import { SecureTranscriptionService as TranscriptionService } from './openai/transcription-secure';
+import { SecureTranslationService as TranslationService } from './openai/translation-secure';
+import { SecureTTSService as TTSService } from './openai/tts-secure';
 import { LanguageDetectionService } from './openai/language-detection';
 import { ConversationContextManager, type ConversationContextEntry } from '@/lib/conversation/ConversationContext';
 import type { Language, TranslationMode } from './openai';

@@ -72,6 +72,8 @@ app.post('/api/openai/whisper', upload.single('file'), async (req, res) => {
     
     formData.append('file', blob, req.file.originalname);
     formData.append('model', 'whisper-1');
+    formData.append('response_format', 'verbose_json'); // Match existing service expectations
+    formData.append('temperature', '0');
     
     // Add any additional parameters from request body
     if (req.body.language) {
