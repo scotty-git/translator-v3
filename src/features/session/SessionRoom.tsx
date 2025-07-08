@@ -68,8 +68,24 @@ export function SessionRoom() {
     )
   }
 
-  // Error state
+  // Error state with automatic redirect for invalid sessions
   if (connectionState === 'error') {
+    // Check if error indicates session not found and redirect automatically
+    const isSessionNotFound = error?.includes('not found') || 
+                             error?.includes('does not exist') || 
+                             error?.includes('Newly created session not found')
+    
+    if (isSessionNotFound && code) {
+      // Redirect to home after a brief delay to show the error
+      setTimeout(() => {
+        navigate('/', { 
+          state: { 
+            error: `Session ${code} was not found or has expired.` 
+          } 
+        })
+      }, 2000)
+    }
+    
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="max-w-md w-full">
@@ -77,11 +93,16 @@ export function SessionRoom() {
             <AlertTriangle className="h-12 w-12 text-red-500 mx-auto" />
             <h2 className="text-xl font-semibold">{t('session.connectionError')}</h2>
             <p className="text-gray-600">{error}</p>
+            {isSessionNotFound && (
+              <p className="text-sm text-gray-500">
+                Redirecting to home page...
+              </p>
+            )}
             <div className="space-y-2">
               <Button onClick={() => navigate('/')} fullWidth>
                 {t('session.returnHome')}
               </Button>
-              {code && (
+              {code && !isSessionNotFound && (
                 <Button 
                   variant="secondary" 
                   onClick={() => window.location.reload()} 

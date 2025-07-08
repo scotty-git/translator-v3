@@ -95,14 +95,15 @@ export function SessionRecordingControls() {
   const audioLevelIntervalRef = useRef<number>()
 
   const startAudioLevelMonitoring = () => {
+    // Simulate audio level for visualization
     audioLevelIntervalRef.current = window.setInterval(() => {
       if (isRecording) {
+        // Simulate realistic audio levels with some variation
         const baseLevel = 0.3 + Math.random() * 0.4
-        const spikeChance = Math.random()
-        const level = spikeChance > 0.8 ? baseLevel + Math.random() * 0.3 : baseLevel
-        setAudioLevel(Math.min(level, 1))
+        const variation = Math.sin(Date.now() * 0.01) * 0.2
+        setAudioLevel(Math.max(0, Math.min(1, baseLevel + variation)))
       }
-    }, 100)
+    }, 50) // 20fps updates like solo mode
   }
 
   const stopAudioLevelMonitoring = () => {
@@ -114,46 +115,27 @@ export function SessionRecordingControls() {
   }
 
   const handleStartRecording = async () => {
+    if (!audioRecorderRef.current || !session) return
+    
     try {
-      if (!session) return
-      
-      // Always check permissions when user clicks record
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-        stream.getTracks().forEach(track => track.stop())
-        setPermissionError(null)
-      } catch (permErr: any) {
-        console.error('Microphone permission error:', permErr)
-        if (permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError') {
-          setPermissionError('Microphone access denied. Please allow microphone access in your browser settings.')
-        } else {
-          setPermissionError('Please allow microphone access to use voice recording.')
-        }
-        return
-      }
-      
-      // Initialize recorder if needed
-      if (!audioRecorderRef.current) {
-        await initializeRecorder()
-        if (!audioRecorderRef.current) {
-          setError('Failed to initialize audio recorder.')
-          return
-        }
-      }
-      
-      performanceLogger.startWorkflow('session-recording')
       setError(null)
-      setCurrentActivity('recording')
+      setPermissionError(null)
       setIsRecording(true)
+      setCurrentActivity('recording')
       setDetectedLanguage('Listening...')
       
+      // Play recording start sound
       playRecordingStart()
+      
+      // Start audio level monitoring for visualization
       startAudioLevelMonitoring()
+      
+      performanceLogger.startWorkflow('session-recording')
+      await audioRecorderRef.current.startRecording()
       
       // Notify other users that we're recording
       await ActivityService.updateActivity(session.id, userId, 'recording')
       
-      await audioRecorderRef.current.startRecording()
       console.log('🎙️ Recording started in session mode')
     } catch (err: any) {
       console.error('❌ Failed to start recording:', err)
@@ -161,8 +143,6 @@ export function SessionRecordingControls() {
       // Check for specific permission errors
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setPermissionError('Microphone access denied. Please allow microphone access to record audio.')
-      } else if (err.message && err.message.includes('permission')) {
-        setPermissionError('Please allow microphone access to use voice recording.')
       } else {
         setError('Failed to start recording. Please try again.')
       }
@@ -175,39 +155,47 @@ export function SessionRecordingControls() {
   }
 
   const handleStopRecording = async () => {
+    if (!audioRecorderRef.current || !isRecording || !session) return
+
     try {
-      if (!audioRecorderRef.current || !isRecording || !session) return
-      
-      console.log('🛑 Stopping recording...')
       setIsRecording(false)
-      stopAudioLevelMonitoring()
-      playRecordingStop()
-      
-      performanceLogger.mark('recording-stopped')
-      
-      const result = await audioRecorderRef.current.stopRecording()
-      
-      if (!result || !result.blob) {
-        throw new Error('No recording data available')
-      }
-      
       setCurrentActivity('processing')
       setIsProcessing(true)
       
-      // Clear recording activity
-      await ActivityService.clearActivity(session.id, userId)
+      // Play recording stop sound
+      playRecordingStop()
       
-      // Process the audio
-      await processAudioRecording(result)
-      
+      // Stop audio level monitoring
+      stopAudioLevelMonitoring()
+
+      // Set up completion handler before stopping
+      audioRecorderRef.current.onComplete = async (result: AudioRecordingResult) => {
+        performanceLogger.mark('recording-stopped')
+        
+        // Convert File to Blob for compatibility
+        const audioBlob = new Blob([await result.audioFile.arrayBuffer()], { 
+          type: result.audioFile.type 
+        })
+        
+        // Process with real OpenAI APIs
+        await processAudioRecording({ blob: audioBlob })
+      }
+
+      audioRecorderRef.current.onError = (error: Error) => {
+        setError('Recording failed: ' + error.message)
+        setCurrentActivity('idle')
+        setIsProcessing(false)
+        playError()
+      }
+
+      // Stop recording - this will trigger onComplete
+      await audioRecorderRef.current.stopRecording()
+
     } catch (err) {
-      console.error('❌ Error stopping recording:', err)
-      setError('Failed to process recording. Please try again.')
-      playError()
-    } finally {
-      setIsRecording(false)
-      setIsProcessing(false)
+      setError('Failed to process recording: ' + (err as Error).message)
       setCurrentActivity('idle')
+      setIsProcessing(false)
+      playError()
     }
   }
 
@@ -345,12 +333,6 @@ export function SessionRecordingControls() {
     console.log(`🎯 Mode switched to: ${newMode}`)
   }
 
-  const handleTargetLanguageToggle = () => {
-    const newLang = targetLanguage === 'es' ? 'pt' : 'es'
-    setTargetLanguage(newLang)
-    UserManager.setPreference('targetLanguage', newLang)
-    console.log(`🌐 Target language switched to: ${newLang}`)
-  }
 
   // Update activity when typing
   useEffect(() => {
@@ -400,16 +382,24 @@ export function SessionRecordingControls() {
 
         {/* Top controls row */}
         <div className="flex items-center justify-between gap-2">
-          {/* Language toggle */}
-          <Button
-            onClick={handleTargetLanguageToggle}
-            variant="secondary"
-            size="sm"
-            className="gap-2"
-          >
-            <Languages className="h-4 w-4" />
-            <span className="uppercase">{targetLanguage}</span>
-          </Button>
+          {/* Target Language - Match solo mode style */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">{t('translator.targetLang', 'Target')}:</span>
+            <select
+              value={targetLanguage}
+              onChange={(e) => {
+                const newLang = e.target.value as 'es' | 'pt'
+                console.log('🎯 Target language changed to:', newLang)
+                setTargetLanguage(newLang)
+                UserManager.setPreference('targetLanguage', newLang)
+              }}
+              disabled={isProcessing || isRecording}
+              className="text-sm bg-transparent border-none text-gray-900 dark:text-gray-100 focus:outline-none"
+            >
+              <option value="es">Español</option>
+              <option value="pt">Português</option>
+            </select>
+          </div>
 
           {/* Voice/Type Toggle - Matches solo mode style exactly */}
           <div className="flex items-center justify-center">
@@ -449,14 +439,22 @@ export function SessionRecordingControls() {
             </div>
           </div>
 
-          {/* Mode toggle */}
-          <Button
+          {/* Mode Toggle - Match solo mode style */}
+          <button
             onClick={handleModeToggle}
-            variant={translationMode === 'fun' ? 'primary' : 'secondary'}
-            size="sm"
+            disabled={isProcessing || isRecording}
+            className={`
+              px-3 py-1 rounded-full text-xs font-medium transition-all duration-200
+              ${translationMode === 'fun' 
+                ? 'bg-pink-100 text-pink-700 hover:bg-pink-200 dark:bg-pink-900/30 dark:text-pink-300' 
+                : 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300'
+              }
+              ${isProcessing || isRecording ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}
+            `}
+            title={`Current mode: ${translationMode}. Click to toggle.`}
           >
-            <Sparkles className="h-4 w-4" />
-          </Button>
+            {translationMode === 'fun' ? '🎉 Fun' : '💬 Casual'}
+          </button>
         </div>
         
         {/* Text input (when toggled) */}
@@ -489,23 +487,15 @@ export function SessionRecordingControls() {
           <div className="flex flex-col items-center">
             <button
               data-testid="recording-button"
-              onClick={() => {
-                if (!isProcessing && !permissionError) {
-                  if (isRecording) {
-                    handleStopRecording()
-                  } else {
-                    handleStartRecording()
-                  }
-                }
-              }}
-              disabled={isProcessing || !!permissionError}
+              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              disabled={isProcessing}
               className={`
                 w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu
                 ${isRecording 
                   ? 'bg-red-500 hover:bg-red-600 scale-110 shadow-lg shadow-red-500/50' 
                   : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
                 }
-                ${(isProcessing || !!permissionError) ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
+                ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
                 text-white
               `}
             >

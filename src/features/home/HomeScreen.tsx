@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Card } from '@/components/ui/Card'
@@ -14,12 +14,22 @@ import { Settings } from 'lucide-react'
 
 export function HomeScreen() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useTranslation()
   const { registerPage } = usePageTransitions()
   const [mode, setMode] = useState<'create' | 'join' | null>(null)
   const [sessionCode, setSessionCode] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Check for error message from session redirect
+  useEffect(() => {
+    if (location.state?.error) {
+      setError(location.state.error)
+      // Clear the error from location state after showing it
+      window.history.replaceState({}, document.title)
+    }
+  }, [location.state])
 
   const handleCreateSession = async () => {
     setIsLoading(true)
