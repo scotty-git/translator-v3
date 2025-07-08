@@ -48,9 +48,10 @@ export function SessionRecordingControls() {
   const audioRecorderRef = useRef<AudioRecorderService | null>(null)
   const recordButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Check microphone permissions on mount
+  // Don't check permissions on mount - wait for user interaction
   useEffect(() => {
-    checkMicrophonePermission()
+    // Initialize recorder without requesting permissions
+    initializeRecorder()
   }, [])
 
   const checkMicrophonePermission = async () => {
@@ -113,14 +114,32 @@ export function SessionRecordingControls() {
   }
 
   const handleStartRecording = async () => {
-    // Check for permission error first
-    if (permissionError) {
-      await checkMicrophonePermission()
-      if (permissionError) return
-    }
-
     try {
-      if (!audioRecorderRef.current || !session) return
+      if (!session) return
+      
+      // Always check permissions when user clicks record
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+        stream.getTracks().forEach(track => track.stop())
+        setPermissionError(null)
+      } catch (permErr: any) {
+        console.error('Microphone permission error:', permErr)
+        if (permErr.name === 'NotAllowedError' || permErr.name === 'PermissionDeniedError') {
+          setPermissionError('Microphone access denied. Please allow microphone access in your browser settings.')
+        } else {
+          setPermissionError('Please allow microphone access to use voice recording.')
+        }
+        return
+      }
+      
+      // Initialize recorder if needed
+      if (!audioRecorderRef.current) {
+        await initializeRecorder()
+        if (!audioRecorderRef.current) {
+          setError('Failed to initialize audio recorder.')
+          return
+        }
+      }
       
       performanceLogger.startWorkflow('session-recording')
       setError(null)
@@ -142,8 +161,10 @@ export function SessionRecordingControls() {
       // Check for specific permission errors
       if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
         setPermissionError('Microphone access denied. Please allow microphone access to record audio.')
+      } else if (err.message && err.message.includes('permission')) {
+        setPermissionError('Please allow microphone access to use voice recording.')
       } else {
-        setError('Failed to start recording. Please check microphone permissions.')
+        setError('Failed to start recording. Please try again.')
       }
       
       setIsRecording(false)

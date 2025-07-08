@@ -159,6 +159,42 @@ This is a mobile-first voice translation app enabling real-time communication be
 3. **Phase 3: Manual Testing** 👤
    Only ask for manual testing when all automated tests pass 100%
 
+### Automated Testing Requirements
+
+**CRITICAL: Always test features before reporting completion**
+
+1. **Default Testing Protocol**:
+   ```bash
+   # Always run Playwright tests in headless mode
+   npx playwright test --project=chromium --headed=false
+   
+   # Take screenshots during tests for analysis
+   await page.screenshot({ path: 'test-results/feature-name.png' })
+   ```
+
+2. **Before Telling User to Check**:
+   - ✅ Run full Playwright tests with screenshots
+   - ✅ Analyze screenshots for UI/UX issues:
+     - Dark text on dark backgrounds
+     - Missing elements
+     - Layout problems
+     - Mobile responsiveness
+   - ✅ Only report completion when confident it's correct
+   - ❌ NEVER tell user to check unless tests pass
+
+3. **Background Testing Only**:
+   - Always use `headless: true` (default)
+   - Never show anything on user's screen
+   - Capture and analyze screenshots programmatically
+   - Report issues found with evidence
+
+4. **Common UI/UX Checks**:
+   - Color contrast in light/dark modes
+   - Text visibility and readability
+   - Button states and interactions
+   - Mobile viewport compatibility
+   - Form input accessibility
+
 ### Running Development Servers
 
 **THE ONLY CORRECT WAY TO RUN DEV SERVER:**

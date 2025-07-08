@@ -66,7 +66,7 @@ export function SessionHeader({ onLeave }: SessionHeaderProps) {
           {/* Session Info */}
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
-              <Languages className="h-5 w-5 text-blue-600" />
+              <Languages className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
                 <p className="text-xs text-gray-500 dark:text-gray-400 leading-none">Session</p>
                 <div className="flex items-center gap-2 mt-0.5">
