@@ -327,7 +327,14 @@ export class SessionService {
       
     if (error) {
       console.error('Error fetching session by code:', error)
-      return null
+      if (error.code === 'PGRST116') {
+        throw new Error('Session not found')
+      }
+      throw new Error('Failed to fetch session')
+    }
+    
+    if (!data) {
+      throw new Error('Session not found')
     }
     
     return data

@@ -48,17 +48,9 @@ export function SessionRecordingControls() {
   const audioRecorderRef = useRef<AudioRecorderService | null>(null)
   const recordButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Check permissions and initialize recorder on mount
+  // Initialize recorder on mount - NO permission checking
   useEffect(() => {
-    const setupAudio = async () => {
-      // Initialize recorder first
-      await initializeRecorder()
-      
-      // Then check microphone permissions
-      await checkMicrophonePermission()
-    }
-    
-    setupAudio()
+    initializeRecorder()
   }, [])
 
   const checkMicrophonePermission = async () => {
@@ -172,14 +164,7 @@ export function SessionRecordingControls() {
       console.log('🎙️ Recording started in session mode')
     } catch (err: any) {
       console.error('❌ Failed to start recording:', err)
-      
-      // Check for specific permission errors
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        setPermissionError('Microphone access denied. Please allow microphone access to record audio.')
-      } else {
-        setError('Failed to start recording. Please try again.')
-      }
-      
+      setError('Failed to start recording. Please try again.')
       setIsRecording(false)
       setCurrentActivity('idle')
       stopAudioLevelMonitoring()
@@ -521,19 +506,16 @@ export function SessionRecordingControls() {
             <button
               data-testid="recording-button"
               onClick={isRecording ? handleStopRecording : handleStartRecording}
-              disabled={isProcessing || !!permissionError}
+              disabled={isProcessing}
               className={`
                 w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu
                 ${isRecording 
                   ? 'bg-red-500 hover:bg-red-600 scale-110 shadow-lg shadow-red-500/50' 
-                  : permissionError
-                    ? 'bg-gray-400 cursor-not-allowed shadow-lg shadow-gray-400/30'
-                    : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
+                  : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
                 }
-                ${isProcessing || permissionError ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
+                ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
                 text-white
               `}
-              title={permissionError || (isRecording ? 'Stop recording' : 'Start recording')}
             >
               {isProcessing ? (
                 <div className="animate-spin">⚙️</div>
