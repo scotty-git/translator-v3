@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Mic, MicOff, Languages } from 'lucide-react'
+import { ArrowLeft, Mic, MicOff } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AudioVisualization } from '@/components/ui/AudioVisualization'
@@ -35,7 +35,6 @@ export function SingleDeviceTranslator() {
   })
   const [translationMode, setTranslationMode] = useState<'casual' | 'fun'>(() => UserManager.getTranslationMode())
   const [audioLevel, setAudioLevel] = useState(0)
-  const [detectedLanguage, setDetectedLanguage] = useState<string>('Auto-detecting...')
   const [conversationContext, setConversationContext] = useState<ConversationContextEntry[]>([])
   const [textMessage, setTextMessage] = useState('')
   const [showTextInput, setShowTextInput] = useState(false)
@@ -165,8 +164,8 @@ export function SingleDeviceTranslator() {
       // Play recording stop sound
       playRecordingStop()
       
-      // Stop audio level monitoring
-      stopAudioLevelMonitoring()
+      // Reset audio level to 0
+      resetAudioLevel()
 
       // Set up completion handler before stopping
       audioRecorderRef.current.onComplete = async (result: AudioRecordingResult) => {
@@ -275,7 +274,6 @@ export function SingleDeviceTranslator() {
       }
       
       const detectedLang = langMap[detectedLangCode] || 'English'
-      setDetectedLanguage(detectedLang)
       
       // Translation logic: Respect user's target language selection
       let actualTargetLanguage: 'es' | 'en' | 'pt' = targetLanguage
@@ -500,9 +498,7 @@ export function SingleDeviceTranslator() {
       const detectedLang = langMap[detectedLangCode] || 'English'
       console.log('   • Full language name:', detectedLang)
       
-      // Update detected language display
-      setDetectedLanguage(detectedLang)
-      console.log('   • UI updated to show:', detectedLang)
+      // Language detected successfully
       
       console.log('')
       console.log('🎯 TRANSLATION DIRECTION LOGIC:')
@@ -687,32 +683,18 @@ export function SingleDeviceTranslator() {
 
         {/* Header */}
         <header className="glass-effect sticky top-0 z-50 border-b border-white/20 backdrop-blur-md">
-          <div className="container mx-auto px-4 py-3">
+          <div className="container mx-auto px-4 py-2">
             <div className="flex items-center justify-between">
-              {/* Left side */}
-              <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => navigate('/')}
-                  className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('common.back', 'Back')}</span>
-                </Button>
-                
-                <div className="flex items-center gap-2">
-                  <Languages className="h-5 w-5 text-blue-600" />
-                  <div>
-                    <p className="text-xs text-gray-500 leading-none">
-                      {t('translator.singleDevice', 'Single Device Mode')}
-                    </p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100 leading-none">
-                      {detectedLanguage}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {/* Left side - Just back button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate('/')}
+                className="flex items-center gap-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">{t('common.back', 'Back')}</span>
+              </Button>
 
               {/* Right side - Mode Toggle & Target Language */}
               <div className="flex items-center gap-4">
@@ -764,7 +746,7 @@ export function SingleDeviceTranslator() {
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center space-y-4 max-w-md mx-auto">
                   <div className="w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center">
-                    <Languages className="h-8 w-8 text-blue-600" />
+                    <Mic className="h-8 w-8 text-blue-600" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
@@ -798,8 +780,8 @@ export function SingleDeviceTranslator() {
             )}
           </div>
 
-          {/* Recording Controls */}
-          <div className="p-4 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50">
+          {/* Recording Controls - Compact */}
+          <div className="p-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50">
             {/* Error Display */}
             {error && (
               <div className="mb-4 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded-lg">
@@ -836,36 +818,36 @@ export function SingleDeviceTranslator() {
               </div>
             )}
 
-            {/* Input Mode Toggle - Improved Design */}
-            <div className="mb-6 flex justify-center">
-              <div className="relative bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg border border-gray-200 dark:border-gray-700">
+            {/* Input Mode Toggle - Compact */}
+            <div className="mb-3 flex justify-center">
+              <div className="relative bg-white dark:bg-gray-800 rounded-full p-0.5 shadow border border-gray-200 dark:border-gray-700">
                 {/* Background indicator */}
                 <div 
-                  className={`absolute top-1 bottom-1 w-1/2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-transform duration-300 ease-out shadow-md ${
+                  className={`absolute top-0.5 bottom-0.5 w-1/2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-transform duration-200 ${
                     showTextInput ? 'translate-x-full' : 'translate-x-0'
                   }`}
                 />
                 <div className="relative flex">
                   <button
                     onClick={() => setShowTextInput(false)}
-                    className={`relative z-10 px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                    className={`relative z-10 px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
                       !showTextInput 
                         ? 'text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                     }`}
                   >
-                    <Mic className="h-4 w-4" />
+                    <Mic className="h-3 w-3" />
                     Voice
                   </button>
                   <button
                     onClick={() => setShowTextInput(true)}
-                    className={`relative z-10 px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                    className={`relative z-10 px-4 py-2 rounded-full text-xs font-medium transition-all duration-200 flex items-center gap-1.5 ${
                       showTextInput 
                         ? 'text-white'
-                        : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100'
                     }`}
                   >
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                     </svg>
                     Type
@@ -882,7 +864,7 @@ export function SingleDeviceTranslator() {
                   onClick={isRecording ? handleStopRecording : handleStartRecording}
                   disabled={false} // Allow recording even while processing previous messages
                   className={`
-                    w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu
+                    w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu
                     ${isRecording 
                       ? 'bg-red-500 hover:bg-red-600 scale-110 shadow-lg shadow-red-500/50' 
                       : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
@@ -893,19 +875,19 @@ export function SingleDeviceTranslator() {
                 >
                   {isRecording ? (
                     <div className="animate-pulse">
-                      <Mic className="h-8 w-8" />
+                      <Mic className="h-6 w-6" />
                     </div>
                   ) : (
-                    <Mic className="h-8 w-8" />
+                    <Mic className="h-6 w-6" />
                   )}
                 </button>
                 
                 {/* 5-bar audio visualization */}
-                <div className="mt-4">
+                <div className="mt-3">
                   <AudioVisualization
                     audioLevel={audioLevel}
                     isRecording={isRecording}
-                    size="lg"
+                    size="md"
                     colors={{
                       active: isRecording ? '#EF4444' : '#3B82F6',
                       inactive: '#E5E7EB'
