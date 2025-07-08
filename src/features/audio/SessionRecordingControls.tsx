@@ -17,8 +17,6 @@ import { ConversationContextManager, type ConversationContextEntry } from '@/lib
 import { UserManager } from '@/lib/user/UserManager'
 import { 
   Mic, 
-  MicOff, 
-  Keyboard,
   Languages,
   Sparkles,
   Send,
@@ -45,26 +43,52 @@ export function SessionRecordingControls() {
   const [textMessage, setTextMessage] = useState('')
   const [showTextInput, setShowTextInput] = useState(false)
   const [conversationContext, setConversationContext] = useState<ConversationContextEntry[]>([])
+  const [permissionError, setPermissionError] = useState<string | null>(null)
   
   const audioRecorderRef = useRef<AudioRecorderService | null>(null)
   const recordButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Initialize audio recorder
+  // Check microphone permissions on mount
   useEffect(() => {
-    const initializeRecorder = async () => {
-      try {
-        audioRecorderRef.current = new AudioRecorderService({
-          maxDuration: 60 // 1 minute max
-        })
-        console.log('🎙️ Audio recorder initialized for Session Mode')
-      } catch (err) {
-        setError('Failed to initialize audio recorder. Please check microphone permissions.')
-        console.error('❌ Audio recorder initialization failed:', err)
-      }
-    }
-    
-    initializeRecorder()
+    checkMicrophonePermission()
   }, [])
+
+  const checkMicrophonePermission = async () => {
+    try {
+      // Check if permissions API is available
+      if ('permissions' in navigator) {
+        const permission = await navigator.permissions.query({ name: 'microphone' as PermissionName })
+        
+        if (permission.state === 'denied') {
+          setPermissionError('Microphone access is blocked. Please enable it in your browser settings.')
+          return
+        }
+      }
+      
+      // Try to get user media to prompt for permission if needed
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      stream.getTracks().forEach(track => track.stop()) // Clean up immediately
+      
+      // Initialize audio recorder after permission granted
+      initializeRecorder()
+    } catch (err) {
+      console.error('Microphone permission error:', err)
+      setPermissionError('Please allow microphone access to use voice recording.')
+    }
+  }
+
+  // Initialize audio recorder
+  const initializeRecorder = async () => {
+    try {
+      audioRecorderRef.current = new AudioRecorderService({
+        maxDuration: 60 // 1 minute max
+      })
+      console.log('🎙️ Audio recorder initialized for Session Mode')
+    } catch (err) {
+      setError('Failed to initialize audio recorder. Please check microphone permissions.')
+      console.error('❌ Audio recorder initialization failed:', err)
+    }
+  }
 
   // Audio level monitoring
   const audioLevelIntervalRef = useRef<number>()
@@ -89,6 +113,12 @@ export function SessionRecordingControls() {
   }
 
   const handleStartRecording = async () => {
+    // Check for permission error first
+    if (permissionError) {
+      await checkMicrophonePermission()
+      if (permissionError) return
+    }
+
     try {
       if (!audioRecorderRef.current || !session) return
       
@@ -106,9 +136,16 @@ export function SessionRecordingControls() {
       
       await audioRecorderRef.current.startRecording()
       console.log('🎙️ Recording started in session mode')
-    } catch (err) {
+    } catch (err: any) {
       console.error('❌ Failed to start recording:', err)
-      setError('Failed to start recording. Please check microphone permissions.')
+      
+      // Check for specific permission errors
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setPermissionError('Microphone access denied. Please allow microphone access to record audio.')
+      } else {
+        setError('Failed to start recording. Please check microphone permissions.')
+      }
+      
       setIsRecording(false)
       setCurrentActivity('idle')
       stopAudioLevelMonitoring()
@@ -294,21 +331,6 @@ export function SessionRecordingControls() {
     console.log(`🌐 Target language switched to: ${newLang}`)
   }
 
-  // Touch and mouse handlers for recording button
-  const handlePointerDown = (e: React.PointerEvent | React.TouchEvent) => {
-    e.preventDefault()
-    if (!isProcessing) {
-      handleStartRecording()
-    }
-  }
-
-  const handlePointerUp = (e: React.PointerEvent | React.TouchEvent) => {
-    e.preventDefault()
-    if (isRecording) {
-      handleStopRecording()
-    }
-  }
-
   // Update activity when typing
   useEffect(() => {
     if (!session || !textMessage.trim()) return
@@ -349,11 +371,71 @@ export function SessionRecordingControls() {
         )}
         
         {/* Error message */}
-        {error && (
-          <div className="text-center text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
-            {error}
+        {(error || permissionError) && (
+          <div className="text-center text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 px-3 py-2 rounded-lg">
+            {error || permissionError}
           </div>
         )}
+
+        {/* Top controls row */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Language toggle */}
+          <Button
+            onClick={handleTargetLanguageToggle}
+            variant="secondary"
+            size="sm"
+            className="gap-2"
+          >
+            <Languages className="h-4 w-4" />
+            <span className="uppercase">{targetLanguage}</span>
+          </Button>
+
+          {/* Voice/Type Toggle - Matches solo mode style */}
+          <div className="flex items-center justify-center">
+            <div className="relative bg-gray-200 dark:bg-gray-700 rounded-full p-1">
+              <div 
+                className={`absolute top-1 left-1 h-10 w-24 bg-blue-500 rounded-full transition-transform duration-300 ${
+                  showTextInput ? 'translate-x-full' : 'translate-x-0'
+                }`}
+              />
+              <div className="relative flex">
+                <button
+                  onClick={() => setShowTextInput(false)}
+                  className={`relative z-10 px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                    !showTextInput 
+                      ? 'text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+                  }`}
+                >
+                  <Mic className="h-4 w-4" />
+                  Voice
+                </button>
+                <button
+                  onClick={() => setShowTextInput(true)}
+                  className={`relative z-10 px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
+                    showTextInput 
+                      ? 'text-white'
+                      : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
+                  }`}
+                >
+                  <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Type
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Mode toggle */}
+          <Button
+            onClick={handleModeToggle}
+            variant={translationMode === 'fun' ? 'primary' : 'secondary'}
+            size="sm"
+          >
+            <Sparkles className="h-4 w-4" />
+          </Button>
+        </div>
         
         {/* Text input (when toggled) */}
         {showTextInput && (
@@ -380,82 +462,58 @@ export function SessionRecordingControls() {
           </div>
         )}
         
-        {/* Control buttons */}
-        <div className="flex items-center justify-center gap-4">
-          {/* Language toggle */}
-          <Button
-            onClick={handleTargetLanguageToggle}
-            variant="secondary"
-            size="sm"
-            className="gap-2"
-          >
-            <Languages className="h-4 w-4" />
-            <span className="uppercase">{targetLanguage}</span>
-          </Button>
-          
-          {/* Recording button */}
-          <div className="relative">
-            {/* Audio visualization background */}
-            {isRecording && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <AudioVisualization
-                  isActive={isRecording}
-                  audioLevel={audioLevel}
-                  size="lg"
-                />
-              </div>
-            )}
-            
-            {/* Record button */}
+        {/* Recording button */}
+        {!showTextInput && (
+          <div className="flex flex-col items-center">
             <button
-              ref={recordButtonRef}
-              onPointerDown={handlePointerDown}
-              onPointerUp={handlePointerUp}
-              onPointerLeave={handlePointerUp}
-              onTouchStart={handlePointerDown}
-              onTouchEnd={handlePointerUp}
-              disabled={isProcessing}
+              data-testid="recording-button"
+              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              disabled={isProcessing || !!permissionError}
               className={`
-                relative z-10 rounded-full p-6 transition-all duration-200 touch-none
+                w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu
                 ${isRecording 
-                  ? 'bg-red-500 hover:bg-red-600 scale-110 shadow-xl' 
-                  : 'bg-blue-500 hover:bg-blue-600 shadow-lg hover:shadow-xl'
+                  ? 'bg-red-500 hover:bg-red-600 scale-110 shadow-lg shadow-red-500/50' 
+                  : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
                 }
-                ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
+                ${(isProcessing || !!permissionError) ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
+                text-white
               `}
             >
-              {isRecording ? (
-                <MicOff className="h-8 w-8 text-white" />
+              {isProcessing ? (
+                <div className="animate-spin">⚙️</div>
+              ) : isRecording ? (
+                <div className="animate-pulse">
+                  <Mic className="h-8 w-8" />
+                </div>
               ) : (
-                <Mic className="h-8 w-8 text-white" />
+                <Mic className="h-8 w-8" />
               )}
             </button>
+            
+            {/* 5-bar audio visualization */}
+            <div className="mt-4">
+              <AudioVisualization
+                audioLevel={audioLevel}
+                isRecording={isRecording}
+                size="lg"
+                colors={{
+                  active: isRecording ? '#EF4444' : '#3B82F6',
+                  inactive: '#E5E7EB'
+                }}
+              />
+            </div>
           </div>
-          
-          {/* Text input toggle */}
-          <Button
-            onClick={() => setShowTextInput(!showTextInput)}
-            variant="secondary"
-            size="sm"
-          >
-            <Keyboard className="h-4 w-4" />
-          </Button>
-          
-          {/* Mode toggle */}
-          <Button
-            onClick={handleModeToggle}
-            variant={translationMode === 'fun' ? 'primary' : 'secondary'}
-            size="sm"
-          >
-            <Sparkles className="h-4 w-4" />
-          </Button>
-        </div>
+        )}
         
         {/* Instructions */}
-        <p className="text-center text-sm text-gray-500">
-          {isRecording 
-            ? t('session.releaseToTranslate')
-            : t('session.holdToRecord')
+        <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+          {isProcessing 
+            ? t('session.processing', 'Processing your message...')
+            : showTextInput
+              ? 'Type your message and press Enter or click Send'
+              : isRecording 
+                ? t('session.releaseToTranslate', 'Recording... Click again to translate')
+                : t('session.holdToRecord', 'Click to record')
           }
         </p>
         

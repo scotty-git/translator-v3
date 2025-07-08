@@ -68,9 +68,9 @@ export function SessionHeader({ onLeave }: SessionHeaderProps) {
             <div className="flex items-center gap-2">
               <Languages className="h-5 w-5 text-blue-600" />
               <div>
-                <p className="text-xs text-gray-500 leading-none">Session</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 leading-none">Session</p>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-lg font-mono font-bold text-gray-900 tracking-wider">
+                  <span className="text-lg font-mono font-bold text-gray-900 dark:text-gray-100 tracking-wider">
                     {session.code}
                   </span>
                   <Button
@@ -106,7 +106,7 @@ export function SessionHeader({ onLeave }: SessionHeaderProps) {
                 <span>{isOnline ? 'Online' : 'Offline'}</span>
               </div>
               
-              <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
+              <div className="flex items-center gap-1 text-xs text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
                 <Users className="h-3 w-3" />
                 <span>
                   {session.user_count === 1 
