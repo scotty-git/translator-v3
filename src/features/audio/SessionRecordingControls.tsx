@@ -488,7 +488,15 @@ export function SessionRecordingControls() {
           <div className="flex flex-col items-center">
             <button
               data-testid="recording-button"
-              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              onClick={() => {
+                if (!isProcessing && !permissionError) {
+                  if (isRecording) {
+                    handleStopRecording()
+                  } else {
+                    handleStartRecording()
+                  }
+                }
+              }}
               disabled={isProcessing || !!permissionError}
               className={`
                 w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu

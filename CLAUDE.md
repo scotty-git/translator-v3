@@ -159,6 +159,47 @@ This is a mobile-first voice translation app enabling real-time communication be
 3. **Phase 3: Manual Testing** 👤
    Only ask for manual testing when all automated tests pass 100%
 
+### 🎯 Playwright Testing Protocol - CRITICAL
+
+**MANDATORY**: For all new features, Claude MUST:
+
+1. **ALWAYS test with Playwright in headless mode (`headless: true`)**
+2. **NEVER show browser on user's screen**
+3. **Take screenshots to verify UI appearance**
+4. **Check for common UI/UX mistakes:**
+   - Dark text on dark background
+   - Light text on light background
+   - Missing hover states
+   - Broken layouts
+   - Inaccessible buttons
+   - Theme inheritance issues
+
+5. **Test Flow Template**:
+```javascript
+test('feature name - full UI/UX validation', async ({ page }) => {
+  const browser = await chromium.launch({ headless: true }); // ALWAYS headless
+  
+  // Test light mode
+  await page.goto('http://127.0.0.1:5173');
+  await page.screenshot({ path: 'test-results/light-mode-test.png' });
+  
+  // Test dark mode
+  await page.click('button[aria-label="Toggle dark mode"]');
+  await page.screenshot({ path: 'test-results/dark-mode-test.png' });
+  
+  // Verify no UI/UX issues
+  // - Check text contrast
+  // - Verify interactive elements
+  // - Test responsive behavior
+});
+```
+
+6. **Only tell user to look at feature when:**
+   - All Playwright tests pass
+   - Screenshots confirm good UI/UX
+   - No dark-on-dark or light-on-light issues
+   - Feature works correctly in both themes
+
 ### Automated Testing Requirements
 
 **CRITICAL: Always test features before reporting completion**
