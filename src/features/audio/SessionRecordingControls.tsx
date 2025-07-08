@@ -109,7 +109,29 @@ export function SessionRecordingControls() {
       audioRecorderRef.current = new AudioRecorderService({
         maxDuration: 60 // 1 minute max
       })
-      console.log('🎙️ Audio recorder initialized for Session Mode')
+      
+      // Set up error handler immediately (not just during stop)
+      audioRecorderRef.current.onError = (error: Error) => {
+        console.log('💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥')
+        console.log('❌ [SESSION MODE] AUDIO RECORDER ERROR!')
+        console.log('💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥')
+        console.log('📊 Recorder Error Details:')
+        console.log('   • Error message:', error.message)
+        console.log('   • Error name:', error.name)
+        console.log('   • Current recorder state:', audioRecorderRef.current?.getState())
+        console.log('   • Recording active:', isRecording)
+        console.log('   • Processing active:', isProcessing)
+        console.log('💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥')
+        
+        setError('Recording failed: ' + error.message)
+        setCurrentActivity('idle')
+        setIsProcessing(false)
+        setIsRecording(false)
+        stopAudioLevelMonitoring()
+        playError()
+      }
+      
+      console.log('🎙️ Audio recorder initialized for Session Mode with error handler')
     } catch (err) {
       setError('Failed to initialize audio recorder. Please check microphone permissions.')
       console.error('❌ Audio recorder initialization failed:', err)
@@ -142,6 +164,18 @@ export function SessionRecordingControls() {
   const handleStartRecording = async () => {
     if (!audioRecorderRef.current || !session) return
     
+    console.log('🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤')
+    console.log('🎙️ [SESSION MODE] STARTING RECORDING')
+    console.log('🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤')
+    console.log('📊 Recording Session Info:')
+    console.log('   • Session ID:', session.id)
+    console.log('   • Session Code:', session.code)
+    console.log('   • User ID:', userId)
+    console.log('   • Recorder initialized:', !!audioRecorderRef.current)
+    console.log('   • Current translation mode:', translationMode)
+    console.log('   • Current target language:', targetLanguage)
+    console.log('⏳ Attempting to start recording...')
+    
     try {
       setError(null)
       setPermissionError(null)
@@ -155,15 +189,33 @@ export function SessionRecordingControls() {
       // Start audio level monitoring for visualization
       startAudioLevelMonitoring()
       
-      performanceLogger.startWorkflow('session-recording')
+      performanceLogger.start('session-recording')
+      
+      console.log('🔊 Calling audioRecorder.startRecording()...')
       await audioRecorderRef.current.startRecording()
+      
+      console.log('✅ Recording started successfully!')
       
       // Notify other users that we're recording
       await ActivityService.updateActivity(session.id, userId, 'recording')
       
-      console.log('🎙️ Recording started in session mode')
+      console.log('✅ Activity status updated for other users')
+      console.log('🎙️ Recording active in session mode - waiting for user to stop')
+      console.log('🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤🎤')
     } catch (err: any) {
-      console.error('❌ Failed to start recording:', err)
+      console.log('💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥')
+      console.log('❌ [SESSION MODE] FAILED TO START RECORDING!')
+      console.log('💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥')
+      console.log('📊 Error Details:')
+      console.log('   • Error type:', err.constructor?.name || typeof err)
+      console.log('   • Error message:', err.message || 'Unknown error')
+      console.log('   • Error code:', err.code || 'No code')
+      console.log('   • Error name:', err.name || 'No name')
+      if (err.stack) {
+        console.log('   • Stack trace:', err.stack)
+      }
+      console.log('💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥')
+      
       setError('Failed to start recording. Please try again.')
       setIsRecording(false)
       setCurrentActivity('idle')
@@ -196,7 +248,7 @@ export function SessionRecordingControls() {
         })
         
         // Process with real OpenAI APIs
-        await processAudioRecording({ blob: audioBlob })
+        await processAudioRecording(audioBlob)
       }
 
       audioRecorderRef.current.onError = (error: Error) => {
@@ -217,34 +269,131 @@ export function SessionRecordingControls() {
     }
   }
 
-  const processAudioRecording = async (result: AudioRecordingResult) => {
+  const processAudioRecording = async (audioBlob: Blob) => {
     if (!session) return
     
+    const messageId = `session-msg-${Date.now()}`
+    let whisperTime = 0
+    let translationTime = 0
+    let totalStartTime = Date.now()
+    
+    console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+    console.log('🎤 [SESSION MODE] STARTING AUDIO MESSAGE PROCESSING')
+    console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+    console.log('📊 Session Info:')
+    console.log('   • Message ID:', messageId)
+    console.log('   • Session ID:', session.id)
+    console.log('   • Session Code:', session.code)
+    console.log('   • User ID:', userId)
+    console.log('   • Audio Size:', audioBlob.size, 'bytes')
+    console.log('   • Audio Type:', audioBlob.type)
+    console.log('   • Timestamp:', new Date().toISOString())
+    console.log('   • Translation Mode:', translationMode)
+    console.log('   • Target Language:', targetLanguage)
+    console.log('   • Current Context Size:', conversationContext.length, 'messages')
+    console.log('🔧 Current conversation context state:')
+    if (conversationContext.length === 0) {
+      console.log('   ⚠️  NO CONTEXT AVAILABLE - This is a fresh conversation')
+    } else {
+      conversationContext.forEach((entry, index) => {
+        console.log(`   ${index + 1}. [${entry.speaker}] "${entry.originalText.substring(0, 60)}${entry.originalText.length > 60 ? '...' : ''}" → "${entry.translatedText.substring(0, 60)}${entry.translatedText.length > 60 ? '...' : ''}"`) 
+      })
+    }
+    console.log('═══════════════════════════════════════════════════════')
+    
     try {
-      // Step 1: Transcribe audio
+      // Step 1: Whisper transcription with conversation context
       performanceLogger.mark('transcription-start')
-      const transcription = await WhisperService.transcribe(result.blob)
+      const whisperStart = Date.now()
+      
+      console.log('╔══════════════════════════════════════════════════════════╗')
+      console.log('║                🎧 WHISPER STT PROCESSING                 ║')
+      console.log('╚══════════════════════════════════════════════════════════╝')
+      
+      // Build Whisper context from conversation history
+      console.log('🔧 Building Whisper context from conversation history...')
+      const whisperContext = ConversationContextManager.buildWhisperContext(conversationContext.map(entry => ({
+        language: 'auto', // Keep it simple for session mode
+        text: entry.originalText
+      })))
+      
+      // Convert Blob to File for WhisperService
+      const audioFile = new File([audioBlob], 'recording.webm', { type: audioBlob.type })
+      
+      console.log('🎧 Calling Whisper API with:')
+      console.log('   • Audio file size:', audioFile.size, 'bytes')
+      console.log('   • Audio file type:', audioFile.type)
+      console.log('   • Context prompt length:', whisperContext?.length || 0, 'characters')
+      console.log('   • Context prompt:', whisperContext ? `"${whisperContext.substring(0, 100)}..."` : 'NONE')
+      console.log('⏳ Sending to Whisper API...')
+      
+      const transcription = await WhisperService.transcribeAudio(
+        audioFile,
+        whisperContext || 'This is a casual conversation.'
+      )
+      
+      console.log('🎉 Whisper API Response Received!')
+      console.log('   • Transcribed text:', `"${transcription.text}"`)
+      console.log('   • Detected language:', transcription.language)
+      console.log('   • Audio duration:', transcription.duration, 'seconds')
+      
+      whisperTime = Date.now() - whisperStart
       performanceLogger.mark('transcription-complete')
       
       console.log('📝 Transcription complete:', transcription.text)
       setDetectedLanguage(transcription.language || 'Unknown')
+      if (!transcription.text) {
+        throw new Error('No transcription received from Whisper')
+      }
       
       // Step 2: Get conversation context
       const context = ConversationContextManager.getContext('session', conversationContext)
       
-      // Step 3: Translate if needed
+      // Step 3: Translation
       performanceLogger.mark('translation-start')
+      const translationStart = Date.now()
+      
+      console.log('╔══════════════════════════════════════════════════════════╗')
+      console.log('║              🌐 TRANSLATION LOGIC PROCESSING             ║')
+      console.log('╚══════════════════════════════════════════════════════════╝')
+      
+      console.log('🌐 Calling Translation API with:')
+      console.log('   • Text to translate:', `"${transcription.text}"`)
+      console.log('   • Source language:', transcription.language || 'auto')
+      console.log('   • Target language:', targetLanguage)
+      console.log('   • Translation mode:', translationMode)
+      console.log('   • Context length:', context?.length || 0, 'characters')
+      console.log('⏳ Sending to Translation API...')
+      
       const translation = await TranslationService.translate({
         text: transcription.text,
         targetLanguage,
         mode: translationMode,
         context
       })
+      
+      translationTime = Date.now() - translationStart
       performanceLogger.mark('translation-complete')
       
+      console.log('🎉 Translation API Response Received!')
+      console.log('   • Translated text:', `"${translation.translatedText}"`)
+      console.log('   • Translation time:', translationTime, 'ms')
       console.log('🌐 Translation complete:', translation.translatedText)
       
       // Step 4: Create and send message
+      console.log('╔══════════════════════════════════════════════════════════╗')
+      console.log('║              💬 MESSAGE CREATION & SENDING               ║')
+      console.log('╚══════════════════════════════════════════════════════════╝')
+      
+      console.log('💬 Creating message with:')
+      console.log('   • Session ID:', session.id)
+      console.log('   • User ID:', userId)
+      console.log('   • Original text:', `"${transcription.text}"`)
+      console.log('   • Translated text:', `"${translation.translatedText}"`)
+      console.log('   • Original language:', transcription.language || 'en')
+      console.log('   • Target language:', targetLanguage)
+      console.log('   • Mode:', translationMode)
+      
       const message = await MessageService.createMessage({
         session_id: session.id,
         user_id: userId,
@@ -256,12 +405,16 @@ export function SessionRecordingControls() {
         detected_language: transcription.language
       })
       
+      console.log('✅ Message created successfully:', message.id)
+      
       // Add to local queue
       messageQueue.add({
         ...message,
         isOwn: true,
         isLeft: UserManager.getOrCreateUser().isLeft
       })
+      
+      console.log('✅ Message added to local queue')
       
       // Update conversation context
       const newEntry: ConversationContextEntry = {
@@ -271,15 +424,44 @@ export function SessionRecordingControls() {
       }
       setConversationContext(prev => [...prev.slice(-4), newEntry])
       
+      console.log('✅ Conversation context updated')
+      
       playTranslationComplete()
       playMessageSent()
       
-      performanceLogger.endWorkflow('session-recording')
+      const totalTime = Date.now() - totalStartTime
+      console.log('🎉 [SESSION MODE] AUDIO MESSAGE PROCESSING COMPLETE!')
+      console.log('📊 Performance Summary:')
+      console.log('   • Whisper time:', whisperTime, 'ms')
+      console.log('   • Translation time:', translationTime, 'ms')
+      console.log('   • Total time:', totalTime, 'ms')
+      console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+      
+      performanceLogger.end('session-recording')
       
     } catch (err) {
-      console.error('❌ Error processing audio:', err)
+      const totalTime = Date.now() - totalStartTime
+      console.log('💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥')
+      console.log('❌ [SESSION MODE] AUDIO PROCESSING FAILED!')
+      console.log('💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥')
+      console.log('📊 Error Details:')
+      console.log('   • Message ID:', messageId)
+      console.log('   • Session ID:', session.id)
+      console.log('   • Time until failure:', totalTime, 'ms')
+      console.log('   • Error type:', err instanceof Error ? err.constructor.name : typeof err)
+      console.log('   • Error message:', err instanceof Error ? err.message : 'Unknown error')
+      if (err instanceof Error && err.stack) {
+        console.log('   • Stack trace:', err.stack)
+      }
+      console.log('   • Whisper time completed:', whisperTime, 'ms')
+      console.log('   • Translation time completed:', translationTime, 'ms')
+      console.log('💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥💥')
+      
       setError('Failed to process audio. Please try again.')
       playError()
+    } finally {
+      setCurrentActivity('idle')
+      setIsProcessing(false)
     }
   }
 
@@ -290,7 +472,7 @@ export function SessionRecordingControls() {
       setIsProcessing(true)
       setCurrentActivity('processing')
       
-      performanceLogger.startWorkflow('text-translation')
+      performanceLogger.start('text-translation')
       
       // Get conversation context
       const context = ConversationContextManager.getContext('session', conversationContext)
@@ -333,7 +515,7 @@ export function SessionRecordingControls() {
       playMessageSent()
       
       setTextMessage('')
-      performanceLogger.endWorkflow('text-translation')
+      performanceLogger.end('text-translation')
       
     } catch (err) {
       console.error('❌ Error sending text message:', err)
