@@ -1,0 +1,508 @@
+{
+    "permissions": {
+      "auto_approve": [
+        // === CORE CLAUDE TOOLS ===
+        "Read",
+        "Write",
+        "Edit",
+        "MultiEdit",
+        "Glob",
+        "Grep",
+        "LS",
+        "WebFetch",
+        "WebSearch",
+        "TodoRead",
+        "TodoWrite",
+        "Task",
+        "NotebookRead",
+        "NotebookEdit",
+
+        // === MCP TOOLS ===
+        "mcp__*",
+        "mcp__*__*",
+        "mcp__context7__resolve-libr
+  ary-id",
+
+  "mcp__context7__get-library-docs",
+
+        "mcp__ide__getDiagnostics",
+        "mcp__supabase__*",
+
+        // === BASIC FILE OPERATIONS
+   ===
+        "Bash(chmod:*)",
+        "Bash(rm:*)",
+        "Bash(mkdir:*)",
+        "Bash(mv:*)",
+        "Bash(cp:*)",
+        "Bash(ls:*)",
+        "Bash(touch:*)",
+        "Bash(cat:*)",
+        "Bash(echo:*)",
+        "Bash(pwd)",
+        "Bash(cd:*)",
+        "Bash(true)",
+
+        // === SEARCH AND TEXT 
+  PROCESSING ===
+        "Bash(find:*)",
+        "Bash(find * -name:*)",
+        "Bash(find * -type:*)",
+        "Bash(find * -name * -o 
+  -name:*)",
+        "Bash(find * -name * 
+  -type:*)",
+        "Bash(grep:*)",
+        "Bash(rg:*)",
+        "Bash(ag:*)",
+        "Bash(fd:*)",
+        "Bash(tree:*)",
+        "Bash(head:*)",
+        "Bash(tail:*)",
+        "Bash(less:*)",
+        "Bash(more:*)",
+        "Bash(sed:*)",
+        "Bash(awk:*)",
+        "Bash(sort:*)",
+        "Bash(uniq:*)",
+        "Bash(wc:*)",
+        "Bash(cut:*)",
+        "Bash(tr:*)",
+
+        // === SYSTEM INFO ===
+        "Bash(uname:*)",
+        "Bash(whoami)",
+        "Bash(id)",
+        "Bash(env)",
+        "Bash(printenv:*)",
+        "Bash(which:*)",
+        "Bash(whereis:*)",
+        "Bash(type:*)",
+        "Bash(command -v:*)",
+        "Bash(date:*)",
+        "Bash(uptime)",
+        "Bash(du:*)",
+        "Bash(df:*)",
+        "Bash(stat:*)",
+        "Bash(file:*)",
+
+        // === NETWORK AND HTTP ===
+        "Bash(curl:*)",
+        "Bash(curl -s:*)",
+        "Bash(curl -X:*)",
+        "Bash(curl -s * -X:*)",
+        "Bash(curl * -H:*)",
+        "Bash(curl * -d:*)",
+        "Bash(curl * --data:*)",
+        "Bash(curl * --header:*)",
+        "Bash(curl -X POST:*)",
+        "Bash(curl -X GET:*)",
+        "Bash(curl -X PUT:*)",
+        "Bash(curl -X DELETE:*)",
+        "Bash(curl -X PATCH:*)",
+        "Bash(curl -s * -X POST:*)",
+        "Bash(wget:*)",
+        "Bash(ping:*)",
+        "Bash(nc:*)",
+        "Bash(telnet:*)",
+        "Bash(dig:*)",
+        "Bash(nslookup:*)",
+        "Bash(traceroute:*)",
+
+        // === PROCESS MANAGEMENT 
+  ===
+        "Bash(ps:*)",
+        "Bash(top)",
+        "Bash(htop)",
+        "Bash(jobs)",
+        "Bash(bg)",
+        "Bash(fg)",
+        "Bash(kill:*)",
+        "Bash(killall:*)",
+        "Bash(pkill:*)",
+        "Bash(pgrep:*)",
+        "Bash(lsof:*)",
+        "Bash(lsof -ti:*)",
+        "Bash(lsof -i:*)",
+        "Bash(netstat:*)",
+        "Bash(ss:*)",
+        "Bash(nohup:*)",
+        "Bash(screen:*)",
+        "Bash(tmux:*)",
+
+        // === SHELL OPERATORS AND 
+  REDIRECTION ===
+        "Bash(* > *:*)",
+        "Bash(* >> *:*)",
+        "Bash(* < *:*)",
+        "Bash(* 2>&1:*)",
+        "Bash(* > * 2>&1:*)",
+        "Bash(* >> * 2>&1:*)",
+        "Bash(* >/dev/null:*)",
+        "Bash(* 2>/dev/null:*)",
+        "Bash(* >/dev/null 2>&1:*)",
+        "Bash(* &:*)",
+        "Bash(* > * &:*)",
+        "Bash(* > * 2>&1 &:*)",
+        "Bash(* && *:*)",
+        "Bash(* || *:*)",
+        "Bash(*; *:*)",
+        "Bash(* | *:*)",
+
+        // === PIPE OPERATIONS ===
+        "Bash(* | grep:*)",
+        "Bash(* | awk:*)",
+        "Bash(* | sed:*)",
+        "Bash(* | sort:*)",
+        "Bash(* | uniq:*)",
+        "Bash(* | head:*)",
+        "Bash(* | tail:*)",
+        "Bash(* | head -*:*)",
+        "Bash(* | tail -*:*)",
+        "Bash(* | wc:*)",
+        "Bash(* | cut -*:*)",
+        "Bash(* | tr -*:*)",
+        "Bash(* | xargs:*)",
+        "Bash(* | xargs kill:*)",
+        "Bash(* | xargs kill -9:*)",
+        "Bash(* | xargs grep:*)",
+        "Bash(* | xargs grep -l:*)",
+        "Bash(* | jq:*)",
+        "Bash(* | jq .:*)",
+        "Bash(xargs:*)",
+        "Bash(xargs kill:*)",
+        "Bash(xargs kill -9:*)",
+
+        // === COMPLEX COMMAND 
+  PATTERNS ===
+        "Bash(cd * && *:*)",
+        "Bash(source * && *:*)",
+        "Bash(source 
+  venv/bin/activate && *:*)",
+        "Bash(source */bin/activate 
+  && *:*)",
+        "Bash(* && * &:*)",
+        "Bash(source * && * &:*)",
+        "Bash(cd * && python:*)",
+        "Bash(cd * && python -c:*)",
+        "Bash(find * | xargs:*)",
+        "Bash(find * | xargs 
+  grep:*)",
+        "Bash(find * | xargs grep 
+  -l:*)",
+
+        // === CURL COMPLEX PATTERNS
+   ===
+        "Bash(curl -s * 
+  >/dev/null:*)",
+        "Bash(curl -s * && echo:*)",
+        "Bash(curl -s * 2>&1:*)",
+        "Bash(curl -s * >/dev/null 
+  2>&1:*)",
+        "Bash(curl -s * >/dev/null 
+  2>&1 &&:*)",
+        "Bash(curl -s * >/dev/null 
+  2>&1 || echo:*)",
+
+        // === PYTHON AND VIRTUAL 
+  ENVIRONMENTS ===
+        "Bash(python:*)",
+        "Bash(python3:*)",
+        "Bash(python -c:*)",
+        "Bash(python -c \"*\":*)",
+        "Bash(python -c '*':*)",
+        "Bash(cd * && python -c 
+  \"*\":*)",
+        "Bash(cd * && python -c 
+  '*':*)",
+        "Bash(python -m:*)",
+        "Bash(python -m venv:*)",
+        "Bash(pip:*)",
+        "Bash(pip install:*)",
+        "Bash(pip3 install:*)",
+        "Bash(pip list:*)",
+        "Bash(pip show:*)",
+        "Bash(pip freeze:*)",
+        "Bash(pip uninstall:*)",
+        "Bash(source:*)",
+        "Bash(source 
+  */bin/activate)",
+        "Bash(*/bin/activate)",
+        "Bash(deactivate)",
+        "Bash(. 
+  venv/bin/activate:*)",
+        "Bash(. */bin/activate)",
+
+        // === PYTHON TESTING ===
+        "Bash(pytest:*)",
+        "Bash(python -m pytest:*)",
+        "Bash(python -m pytest 
+  tests/*:*)",
+
+        // === PYTHON SERVERS ===
+        "Bash(uvicorn:*)",
+        "Bash(uvicorn app.*:*)",
+        "Bash(uvicorn * --host:*)",
+        "Bash(uvicorn * --port:*)",
+        "Bash(uvicorn * 
+  --reload:*)",
+        "Bash(uvicorn * --host * 
+  --port:*)",
+        "Bash(uvicorn * --host * 
+  --port * --reload:*)",
+        "Bash(uvicorn * &:*)",
+        "Bash(source * && 
+  uvicorn:*)",
+        "Bash(source 
+  venv/bin/activate && uvicorn:*)",
+        "Bash(source */bin/activate 
+  && uvicorn:*)",
+        "Bash(* --host * --port * 
+  --reload &:*)",
+
+        // === NODE.JS AND NPM ===
+        "Bash(node:*)",
+        "Bash(npm:*)",
+        "Bash(npm install:*)",
+        "Bash(npm run:*)",
+        "Bash(npm run dev:*)",
+        "Bash(npm run build:*)",
+        "Bash(npm run test:*)",
+        "Bash(npm test)",
+        "Bash(npm test:*)",
+        "Bash(npm --version)",
+        "Bash(npm whoami)",
+        "Bash(npm login:*)",
+        "Bash(npm logout)",
+        "Bash(npm search:*)",
+        "Bash(npm create:*)",
+        "Bash(npm init:*)",
+        "Bash(npx:*)",
+        "Bash(npx vite:*)",
+        "Bash(npx serve:*)",
+        "Bash(npx vercel:*)",
+        "Bash(npx tailwindcss 
+  init:*)",
+        "Bash(yarn:*)",
+        "Bash(pnpm:*)",
+        "Bash(bun:*)",
+        "Bash(bun run:*)",
+
+        // === TESTING FRAMEWORKS 
+  ===
+        "Bash(npx playwright:*)",
+        "Bash(playwright:*)",
+        "Bash(npm run test:e2e:*)",
+        "Bash(yarn playwright:*)",
+        "Bash(pnpm playwright:*)",
+        "Bash(npx 
+  @playwright/test:*)",
+        "Bash(npx jest:*)",
+        "Bash(npx vitest:*)",
+        "Bash(vite:*)",
+        "Bash(vitest:*)",
+
+        // === GIT AND VERSION 
+  CONTROL ===
+        "Bash(git init:*)",
+        "Bash(git status)",
+        "Bash(git add:*)",
+        "Bash(git commit:*)",
+        "Bash(git push:*)",
+        "Bash(git pull:*)",
+        "Bash(git fetch:*)",
+        "Bash(git branch:*)",
+        "Bash(git checkout:*)",
+        "Bash(git merge:*)",
+        "Bash(git diff:*)",
+        "Bash(git show:*)",
+        "Bash(git log:*)",
+        "Bash(git count-objects:*)",
+        "Bash(git stash:*)",
+        "Bash(git tag:*)",
+        "Bash(git describe:*)",
+        "Bash(git config:*)",
+        "Bash(git cherry-pick:*)",
+        "Bash(git blame:*)",
+        "Bash(git clean:*)",
+        "Bash(git clone:*)",
+        "Bash(git mv:*)",
+        "Bash(git rm:*)",
+        "Bash(git restore:*)",
+        "Bash(git switch:*)",
+        "Bash(git worktree:*)",
+        "Bash(git reset:*)",
+        "Bash(git revert:*)",
+        "Bash(git remote add:*)",
+        "Bash(git remote 
+  set-url:*)",
+        "Bash(git remote remove:*)",
+        "Bash(git --version)",
+
+        // === GITHUB CLI ===
+        "Bash(gh auth:*)",
+        "Bash(gh repo:*)",
+        "Bash(gh repo view:*)",
+        "Bash(gh repo sync:*)",
+        "Bash(gh repo create:*)",
+        "Bash(gh repo clone:*)",
+        "Bash(gh repo 
+  set-default:*)",
+        "Bash(gh pr:*)",
+        "Bash(gh issue:*)",
+        "Bash(gh workflow:*)",
+        "Bash(gh run:*)",
+        "Bash(gh release:*)",
+        "Bash(gh api:*)",
+        "Bash(gh gist:*)",
+        "Bash(gh project:*)",
+        "Bash(gh secret:*)",
+        "Bash(gh ssh-key:*)",
+        "Bash(gh status)",
+
+        // === DATABASE AND SUPABASE
+   ===
+        "Bash(supabase:*)",
+        "Bash(npx supabase:*)",
+        "Bash(psql:*)",
+        "Bash(pg_dump:*)",
+        "Bash(pg_restore:*)",
+        "Bash(createdb:*)",
+        "Bash(dropdb:*)",
+        "Bash(supabase start)",
+        "Bash(supabase stop)",
+        "Bash(supabase status)",
+        "Bash(supabase db:*)",
+        "Bash(supabase gen:*)",
+        "Bash(supabase 
+  migration:*)",
+        "Bash(supabase 
+  functions:*)",
+        "Bash(supabase 
+  edge-functions:*)",
+        "Bash(alembic:*)",
+
+        // === DEVELOPMENT TOOLS ===
+        "Bash(code:*)",
+        "Bash(cursor:*)",
+        "Bash(diff:*)",
+        "Bash(jq:*)",
+        "Bash(claude config list)",
+        "Bash(claude --version)",
+        "Bash(claude mcp:*)",
+        "Bash(claude code mcp:*)",
+        "Bash(claude code --debug 
+  mcp servers)",
+
+        // === COMPRESSION AND 
+  ARCHIVES ===
+        "Bash(tar:*)",
+        "Bash(zip:*)",
+        "Bash(unzip:*)",
+        "Bash(gzip:*)",
+        "Bash(gunzip:*)",
+
+        // === REMOTE ACCESS ===
+        "Bash(ssh:*)",
+        "Bash(scp:*)",
+        "Bash(rsync:*)",
+
+        // === DEPLOYMENT ===
+        "Bash(vercel)",
+        "Bash(vercel:*)",
+        "Bash(netlify:*)",
+        "Bash(railway:*)",
+        "Bash(fly:*)",
+        "Bash(docker:*)",
+        "Bash(docker-compose:*)",
+        "Bash(docker compose:*)",
+
+        // === PERFORMANCE AND 
+  MONITORING ===
+        "Bash(hyperfine:*)",
+        "Bash(ab:*)",
+        "Bash(wrk:*)",
+        "Bash(siege:*)",
+        "Bash(iotop:*)",
+        "Bash(iostat:*)",
+        "Bash(vmstat:*)",
+        "Bash(nload:*)",
+
+        // === REDIS ===
+        "Bash(redis-cli:*)",
+        "Bash(redis-server:*)",
+
+        // === SYSTEM UTILITIES ===
+        "Bash(sleep:*)",
+        "Bash(timeout:*)",
+        "Bash(wait:*)",
+        "Bash(export:*)",
+        "Bash(unset:*)",
+        "Bash(eval:*)",
+        "Bash(test:*)",
+        "Bash([ *:*)",
+        "Bash([[ *:*)",
+        "Bash(dirname *:*)",
+        "Bash(basename *:*)",
+        "Bash(realpath *:*)",
+        "Bash(readlink *:*)",
+
+        // === AUDIO NOTIFICATIONS 
+  ===
+        "Bash(afplay:*)",
+        "Bash(say:*)",
+        "Bash(osascript:*)",
+
+        // === SYSTEM CHECKS ===
+        "Bash(ifconfig:*)",
+        "Bash(hostname:*)",
+        "Bash(open:*)",
+
+        // === CUSTOM SCRIPTS ===
+        "Bash(./check-health.sh)",
+        "Bash(./scripts/*:*)",
+
+        // === UNIVERSAL PATTERNS 
+  ===
+        "Bash(*):*",
+        "Bash((*):*)",
+
+        // === WEBFETCH DOMAINS ===
+        "WebFetch(domain:platform.op
+  enai.com)",
+        "WebFetch(domain:cookbook.op
+  enai.com)",
+
+  "WebFetch(domain:cursor.com)",
+
+  "WebFetch(domain:supabase.com)",
+
+  "WebFetch(domain:github.com)",
+        "WebFetch(domain:docs.anthro
+  pic.com)",
+
+  "WebFetch(domain:vitejs.dev)",
+
+  "WebFetch(domain:react.dev)",
+        "WebFetch(domain:fastapi.tia
+  ngolo.com)",
+        "WebFetch(domain:redis.io)",
+
+  "WebFetch(domain:playwright.dev)",
+
+  "WebFetch(domain:vitest.dev)",
+
+  "WebFetch(domain:unocss.dev)",
+        "WebFetch(domain:zustand-dem
+  o.pmnd.rs)",
+        "WebFetch(domain:typescript-
+  eslint.io)",
+
+  "WebFetch(domain:sqlalchemy.org)",
+
+  "WebFetch(domain:smithery.ai)"
+      ],
+      "allow": [],
+      "deny": []
+    }
+  }

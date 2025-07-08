@@ -1,0 +1,1 @@
+Read the CLAUDE.md file in the current project to understand the project context and my preferences.

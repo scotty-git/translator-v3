@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+/* Font Size System - based on oldappfeatures.md */
+:root {
+  --font-size-mobile: 16px;
+  --font-size-desktop: 18px;
+}
+
+/* Responsive font sizing classes */
+.font-small {
+  --font-size-mobile: 14px;
+  --font-size-desktop: 16px;
+}
+
+.font-medium {
+  --font-size-mobile: 16px;
+  --font-size-desktop: 18px;
+}
+
+.font-large {
+  --font-size-mobile: 20px;
+  --font-size-desktop: 22px;
+}
+
+.font-xl {
+  --font-size-mobile: 24px;
+  --font-size-desktop: 28px;
+}
+
+/* Apply responsive font sizes to body and text elements */
+body, 
+.text-base,
+.message-text,
+p,
+span:not(.text-xs):not(.text-sm):not(.text-lg):not(.text-xl):not(.text-2xl) {
+  font-size: var(--font-size-mobile);
+}
+
+/* Desktop responsiveness */
+@media (min-width: 768px) {
+  body, 
+  .text-base,
+  .message-text,
+  p,
+  span:not(.text-xs):not(.text-sm):not(.text-lg):not(.text-xl):not(.text-2xl) {
+    font-size: var(--font-size-desktop);
+  }
+}
+
+/* Ensure message bubbles use the font size system */
+.message-bubble {
+  font-size: var(--font-size-mobile);
+}
+
+@media (min-width: 768px) {
+  .message-bubble {
+    font-size: var(--font-size-desktop);
+  }
+}
