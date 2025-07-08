@@ -199,7 +199,11 @@ export class AudioWorkflowService {
           return;
         }
         
-        const direction = LanguageDetectionService.determineTranslationDirection(detectedLanguage);
+        // Use the new method that respects configured target for English speakers
+        const direction = LanguageDetectionService.determineTranslationDirectionWithConfig(
+          detectedLanguage,
+          this.config.toLanguage === 'auto-detect' ? 'Spanish' : this.config.toLanguage
+        );
         
         // This should never happen, but handle it just in case
         if (!direction) {

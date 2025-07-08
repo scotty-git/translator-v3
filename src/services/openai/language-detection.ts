@@ -68,6 +68,8 @@ export class LanguageDetectionService {
    * 2. If detected language is Spanish/Portuguese → translate to English
    * 3. Always ensure one language is English
    * 4. Returns null if language is not supported
+   * 
+   * @deprecated Use determineTranslationDirectionWithConfig for new implementation
    */
   static determineTranslationDirection(detectedLanguage: Language | null): {
     fromLanguage: Language
@@ -99,6 +101,49 @@ export class LanguageDetectionService {
       // This should never happen now that mapWhisperLanguage returns null for unsupported
       console.error(`Unexpected language in determineTranslationDirection: ${detectedLanguage}`)
       return null
+    }
+  }
+
+  /**
+   * Determine translation direction with configured target language
+   * 
+   * NEW RULES:
+   * 1. If detected language is English → translate to configured target language
+   * 2. If detected language is NOT English → ALWAYS translate to English
+   * 3. This ensures non-English speakers always see English translations
+   */
+  static determineTranslationDirectionWithConfig(
+    detectedLanguage: Language | null,
+    configuredTargetLanguage: Language
+  ): {
+    fromLanguage: Language
+    toLanguage: Language
+  } | null {
+    // If language is not supported, return null
+    if (!detectedLanguage) {
+      return null
+    }
+
+    // Remove auto-detect if it somehow got through
+    if (detectedLanguage === 'auto-detect') {
+      detectedLanguage = 'English'
+    }
+
+    // Core logic: English respects config, everything else goes to English
+    if (detectedLanguage === 'English') {
+      // English speaker: translate to their configured target language
+      console.log(`🇬🇧 English detected → Translating to configured target: ${configuredTargetLanguage}`)
+      return {
+        fromLanguage: 'English',
+        toLanguage: configuredTargetLanguage
+      }
+    } else {
+      // Non-English speaker: ALWAYS translate to English (ignore config)
+      console.log(`🌍 ${detectedLanguage} detected → Always translating to English`)
+      return {
+        fromLanguage: detectedLanguage,
+        toLanguage: 'English'
+      }
     }
   }
 
