@@ -1,10 +1,11 @@
 # Page snapshot
 
 ```yaml
-- link "Skip to main content":
-  - /url: "#main-content"
-- link "Skip to navigation":
-  - /url: "#navigation"
-- paragraph: Something went wrong. Please refresh the page.
-- button "Retry"
+- text: "[plugin:vite:import-analysis] Failed to resolve import \"@/features/test/Phase3Test\" from \"src/App.tsx\". Does the file exist? /Users/calsmith/Documents/VS/translator-v3/src/App.tsx:11:37 24 | const SingleDeviceTranslator = lazy(_c3 = () => import(\"@/features/translator/SingleDeviceTranslator\").then((m) => ({ default: m.SingleDeviceTranslator }))); 25 | _c4 = SingleDeviceTranslator; 26 | const Phase3Test = lazy(_c5 = () => import(\"@/features/test/Phase3Test\").then((m) => ({ default: m.Phase3Test }))); | ^ 27 | _c6 = Phase3Test; 28 | const Phase4Test = lazy(_c7 = () => import(\"@/features/test/Phase4Test\").then((m) => ({ default: m.Phase4Test }))); at TransformPluginContext._formatError (file:///Users/calsmith/Documents/VS/translator-v3/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49258:41) at TransformPluginContext.error (file:///Users/calsmith/Documents/VS/translator-v3/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49253:16) at normalizeUrl (file:///Users/calsmith/Documents/VS/translator-v3/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:64291:23) at process.processTicksAndRejections (node:internal/process/task_queues:105:5) at async file:///Users/calsmith/Documents/VS/translator-v3/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:64423:39 at async Promise.all (index 9) at async TransformPluginContext.transform (file:///Users/calsmith/Documents/VS/translator-v3/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:64350:7) at async PluginContainer.transform (file:///Users/calsmith/Documents/VS/translator-v3/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:49099:18) at async loadAndTransform (file:///Users/calsmith/Documents/VS/translator-v3/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:51977:27) at async viteTransformMiddleware (file:///Users/calsmith/Documents/VS/translator-v3/node_modules/vite/dist/node/chunks/dep-C6uTJdX2.js:62105:24 Click outside, press Esc key, or fix the code to dismiss. You can also disable this overlay by setting"
+- code: server.hmr.overlay
+- text: to
+- code: "false"
+- text: in
+- code: vite.config.ts
+- text: .
 ```

@@ -8,7 +8,6 @@ const HomeScreen = lazy(() => import('@/features/home/HomeScreen').then(m => ({ 
 const SingleDeviceTranslator = lazy(() => import('@/features/translator/SingleDeviceTranslator').then(m => ({ default: m.SingleDeviceTranslator })))
 
 // Lazy load test components (only loaded when needed)
-const Phase3Test = lazy(() => import('@/features/test/Phase3Test').then(m => ({ default: m.Phase3Test })))
 const Phase4Test = lazy(() => import('@/features/test/Phase4Test').then(m => ({ default: m.Phase4Test })))
 const Phase4TestRunner = lazy(() => import('@/features/test/Phase4TestRunner').then(m => ({ default: m.Phase4TestRunner })))
 const Phase5Test = lazy(() => import('@/features/test/Phase5Test').then(m => ({ default: m.Phase5Test })))
@@ -122,11 +121,6 @@ function App() {
               } />
               <Route path="/translator" element={
                 <SingleDeviceTranslator />
-              } />
-              <Route path="/test/phase3" element={
-                <Layout>
-                  <Phase3Test />
-                </Layout>
               } />
               <Route path="/test/phase4" element={
                 <Layout>
