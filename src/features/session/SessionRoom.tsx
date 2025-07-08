@@ -4,7 +4,6 @@ import { SessionProvider } from './SessionContext'
 import { SessionHeader } from './SessionHeader'
 import { MessageList } from '../messages/MessageList'
 import { SessionRecordingControls } from '../audio/SessionRecordingControls'
-import { PerformanceMonitor } from '../messages/PerformanceMonitor'
 import { Spinner } from '@/components/ui/Spinner'
 import { Card } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -103,9 +102,6 @@ export function SessionRoom() {
         </div>
         
         <SessionRecordingControls />
-        
-        {/* Performance monitor (dev only) */}
-        <PerformanceMonitor />
       </div>
     </SessionProvider>
   )
