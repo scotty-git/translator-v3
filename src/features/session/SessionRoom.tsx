@@ -2,9 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { SessionProvider } from './SessionContext'
 import { SessionHeader } from './SessionHeader'
-import { SessionInfo } from './SessionInfo'
 import { MessageList } from '../messages/MessageList'
-import { RecordingControls } from '../audio/RecordingControls'
+import { SessionRecordingControls } from '../audio/SessionRecordingControls'
 import { PerformanceMonitor } from '../messages/PerformanceMonitor'
 import { Spinner } from '@/components/ui/Spinner'
 import { Card } from '@/components/ui/Card'
@@ -97,26 +96,13 @@ export function SessionRoom() {
   return (
     <SessionProvider session={session} userId={userId} isLeft={isLeft}>
       <div className="min-h-screen bg-app flex flex-col relative overflow-hidden">
-        {/* Background decoration */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-0 left-0 w-72 h-72 bg-blue-200 dark:bg-blue-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-pulse-soft" />
-          <div className="absolute bottom-0 right-0 w-72 h-72 bg-indigo-200 dark:bg-indigo-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-pulse-soft" style={{ animationDelay: '1s' }} />
-        </div>
-
         <SessionHeader onLeave={handleLeave} />
         
-        {/* Session Info Panel */}
-        {code && (
-          <div className="relative z-10 p-4 pb-0">
-            <SessionInfo sessionCode={code} />
-          </div>
-        )}
-        
-        <div className="flex-1 flex flex-col relative z-10">
+        <div className="flex-1 flex flex-col">
           <MessageList />
         </div>
         
-        <RecordingControls />
+        <SessionRecordingControls />
         
         {/* Performance monitor (dev only) */}
         <PerformanceMonitor />

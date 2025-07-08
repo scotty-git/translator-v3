@@ -108,7 +108,11 @@ export function SessionHeader({ onLeave }: SessionHeaderProps) {
               
               <div className="flex items-center gap-1 text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded-full">
                 <Users className="h-3 w-3" />
-                <span>{session.user_count || 1} connected</span>
+                <span>
+                  {session.user_count === 1 
+                    ? 'Waiting for partner to join...' 
+                    : `${session.user_count} users connected`}
+                </span>
               </div>
             </div>
           </div>
@@ -125,6 +129,11 @@ export function SessionHeader({ onLeave }: SessionHeaderProps) {
                 ) : (
                   <WifiOff className="h-3 w-3 text-red-600 dark:text-red-400" />
                 )}
+              </div>
+              <div className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-full">
+                <span className="text-xs text-gray-600 dark:text-gray-400">
+                  {session.user_count === 1 ? 'Waiting...' : `${session.user_count} users`}
+                </span>
               </div>
             </div>
             

@@ -27,7 +27,9 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const messageRef = useRef<HTMLDivElement | null>(null)
   
+  // In session mode, we want partner messages on the right side
   const isOwnMessage = message.user_id === userId
+  const isLeftAligned = isOwnMessage // User's messages on left, partner's on right
 
   // Theme color mappings
   const themeColors = {
@@ -245,7 +247,7 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
     <>
       <div className={clsx(
         'flex',
-        isOwnMessage ? 'justify-end' : 'justify-start'
+        isLeftAligned ? 'justify-start' : 'justify-end'
       )}>
         <div 
           ref={messageRef}
@@ -254,7 +256,7 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
             'max-w-[80%] rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 cursor-pointer select-none relative transform-gpu hover:scale-[1.02]',
             {
               [`${colors.bg} text-white`]: isOwnMessage,
-              'bg-white border border-gray-200 dark:bg-gray-800 dark:border-gray-700': !isOwnMessage,
+              'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white': !isOwnMessage,
               // Prioritize animations - only one at a time
               'opacity-60 scale-95': message.status === 'queued',
               'opacity-80': message.status === 'processing', 
