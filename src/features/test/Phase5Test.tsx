@@ -4,7 +4,7 @@ import { ActivityIndicator } from '../messages/ActivityIndicator'
 import { MessageList } from '../messages/MessageList'
 import { PerformanceMonitor } from '../messages/PerformanceMonitor'
 import { messageQueue, QueuedMessage } from '../messages/MessageQueue'
-import { SessionProvider } from '../session/SessionContext'
+// SessionProvider removed - using solo translator mode
 import { AudioRecorder } from '../../services/audio/recorder'
 import { WhisperService } from '../../services/openai/whisper'
 import { TranslationService } from '../../services/openai/translation'
@@ -1059,8 +1059,7 @@ export function Phase5Test() {
   ]
 
   return (
-    <SessionProvider session={mockSession} userId={currentUser} isLeft={true}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Header */}
           <div className="text-center space-y-4">
@@ -1617,7 +1616,6 @@ export function Phase5Test() {
         <PerformanceMonitor />
         
         {/* Audio elements now handled per-message */}
-      </div>
-    </SessionProvider>
+    </div>
   )
 }
