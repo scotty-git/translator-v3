@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { SessionProvider } from './SessionContext'
 import { SessionHeader } from './SessionHeader'
 import { MessageList } from '../messages/MessageList'
@@ -17,10 +17,15 @@ import type { Session } from '@/types/database'
 export function SessionRoom() {
   const { code } = useParams<{ code: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const { t } = useTranslation()
   
+  // Check if this is a newly created session
+  const searchParams = new URLSearchParams(location.search)
+  const isNewlyCreated = searchParams.get('created') === 'true'
+  
   // Use new session state management
-  const { session, connectionState, error, leave } = useSessionState(code)
+  const { session, connectionState, error, leave } = useSessionState(code, {}, isNewlyCreated)
   
   // Get user profile with enhanced management
   const user = UserManager.getOrCreateUser()

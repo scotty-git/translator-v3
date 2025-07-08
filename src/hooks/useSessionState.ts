@@ -6,7 +6,7 @@ interface UseSessionStateOptions {
   autoCleanup?: boolean
 }
 
-export function useSessionState(sessionCode?: string, options: UseSessionStateOptions = {}) {
+export function useSessionState(sessionCode?: string, options: UseSessionStateOptions = {}, isNewlyCreated: boolean = false) {
   const { autoCleanup = true } = options
   
   const [state, setState] = useState<SessionState>({
@@ -34,7 +34,7 @@ export function useSessionState(sessionCode?: string, options: UseSessionStateOp
     
     // Initialize session
     const userId = UserManager.getUserId()
-    managerRef.current.initialize(sessionCode, userId).catch((error) => {
+    managerRef.current.initialize(sessionCode, userId, isNewlyCreated).catch((error) => {
       console.error('Failed to initialize session:', error)
     })
     
@@ -52,7 +52,7 @@ export function useSessionState(sessionCode?: string, options: UseSessionStateOp
       additionalUnsubscribe()
       cleanup()
     }
-  }, [sessionCode])
+  }, [sessionCode, isNewlyCreated])
 
   // Cleanup function
   const cleanup = () => {

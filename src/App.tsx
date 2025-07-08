@@ -37,7 +37,6 @@ import { ThemeProvider } from '@/contexts/ThemeContext'
 import { TranslationProvider } from '@/lib/i18n/useTranslation'
 import { ToastProvider } from '@/components/ui/Toast'
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
-import { PerformanceDashboard } from '@/features/performance/PerformanceDashboard'
 import { accessibilityManager } from '@/lib/accessibility/AccessibilityManager'
 import { pwaManager } from '@/lib/pwa/PWAManager'
 import { UserManager } from '@/lib/user/UserManager'
@@ -222,8 +221,6 @@ function App() {
               </Routes>
             </Suspense>
             </BrowserRouter>
-            {/* Phase 7 Performance Dashboard */}
-            <PerformanceDashboard />
           </ToastProvider>
         </TranslationProvider>
       </ThemeProvider>

@@ -27,7 +27,7 @@ export function HomeScreen() {
     
     try {
       const session = await SessionService.createSession()
-      navigate(`/session/${session.code}`)
+      navigate(`/session/${session.code}?created=true`)
     } catch (err) {
       setError(t('errors.sessionCreateFailed'))
       console.error('Create session error:', err)

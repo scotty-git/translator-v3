@@ -45,7 +45,7 @@ export class SessionStateManager {
   /**
    * Initialize session and connect
    */
-  async initialize(sessionCode: string, userId: string): Promise<void> {
+  async initialize(sessionCode: string, userId: string, isNewlyCreated: boolean = false): Promise<void> {
     performanceLogger.start('session.state.initialize')
     
     this.updateState({ 
@@ -55,10 +55,25 @@ export class SessionStateManager {
     })
     
     try {
-      const session = await withRetry(
-        () => SessionService.joinSession(sessionCode),
-        'session-join'
-      )
+      let session;
+      
+      if (isNewlyCreated) {
+        // For newly created sessions, just get the session data without joining
+        session = await withRetry(
+          () => SessionService.getSessionByCode(sessionCode),
+          'session-get'
+        )
+        
+        if (!session) {
+          throw new Error('Newly created session not found')
+        }
+      } else {
+        // For existing sessions, join normally
+        session = await withRetry(
+          () => SessionService.joinSession(sessionCode),
+          'session-join'
+        )
+      }
       
       this.updateState({ 
         session, 

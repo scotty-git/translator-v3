@@ -411,11 +411,12 @@ export function SessionRecordingControls() {
             <span className="uppercase">{targetLanguage}</span>
           </Button>
 
-          {/* Voice/Type Toggle - Matches solo mode style */}
+          {/* Voice/Type Toggle - Matches solo mode style exactly */}
           <div className="flex items-center justify-center">
-            <div className="relative bg-gray-200 dark:bg-gray-700 rounded-full p-1">
+            <div className="relative bg-white dark:bg-gray-800 rounded-full p-1 shadow-lg border border-gray-200 dark:border-gray-700">
+              {/* Background indicator */}
               <div 
-                className={`absolute top-1 left-1 h-10 w-24 bg-blue-500 rounded-full transition-transform duration-300 ${
+                className={`absolute top-1 bottom-1 w-1/2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-transform duration-300 ease-out shadow-md ${
                   showTextInput ? 'translate-x-full' : 'translate-x-0'
                 }`}
               />
