@@ -73,7 +73,11 @@ export function SessionRoom() {
     // Check if error indicates session not found and redirect automatically
     const isSessionNotFound = error?.includes('not found') || 
                              error?.includes('does not exist') || 
-                             error?.includes('Newly created session not found')
+                             error?.includes('Newly created session not found') ||
+                             error?.includes('NOT_FOUND') ||
+                             error?.includes('404') ||
+                             error?.toLowerCase().includes('session not found') ||
+                             error?.toLowerCase().includes('invalid session')
     
     if (isSessionNotFound && code) {
       // Redirect to home after a brief delay to show the error

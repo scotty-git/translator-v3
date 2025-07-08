@@ -48,10 +48,17 @@ export function SessionRecordingControls() {
   const audioRecorderRef = useRef<AudioRecorderService | null>(null)
   const recordButtonRef = useRef<HTMLButtonElement>(null)
 
-  // Don't check permissions on mount - wait for user interaction
+  // Check permissions and initialize recorder on mount
   useEffect(() => {
-    // Initialize recorder without requesting permissions
-    initializeRecorder()
+    const setupAudio = async () => {
+      // Initialize recorder first
+      await initializeRecorder()
+      
+      // Then check microphone permissions
+      await checkMicrophonePermission()
+    }
+    
+    setupAudio()
   }, [])
 
   const checkMicrophonePermission = async () => {
@@ -62,19 +69,45 @@ export function SessionRecordingControls() {
         
         if (permission.state === 'denied') {
           setPermissionError('Microphone access is blocked. Please enable it in your browser settings.')
-          return
+          return false
+        }
+        
+        if (permission.state === 'granted') {
+          console.log('🎙️ Microphone permission already granted')
+          setPermissionError(null)
+          return true
         }
       }
       
       // Try to get user media to prompt for permission if needed
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      stream.getTracks().forEach(track => track.stop()) // Clean up immediately
+      console.log('🎙️ Requesting microphone permission...')
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      })
       
-      // Initialize audio recorder after permission granted
-      initializeRecorder()
-    } catch (err) {
-      console.error('Microphone permission error:', err)
-      setPermissionError('Please allow microphone access to use voice recording.')
+      // Permission granted, clean up immediately
+      stream.getTracks().forEach(track => track.stop())
+      console.log('✅ Microphone permission granted')
+      setPermissionError(null)
+      return true
+      
+    } catch (err: any) {
+      console.error('🚫 Microphone permission error:', err)
+      
+      if (err.name === 'NotAllowedError') {
+        setPermissionError('Microphone access denied. Please allow microphone access and refresh the page.')
+      } else if (err.name === 'NotFoundError') {
+        setPermissionError('No microphone found. Please connect a microphone and refresh the page.')
+      } else if (err.name === 'NotReadableError') {
+        setPermissionError('Microphone is being used by another application. Please close other apps and refresh.')
+      } else {
+        setPermissionError('Microphone access failed. Please check your browser settings and refresh the page.')
+      }
+      return false
     }
   }
 
@@ -488,16 +521,19 @@ export function SessionRecordingControls() {
             <button
               data-testid="recording-button"
               onClick={isRecording ? handleStopRecording : handleStartRecording}
-              disabled={isProcessing}
+              disabled={isProcessing || !!permissionError}
               className={`
                 w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu
                 ${isRecording 
                   ? 'bg-red-500 hover:bg-red-600 scale-110 shadow-lg shadow-red-500/50' 
-                  : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
+                  : permissionError
+                    ? 'bg-gray-400 cursor-not-allowed shadow-lg shadow-gray-400/30'
+                    : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
                 }
-                ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
+                ${isProcessing || permissionError ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
                 text-white
               `}
+              title={permissionError || (isRecording ? 'Stop recording' : 'Start recording')}
             >
               {isProcessing ? (
                 <div className="animate-spin">⚙️</div>

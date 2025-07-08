@@ -58,7 +58,7 @@ export class SessionStateManager {
       let session;
       
       if (isNewlyCreated) {
-        // For newly created sessions, just get the session data without joining
+        // For newly created sessions, get the session data and increment user count
         session = await withRetry(
           () => SessionService.getSessionByCode(sessionCode),
           'session-get'
@@ -67,6 +67,12 @@ export class SessionStateManager {
         if (!session) {
           throw new Error('Newly created session not found')
         }
+        
+        // Join the session to increment user count for the creator
+        session = await withRetry(
+          () => SessionService.joinSession(sessionCode),
+          'session-join-creator'
+        )
       } else {
         // For existing sessions, join normally
         session = await withRetry(
