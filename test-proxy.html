@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Proxy Test</title>
+</head>
+<body>
+    <h1>OpenAI Proxy Test</h1>
+    <button onclick="testTranslation()">Test Translation</button>
+    <div id="result"></div>
+
+    <script>
+        async function testTranslation() {
+            const result = document.getElementById('result');
+            result.innerHTML = 'Testing translation via proxy...';
+            
+            try {
+                const response = await fetch('/api/openai/translate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: 'Translate the following text to Spanish:' },
+                            { role: 'user', content: 'Hello, how are you?' }
+                        ],
+                        temperature: 0.3,
+                        max_tokens: 100,
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                result.innerHTML = `<strong>Success!</strong><br>Translation: ${data.choices[0]?.message?.content || 'No content'}`;
+                
+                // Check if API key is visible in browser
+                console.log('🔍 Checking for API key exposure...');
+                const hasApiKey = window.location.href.includes('sk-') || 
+                                  JSON.stringify(data).includes('sk-') ||
+                                  document.body.innerText.includes('sk-');
+                                  
+                if (hasApiKey) {
+                    console.error('❌ API key detected in browser!');
+                } else {
+                    console.log('✅ No API key detected in browser - secure!');
+                }
+                
+            } catch (error) {
+                result.innerHTML = `<strong>Error:</strong> ${error.message}`;
+                console.error('Translation test failed:', error);
+            }
+        }
+    </script>
+</body>
+</html>
