@@ -84,7 +84,10 @@ export class SessionService {
     
     const { data, error } = await supabase
       .from('sessions')
-      .insert({ code })
+      .insert({ 
+        code,
+        user_count: 1  // Creator is the first user
+      })
       .select()
       .single()
     
