@@ -23,8 +23,5 @@
       "source": "/api/openai/tts",
       "destination": "/api/openai/tts"
     }
-  ],
-  "env": {
-    "OPENAI_API_KEY": "@openai-api-key"
-  }
+  ]
 }
