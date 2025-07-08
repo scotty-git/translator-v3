@@ -11,7 +11,7 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { ErrorMessage, PermissionErrorMessage, NetworkErrorMessage } from '@/components/ui/ErrorMessage'
 import { OfflineIndicator, useNetworkStatus } from '@/components/ui/OfflineIndicator'
 import { LoadingSkeleton, ErrorSkeleton, AdaptiveLoading } from '@/components/ui/LoadingSkeleton'
-import { SessionRecoveryScreen } from '@/features/session/SessionRecoveryScreen'
+// SessionRecoveryScreen removed - using solo translator mode
 import { useErrorRecovery } from '@/hooks/useErrorRecovery'
 import { ErrorCode, ErrorSeverity, ErrorCategory } from '@/lib/errors/ErrorCodes'
 import { ErrorManager, type AppError } from '@/lib/errors/ErrorManager'
@@ -503,12 +503,9 @@ export function Phase8Test() {
       // Create session recovery test component
       const sessionRecoveryTest = (
         <div style={{ transform: 'scale(0.3)', transformOrigin: 'top left', height: '200px', overflow: 'hidden' }}>
-          <SessionRecoveryScreen
-            error={sessionError}
-            sessionCode="TEST"
-            autoStart={false}
-            onRecoveryComplete={() => console.log('🎉 [Session Recovery] Test completed')}
-          />
+          <div className="p-8 text-center">
+            <p className="text-gray-500">SessionRecoveryScreen removed - using solo translator mode</p>
+          </div>
         </div>
       )
 
