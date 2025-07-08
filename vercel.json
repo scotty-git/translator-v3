@@ -1,0 +1,30 @@
+{
+  "functions": {
+    "api/openai/translate.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/openai/whisper.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/openai/tts.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/openai/translate",
+      "destination": "/api/openai/translate"
+    },
+    {
+      "source": "/api/openai/whisper", 
+      "destination": "/api/openai/whisper"
+    },
+    {
+      "source": "/api/openai/tts",
+      "destination": "/api/openai/tts"
+    }
+  ],
+  "env": {
+    "OPENAI_API_KEY": "@openai-api-key"
+  }
+}
