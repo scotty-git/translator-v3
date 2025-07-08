@@ -24,13 +24,40 @@ const WHISPER_TO_LANGUAGE_MAP: Record<string, Language> = {
 // Supported target languages (always non-English)
 const TARGET_LANGUAGES: Language[] = ['Spanish', 'Portuguese']
 
+// Pattern-based language detection patterns from translatorinfo.md
+const LANGUAGE_PATTERNS = {
+  spanish: {
+    commonWords: ['sí', 'no', 'gracias', 'hola', 'adiós', 'bien', 'bueno', 'cómo', 'qué', 'está', 'están', 'estoy', 'estás', 'es', 'son', 'tiene', 'tengo'],
+    uniqueChars: /[ñáéíóúü]/,
+    strongIndicators: ['cómo estás', 'qué tal', 'buenos días', 'buenas tardes', 'por favor']
+  },
+  portuguese: {
+    commonWords: ['sim', 'não', 'obrigado', 'obrigada', 'olá', 'tchau', 'como', 'que', 'está', 'estão', 'estou', 'é', 'são', 'tem', 'têm', 'tenho'],
+    uniqueChars: /[çãõâêô]/,
+    strongIndicators: ['como está', 'tudo bem', 'bom dia', 'boa tarde', 'por favor']
+  },
+  english: {
+    commonWords: ['the', 'and', 'or', 'but', 'this', 'that', 'have', 'has', 'will', 'would', 'yes', 'no', 'hello', 'hi', 'thanks', 'please'],
+    suffixes: ['ing', 'tion', 'ness', 'ment', 'ly'],
+    strongIndicators: ['how are you', 'what is', 'thank you', 'please']
+  }
+}
+
 export class LanguageDetectionService {
   /**
    * Convert Whisper language detection to our Language type
+   * Returns null if language is not supported
    */
-  static mapWhisperLanguage(whisperLanguage: string): Language {
+  static mapWhisperLanguage(whisperLanguage: string): Language | null {
     const normalizedLang = whisperLanguage.toLowerCase().trim()
-    return WHISPER_TO_LANGUAGE_MAP[normalizedLang] || 'English' // Default to English if unknown
+    const mapped = WHISPER_TO_LANGUAGE_MAP[normalizedLang]
+    
+    if (!mapped) {
+      console.warn(`❌ Unsupported language detected: "${whisperLanguage}". Only English, Spanish, and Portuguese are supported.`)
+      return null
+    }
+    
+    return mapped
   }
 
   /**
@@ -40,11 +67,17 @@ export class LanguageDetectionService {
    * 1. If detected language is English → translate to first available target language (Spanish)
    * 2. If detected language is Spanish/Portuguese → translate to English
    * 3. Always ensure one language is English
+   * 4. Returns null if language is not supported
    */
-  static determineTranslationDirection(detectedLanguage: Language): {
+  static determineTranslationDirection(detectedLanguage: Language | null): {
     fromLanguage: Language
     toLanguage: Language
-  } {
+  } | null {
+    // If language is not supported, return null
+    if (!detectedLanguage) {
+      return null
+    }
+
     // Remove auto-detect if it somehow got through
     if (detectedLanguage === 'auto-detect') {
       detectedLanguage = 'English'
@@ -63,12 +96,9 @@ export class LanguageDetectionService {
         toLanguage: 'English'
       }
     } else {
-      // Unknown language → treat as English and translate to Spanish
-      console.warn(`Unknown language detected: ${detectedLanguage}, treating as English → Spanish`)
-      return {
-        fromLanguage: 'English',
-        toLanguage: 'Spanish'
-      }
+      // This should never happen now that mapWhisperLanguage returns null for unsupported
+      console.error(`Unexpected language in determineTranslationDirection: ${detectedLanguage}`)
+      return null
     }
   }
 
@@ -82,9 +112,15 @@ export class LanguageDetectionService {
   /**
    * Check if a language is supported
    */
-  static isLanguageSupported(language: string): boolean {
+  static isLanguageSupported(language: string | Language): boolean {
+    // If it's already a Language type, just check if it's in supported list
+    if (this.getSupportedLanguages().includes(language as Language)) {
+      return true
+    }
+    
+    // Otherwise try to map it
     const mapped = this.mapWhisperLanguage(language)
-    return this.getSupportedLanguages().includes(mapped)
+    return mapped !== null && this.getSupportedLanguages().includes(mapped)
   }
 
   /**
@@ -130,5 +166,94 @@ export class LanguageDetectionService {
     // Both must be supported
     const supported = this.getSupportedLanguages()
     return supported.includes(from) && supported.includes(to)
+  }
+
+  /**
+   * Pattern-based language detection fallback
+   * Analyzes text patterns to determine language when Whisper detection is unreliable
+   */
+  static detectLanguageFromText(text: string): Language | null {
+    if (!text || text.trim().length === 0) {
+      return null
+    }
+
+    const lowerText = text.toLowerCase()
+    const scores = {
+      spanish: 0,
+      portuguese: 0,
+      english: 0
+    }
+
+    // Check for strong indicators first
+    for (const indicator of LANGUAGE_PATTERNS.spanish.strongIndicators) {
+      if (lowerText.includes(indicator)) scores.spanish += 5
+    }
+    for (const indicator of LANGUAGE_PATTERNS.portuguese.strongIndicators) {
+      if (lowerText.includes(indicator)) scores.portuguese += 5
+    }
+    for (const indicator of LANGUAGE_PATTERNS.english.strongIndicators) {
+      if (lowerText.includes(indicator)) scores.english += 5
+    }
+
+    // Check for unique characters
+    if (LANGUAGE_PATTERNS.spanish.uniqueChars.test(text)) {
+      scores.spanish += 3
+    }
+    if (LANGUAGE_PATTERNS.portuguese.uniqueChars.test(text)) {
+      scores.portuguese += 3
+    }
+
+    // Check for common words
+    const words = lowerText.split(/\s+/)
+    for (const word of words) {
+      if (LANGUAGE_PATTERNS.spanish.commonWords.includes(word)) scores.spanish += 1
+      if (LANGUAGE_PATTERNS.portuguese.commonWords.includes(word)) scores.portuguese += 1
+      if (LANGUAGE_PATTERNS.english.commonWords.includes(word)) scores.english += 1
+      
+      // Check English suffixes
+      if (LANGUAGE_PATTERNS.english.suffixes.some(suffix => word.endsWith(suffix))) {
+        scores.english += 0.5
+      }
+    }
+
+    // Determine the language with highest score
+    const maxScore = Math.max(scores.spanish, scores.portuguese, scores.english)
+    
+    // Require a minimum score to be confident
+    if (maxScore < 2) {
+      console.warn('Pattern-based detection: No clear language pattern found')
+      return null
+    }
+
+    if (scores.spanish === maxScore) return 'Spanish'
+    if (scores.portuguese === maxScore) return 'Portuguese'
+    if (scores.english === maxScore) return 'English'
+
+    return null
+  }
+
+  /**
+   * Combined language detection with Whisper primary and pattern-based fallback
+   */
+  static detectLanguageWithFallback(whisperLanguage: string, transcribedText: string): Language | null {
+    // First try Whisper's detection
+    const whisperDetected = this.mapWhisperLanguage(whisperLanguage)
+    
+    if (whisperDetected) {
+      console.log(`✅ Whisper detected supported language: ${whisperDetected}`)
+      return whisperDetected
+    }
+
+    // If Whisper detected unsupported language, try pattern-based detection
+    console.log(`⚠️ Whisper detected unsupported language "${whisperLanguage}", trying pattern-based detection...`)
+    const patternDetected = this.detectLanguageFromText(transcribedText)
+    
+    if (patternDetected) {
+      console.log(`✅ Pattern-based detection found: ${patternDetected}`)
+      return patternDetected
+    }
+
+    console.error(`❌ Could not detect supported language. Whisper: "${whisperLanguage}", Pattern detection: failed`)
+    return null
   }
 }

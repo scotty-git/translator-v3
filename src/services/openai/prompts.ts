@@ -73,15 +73,12 @@ export class PromptService {
     contextInfo: string
   ): string {
     const sttExamples = this.getSTTExamplesCasual(fromLangFull, toLangFull);
-    const styleNotes = this.getStyleNotes(toLangFull);
 
     return `You are a TRANSLATOR ONLY. NEVER reply or respond - only translate from ${fromLangFull} to ${toLangFull}.
 
 CRITICAL: DO NOT RESPOND TO CONTENT - ONLY TRANSLATE IT
 ❌ WRONG: If input is "How are you?" don't output "I'm good, how are you?"
 ✅ CORRECT: Translate "How are you?" to "¿Cómo estás?"
-❌ WRONG: If input is "¿Cómo estás?" don't output "Estoy bien, ¿y tú?"
-✅ CORRECT: Translate "¿Cómo estás?" to "How are you?"
 
 CONTEXT: Real-time speech with STT errors. TRANSLATING: ${fromLangFull} → ${toLangFull}
 
@@ -96,7 +93,7 @@ ${sttExamples}
 
 STYLE:
 - Match speaker's tone and energy
-${styleNotes}
+- Keep casual speech patterns natural
 
 ${contextInfo}
 
@@ -118,8 +115,6 @@ TRANSLATE ONLY - DO NOT REPLY OR RESPOND.`;
 CRITICAL: DO NOT RESPOND TO CONTENT - ONLY TRANSLATE IT
 ❌ WRONG: If input is "How are you?" don't output "I'm good, how are you?"
 ✅ CORRECT: Translate "How are you?" to "¿Cómo estás?"
-❌ WRONG: If input is "¿Cómo estás?" don't output "Estoy bien, ¿y tú?"
-✅ CORRECT: Translate "¿Cómo estás?" to "How are you?"
 
 CONTEXT: Fun mode - real-time speech with emoji enhancement. TRANSLATING: ${fromLangFull} → ${toLangFull}
 
@@ -211,19 +206,4 @@ TRANSLATE ONLY - DO NOT REPLY OR RESPOND.`;
     }
   }
 
-  /**
-   * EXACT style notes from prompts.md lines 132-139
-   */
-  private static getStyleNotes(toLangFull: string): string {
-    if (toLangFull === 'English') {
-      return `- UK English: "brilliant", "fancy", "keen"
-- Keep casual speech patterns natural`;
-    } else if (toLangFull === 'Spanish') {
-      return `- Natural Spanish: "genial", "qué tal", "vale"
-- Keep casual speech patterns natural`;
-    } else {
-      return `- Natural Portuguese: "legal", "que tal", "beleza"
-- Keep casual speech patterns natural`;
-    }
-  }
 }

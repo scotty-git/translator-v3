@@ -181,14 +181,38 @@ export class AudioWorkflowService {
       console.log('   • Config FROM language:', this.config.fromLanguage)
       console.log('   • Config TO language:', this.config.toLanguage)
       
-      // If auto-detection is enabled, use Whisper's language detection
+      // If auto-detection is enabled, use Whisper's language detection with pattern-based fallback
       if (this.config.fromLanguage === 'auto-detect' || this.config.toLanguage === 'auto-detect') {
-        const detectedLanguage = LanguageDetectionService.mapWhisperLanguage(transcription.language);
+        const detectedLanguage = LanguageDetectionService.detectLanguageWithFallback(
+          transcription.language,
+          transcription.text
+        );
+        
+        // Handle unsupported language
+        if (!detectedLanguage) {
+          const error = new Error(
+            `Unsupported language detected: "${transcription.language}". ` +
+            `This translator only supports English, Spanish, and Portuguese.`
+          );
+          console.error('❌ Language validation failed:', error.message);
+          this.handleError(error, 'translating');
+          return;
+        }
+        
         const direction = LanguageDetectionService.determineTranslationDirection(detectedLanguage);
+        
+        // This should never happen, but handle it just in case
+        if (!direction) {
+          const error = new Error(`Failed to determine translation direction for language: ${detectedLanguage}`);
+          this.handleError(error, 'translating');
+          return;
+        }
+        
         fromLang = direction.fromLanguage;
         toLang = direction.toLanguage;
         
         console.log('🤖 Auto-detection enabled:')
+        console.log('   • Whisper detected:', transcription.language)
         console.log('   • Mapped language:', detectedLanguage)
         console.log('   • Direction FROM:', direction.fromLanguage)
         console.log('   • Direction TO:', direction.toLanguage)
@@ -197,6 +221,17 @@ export class AudioWorkflowService {
         console.log('🔧 Using configured language direction')
         console.log('   • FROM:', fromLang)
         console.log('   • TO:', toLang)
+        
+        // Validate configured languages are supported
+        if (!LanguageDetectionService.isLanguageSupported(fromLang) || 
+            !LanguageDetectionService.isLanguageSupported(toLang)) {
+          const error = new Error(
+            `Invalid language configuration. From: ${fromLang}, To: ${toLang}. ` +
+            `Only English, Spanish, and Portuguese are supported.`
+          );
+          this.handleError(error, 'translating');
+          return;
+        }
       }
       
       // Enhanced translation context using conversation context system
@@ -276,18 +311,27 @@ export class AudioWorkflowService {
       console.log('╚══════════════════════════════════════════════════════════╝')
       
       // Update conversation context for future translations
-      const detectedLanguageCode = LanguageDetectionService.mapWhisperLanguage(transcription.language);
-      console.log('🔧 Adding to conversation context (Single Device):')
-      console.log('   • Original text:', `"${transcription.text}"`)
-      console.log('   • Detected language code:', detectedLanguageCode)
-      console.log('   • Current context size:', this.conversationContext.length)
-      
-      this.conversationContext = ConversationContextManager.addToContext(
-        this.conversationContext,
-        transcription.text,
-        detectedLanguageCode,
-        Date.now()
+      const detectedLanguageForContext = LanguageDetectionService.detectLanguageWithFallback(
+        transcription.language,
+        transcription.text
       );
+      
+      // Only add to context if we have a valid language
+      if (detectedLanguageForContext) {
+        console.log('🔧 Adding to conversation context (Single Device):')
+        console.log('   • Original text:', `"${transcription.text}"`)
+        console.log('   • Detected language:', detectedLanguageForContext)
+        console.log('   • Current context size:', this.conversationContext.length)
+        
+        this.conversationContext = ConversationContextManager.addToContext(
+          this.conversationContext,
+          transcription.text,
+          detectedLanguageForContext,
+          Date.now()
+        );
+      } else {
+        console.warn('⚠️ Skipping context update - unsupported language detected')
+      }
       
       console.log('✅ Context updated (Single Device)!')
       console.log('   • New context size:', this.conversationContext.length)
