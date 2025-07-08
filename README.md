@@ -1,7 +1,7 @@
 # 🌐 Real-time Translator v3
 
 **Break language barriers instantly with real-time voice translation.**  
-Mobile-first PWA enabling seamless English ↔ Spanish/Portuguese conversations through 4-digit session rooms.
+Mobile-first PWA enabling seamless English ↔ Spanish/Portuguese conversations on a single device.
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-3178C6?logo=typescript)](https://www.typescriptlang.org/)
@@ -37,16 +37,16 @@ npm run dev
 
 ## 🚀 What This Is
 
-**For Users**: Join a 4-digit room (like 1234), speak in your language, and instantly see/hear translations in real-time.
+**For Users**: Speak in your language on one side of the device, hand it to the other person to speak in their language, and see instant translations.
 
-**For Developers**: A production-ready React PWA with mobile-first design, real-time Supabase sync, OpenAI translation pipeline, and comprehensive testing.
+**For Developers**: A production-ready React PWA with mobile-first design, OpenAI translation pipeline, and comprehensive testing.
 
 ### ✨ Key Features
 - 🎤 **Real-time Voice Translation** - Whisper STT → GPT-4o-mini → Native TTS
 - 📱 **Mobile-First PWA** - Works offline, installable, touch-optimized
-- 🔄 **Session-Based Rooms** - 4-digit codes, 4-hour expiry, auto-reconnect
+- 🔄 **Single-Device Translation** - Perfect for face-to-face conversations
 - 🌍 **3 Languages** - English, Spanish (Español), Portuguese (Português)
-- ⚡ **Sub-100ms Feedback** - Real-time status, message queuing, performance monitoring
+- ⚡ **Sub-100ms Feedback** - Real-time status, performance monitoring
 - 🎨 **Modern UI** - Dark/light themes, animations, accessibility (WCAG 2.1 AA)
 
 ---
@@ -58,7 +58,7 @@ npm run dev
 | **Frontend** | React 19 + TypeScript | Modern UI with type safety |
 | **Build** | Vite | Lightning-fast development |
 | **Styling** | UnoCSS | Utility-first CSS with performance |
-| **Backend** | Supabase | Real-time database + auth |
+| **Storage** | LocalStorage | Client-side data persistence |
 | **AI** | OpenAI (Whisper, GPT-4o-mini, TTS) | Translation pipeline |
 | **Testing** | Playwright + Vitest | E2E and unit testing |
 | **Deployment** | Vercel | Auto-deploy from git |
@@ -107,7 +107,7 @@ translator-v3/
 ```
 
 **Key Directories:**
-- `src/features/translator/` - Main translation interface
+- `src/features/translator/` - Single-device translation interface
 - `src/services/openai/` - AI translation pipeline  
 - `src/lib/` - Core utilities (performance, caching, retry logic)
 - `tests/` - E2E validation tests
@@ -132,15 +132,15 @@ translator-v3/
 
 ## 🎯 Current Status
 
-**Phase 9 Complete** - Production ready with all advanced features:
+**Production Ready** - Single-device translator with advanced features:
 - ✅ Internationalization (3 languages)
 - ✅ PWA with offline support
 - ✅ WCAG 2.1 AA accessibility
 - ✅ Performance optimization & caching
 - ✅ Comprehensive error handling
-- ✅ Master test suite (41 tests passing)
+- ✅ Master test suite passing
 
-**Next Steps**: Documentation, monitoring, and user feedback integration.
+**Focus**: Perfected single-device translation experience for face-to-face conversations.
 
 ---
 

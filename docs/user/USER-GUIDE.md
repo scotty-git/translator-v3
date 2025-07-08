@@ -1,32 +1,32 @@
 # 👥 User Guide - How to Use the Real-time Translator
 
-Learn how to break language barriers instantly with real-time voice translation! This guide explains everything from your first session to advanced features.
+Learn how to break language barriers instantly with real-time voice translation! This guide explains how to use the single-device translator for face-to-face conversations.
 
 ---
 
 ## ⚡ Quick Start (30 seconds)
 
-### Your First Translation Session
+### Your First Translation Conversation
 
 **Step 1**: Open the app 📱  
 Go to your translator website or open the installed app
 
-**Step 2**: Choose your mode 🎯  
-- **Create Session** - Start a new room for others to join
-- **Join Session** - Enter someone else's 4-digit room code
-- **Solo Mode** - Practice translations by yourself
+**Step 2**: Start translating 🎯  
+- Tap **Start Translating** on the home screen
+- Grant microphone permission when prompted
 
-**Step 3**: Start talking! 🎤  
-- Tap the **Voice** tab 
-- Hold the record button and speak
+**Step 3**: Have your conversation! 🎤  
+- You speak in your language (English/Spanish/Portuguese)
+- Tap the record button and speak clearly
 - See your translation appear instantly
-- Share your room code with others
+- Hand the device to the other person
+- They can respond in their language
 
 **Step 4**: Watch the magic ✨  
 - Your speech appears in your language
-- Translation shows in the target language  
-- Other people see it in real-time
-- They can respond in their language
+- Translation shows in the target language automatically
+- Perfect for face-to-face conversations
+- Both people can see the conversation history
 
 **That's it!** You're now having real-time translated conversations! 🎉
 
@@ -36,23 +36,22 @@ Go to your translator website or open the installed app
 
 ### 🏠 Home Screen Features
 
-**Create New Session**
-- Creates a random 4-digit room code (like 1234)
-- Sessions last 4 hours automatically
-- You become the "host" but anyone can invite others
-- Great for: meetings, travel, making new friends
+**Start Translating**
+- Launches the single-device translator
+- Perfect for face-to-face conversations
+- Auto-detects between English, Spanish, and Portuguese
+- No setup or room codes needed
 
-**Join Existing Session**  
-- Enter someone else's 4-digit code
-- Join their conversation instantly
-- No passwords or complex setup needed
-- Perfect for: joining friends, business meetings
+**Settings Access**
+- Customize your experience
+- Change interface language
+- Adjust audio quality
+- Toggle dark/light mode
 
-**Solo Translation Mode**
-- Practice without others in the room
-- Test different languages
-- Learn pronunciation
-- Build confidence before group conversations
+**Conversation History**
+- View previous translation sessions
+- Search through past conversations
+- Export important translations
 
 ---
 
@@ -61,9 +60,9 @@ Go to your translator website or open the installed app
 **Recording Your Voice**
 
 *On Mobile* 📱:
-- **Tap and hold** the blue record button
+- **Tap** the blue record button to start
 - Speak clearly into your microphone
-- **Release** when you're done talking
+- **Tap again** when you're done talking
 - Translation appears in 2-3 seconds
 
 *On Desktop* 💻:
@@ -137,25 +136,26 @@ Sometimes typing is better than talking:
 
 ---
 
-### 👥 Multi-Person Sessions
+### 👥 Face-to-Face Conversations
 
-**Starting a Group Conversation**:
-1. **Create Session** from home screen
-2. **Share your 4-digit code** with others
-3. They **Join Session** with your code
-4. Everyone can now talk and see translations
+**Having a Two-Person Conversation**:
+1. **Start Translating** from home screen
+2. **Speak in your language** and see the translation
+3. **Hand the device** to the other person
+4. **They respond** in their language and see your translation
+5. **Continue naturally** - the app handles language detection
 
-**Group Conversation Tips**:
+**Conversation Tips**:
 - 🎯 **Take turns speaking** - One person at a time works best
-- 📢 **Say names** - "Maria, what do you think?" helps context
+- 📢 **Speak clearly** - Good audio quality improves translation
 - ⏸️ **Pause between speakers** - Gives translation time to process
-- 🔁 **Repeat if needed** - Don't be shy about asking for clarification
+- 🔁 **Use both voice and text** - Switch modes as needed
 
-**Real-Time Features**:
-- 👀 **Live typing indicators** - See when someone is typing
-- 🎤 **Recording indicators** - Know when someone is speaking
-- ⚡ **Instant delivery** - Messages appear as soon as translated
-- 🔄 **Auto-sync** - Join mid-conversation and see recent messages
+**Single-Device Features**:
+- 🎤 **Smart language detection** - Automatically knows who's speaking what
+- ⚡ **Instant translation** - See results in real-time
+- 📱 **Mobile optimized** - Perfect for handheld conversations
+- 📋 **Conversation history** - Review what was said
 
 ---
 
@@ -183,7 +183,7 @@ Sometimes typing is better than talking:
 - 🎤 **Chrome recommended** - Best compatibility
 - 🔊 **Audio permissions** - Grant microphone access
 - 📱 **Install prompt** - Browser may offer to install as app
-- 🔔 **Notifications** - Enable for session updates
+- 🔔 **Notifications** - Enable for conversation updates
 
 ---
 
@@ -196,46 +196,41 @@ Sometimes typing is better than talking:
 
 **Audio Settings**:
 - 🎚️ **Input sensitivity** - Adjust microphone sensitivity
-- 🔊 **Output volume** - Control playback volume
+- 🔊 **Audio quality** - High/medium/low quality options
 - 🎧 **Audio effects** - Noise cancellation, echo reduction
 
 **Language Preferences**:
-- 🌐 **Interface language** - Change app's language
+- 🌐 **Interface language** - Change app's language (English/Spanish/Portuguese)
 - 🎯 **Default target** - Set preferred translation language
 - 📚 **Translation style** - Casual vs. formal tone
 
 **Privacy Settings**:
 - 💾 **Message history** - Choose to save or delete conversations
-- 🔒 **Data retention** - Control how long messages are kept
-- 👤 **Anonymous mode** - Use without creating account
+- 🔒 **Data retention** - All data stays on your device
+- 👤 **Anonymous mode** - No account required, fully private
 
 ---
 
 ### 🎯 Advanced Features
 
-**Session Management**:
-- 🏷️ **Session names** - Give your rooms custom names
-- ⏰ **Extended sessions** - Sessions automatically last 4 hours
-- 👥 **Participant list** - See who's in your session
-- 🚪 **Leave anytime** - Exit sessions without affecting others
-
-**Message Features**:
-- 📋 **Copy text** - Copy translations to clipboard
-- 💾 **Save conversations** - Export session transcripts
-- 🔍 **Search history** - Find old conversations
+**Conversation Management**:
+- 🏷️ **Auto-save** - Conversations saved locally on your device
+- 📋 **Export conversations** - Download your translation history
+- 🔍 **Search history** - Find old conversations easily
 - ⭐ **Bookmark favorites** - Save important translations
 
-**Quality Controls**:
-- 📊 **Network monitoring** - App adapts to your connection
-- 🔄 **Auto-retry** - Failed messages automatically retry
-- ⚡ **Quality adjustment** - Lower quality on slow networks
-- 📈 **Performance stats** - See translation speeds
+**Smart Translation**:
+- 🧠 **Context awareness** - Understands conversation flow
+- 🔄 **Auto-retry** - Failed translations automatically retry
+- ⚡ **Performance optimization** - Optimized for mobile devices
+- 📈 **Performance stats** - See translation speeds in real-time
 
 **Accessibility Features**:
 - 🦽 **Screen reader support** - Full VoiceOver/TalkBack compatibility
 - ⌨️ **Keyboard navigation** - Use arrow keys and tab
 - 🔤 **High contrast** - Enhanced visibility mode
 - 🎵 **Reduced motion** - Fewer animations if preferred
+- 🔤 **Font scaling** - Press 'F' key to cycle font sizes
 
 ---
 
@@ -243,15 +238,15 @@ Sometimes typing is better than talking:
 
 **Getting Perfect Translations**:
 - 🗣️ **Speak naturally** - Don't slow down artificially
-- 📍 **Use context** - Reference previous messages
+- 📍 **Use context** - Reference previous messages in the conversation
 - 🎯 **Be specific** - "That restaurant" vs "the Mexican restaurant we discussed"
 - 🔁 **Rephrase if needed** - Try different words if translation seems off
 
-**Session Hosting Tips**:
-- 📢 **Introduce everyone** - Start with names and languages
-- 🎯 **Set expectations** - Explain the 4-hour session limit
+**Face-to-Face Conversation Tips**:
+- 📢 **Introduce the app** - Show the other person how it works
+- 🎯 **Take turns naturally** - Hand the device back and forth
 - 🔄 **Check understanding** - Ask "Does that make sense?" often
-- 📱 **Share screen** - Show the 4-digit code clearly
+- 📱 **Use both modes** - Switch between voice and text as needed
 
 **Troubleshooting on the Fly**:
 - 🔄 **Refresh if stuck** - Reload the page/app
@@ -261,9 +256,9 @@ Sometimes typing is better than talking:
 
 **Power User Features**:
 - ⌨️ **Keyboard shortcuts** - Spacebar to toggle recording (desktop)
-- 📱 **Multiple sessions** - Join different rooms in different browser tabs
-- 💾 **Export conversations** - Download session transcripts
-- 🔗 **Share sessions** - Send session links to others
+- 💾 **Export conversations** - Download conversation transcripts
+- 🔤 **Font scaling** - Press 'F' to cycle through font sizes
+- 🌐 **PWA install** - Add to home screen for app-like experience
 
 ---
 
@@ -281,11 +276,11 @@ Sometimes typing is better than talking:
 - Check if lots of people are using your internet
 - App automatically adjusts quality for speed
 
-**"I can't join a session"**
-- Double-check the 4-digit code
-- Ask for a new code (sessions expire after 4 hours)
+**"The app isn't working properly"**
 - Try refreshing your browser
 - Make sure you have internet connection
+- Check that microphone permissions are granted
+- Clear browser cache if issues persist
 
 **"Audio is choppy or unclear"**
 - Move closer to your microphone
@@ -313,23 +308,23 @@ Sometimes typing is better than talking:
 **Business & Professional** 💼
 - International client meetings
 - Customer service across languages
-- Training sessions with global teams
-- Conference calls with translation
-- Remote work with international colleagues
+- Training sessions with bilingual teams
+- In-person negotiations
+- Trade show conversations
 
 **Education & Learning** 📚
 - Language exchange partnerships
 - Study groups with international students
-- Online tutoring across languages
+- In-person tutoring across languages
 - Cultural exchange programs
-- Practice pronunciation
+- Practice pronunciation with native speakers
 
 **Personal & Social** 👥
 - Family conversations across generations
 - Dating across language barriers
-- Gaming with international players
-- Social media live conversations
+- Making friends while traveling
 - Community events and meetups
+- Helping neighbors communicate
 
 **Healthcare & Emergency** 🏥
 - Medical appointments with translation
@@ -343,10 +338,10 @@ Sometimes typing is better than talking:
 ### 🔒 Privacy & Safety
 
 **Your Data**:
-- 🔒 **Conversations are temporary** - Messages deleted after 4 hours
-- 🚫 **No permanent storage** - We don't keep your translations
+- 🔒 **Local storage only** - All data stays on your device
+- 🚫 **No cloud storage** - Your conversations never leave your device
 - 👤 **Anonymous by default** - No account required
-- 🔐 **Encrypted connections** - All communication is secure
+- 🔐 **Private conversations** - Only you can access your translation history
 
 **Safety Guidelines**:
 - 🚫 **Don't share personal info** - Addresses, phone numbers, passwords
@@ -380,8 +375,8 @@ Sometimes typing is better than talking:
 
 ## 🎉 Welcome to Breaking Language Barriers!
 
-You now have everything you need to have amazing conversations across languages! Whether you're traveling the world, working with international colleagues, or just making new friends, the Real-time Translator makes communication instant and natural.
+You now have everything you need to have amazing face-to-face conversations across languages! Whether you're traveling the world, meeting new people, or helping friends and family communicate, the Real-time Translator makes communication instant and natural.
 
-**Remember**: The best way to learn is by trying! Start with a simple conversation and discover how powerful real-time translation can be.
+**Remember**: The best way to learn is by trying! Start with a simple conversation and discover how powerful single-device translation can be.
 
 Happy translating! 🌍✨💬
