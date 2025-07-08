@@ -27,10 +27,13 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const messageRef = useRef<HTMLDivElement | null>(null)
   
-  // In session mode, we want partner messages on the right side
-  const isOwnMessage = message.user_id === userId
   // In single device mode: English messages on left, other languages on right
   const isLeftAligned = message.original_lang === 'en' // English on left, Spanish/Portuguese on right
+  
+  // For styling purposes in single-device mode, use language instead of ownership
+  // English messages get "received" styling (gray), Spanish/Portuguese get "sent" styling (colored)
+  const isOwnMessage = message.user_id === userId
+  const useOwnMessageStyling = !isLeftAligned // Spanish/Portuguese messages get "own message" styling
 
   // Theme color mappings
   const themeColors = {
@@ -256,8 +259,8 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
           className={clsx(
             'max-w-[80%] rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 cursor-pointer select-none relative transform-gpu hover:scale-[1.02]',
             {
-              [`${colors.bg} text-white`]: isOwnMessage,
-              'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white': !isOwnMessage,
+              [`${colors.bg} text-white`]: useOwnMessageStyling,
+              'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white': !useOwnMessageStyling,
               // Prioritize animations - only one at a time
               'opacity-60 scale-95': message.status === 'queued',
               'opacity-80': message.status === 'processing', 
@@ -271,7 +274,7 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
           {/* Primary text (translation) with placeholder handling */}
           <p className={clsx(
             'text-sm leading-relaxed',
-            !isOwnMessage && 'text-gray-900 dark:text-gray-100',
+            !useOwnMessageStyling && 'text-gray-900 dark:text-gray-100',
             {
               'text-gray-500 italic': message.status === 'queued' && primaryText === '...',
               'text-gray-600 italic': message.status === 'processing' && !message.translation
@@ -289,7 +292,7 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
           {secondaryText && (
             <p className={clsx(
               'text-xs mt-1 opacity-70 leading-relaxed',
-              isOwnMessage ? colors.text : 'text-gray-600 dark:text-gray-400'
+              useOwnMessageStyling ? colors.text : 'text-gray-600 dark:text-gray-400'
             )}>
               {secondaryText}
             </p>
@@ -306,7 +309,7 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
         {/* Bottom control area */}
         <div className={clsx(
           'flex items-center justify-between',
-          isOwnMessage ? colors.text : 'text-gray-400 dark:text-gray-500'
+          useOwnMessageStyling ? colors.text : 'text-gray-400 dark:text-gray-500'
         )}>
           {/* Left side - Timestamp and Status */}
           <div className="flex items-center gap-2">
@@ -388,10 +391,10 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
           {message.reactions && Object.keys(message.reactions).length > 0 && (
             <div className={clsx(
               'absolute -bottom-2 z-10',
-              // Position based on message ownership:
-              // Own messages: reactions on bottom-left (easier to see)
-              // Others' messages: reactions on bottom-right
-              isOwnMessage ? '-left-2' : '-right-2'
+              // Position based on message styling:
+              // Spanish/Portuguese messages: reactions on bottom-left (easier to see)
+              // English messages: reactions on bottom-right
+              useOwnMessageStyling ? '-left-2' : '-right-2'
             )}>
               <MessageReactions
                 reactions={message.reactions}

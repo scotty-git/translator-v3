@@ -1,23 +1,19 @@
 # CLAUDE.md - Project Guide
 
-## 🔔 PING RULES - ALWAYS READ FIRST
+## 🔔 AUTO-PING SYSTEM - CONFIGURED WITH HOOKS
 
-**ALWAYS PING WHEN:**
-- ✅ I finish explaining/analyzing and am waiting for your response
-- ✅ Task complete with nothing more to add
-- ✅ After presenting options and need your choice
-- ✅ After asking questions and waiting for answers
-- ✅ Any time I stop talking and need your input
+**AUTOMATIC NOTIFICATIONS NOW ACTIVE!**
 
-**NEVER PING WHEN:**
-- ❌ Still working or have more to say
-- ❌ During explanations or progress updates
-- ❌ Before asking questions (ask first, then ping)
+Claude Code now uses automated hooks for notifications:
+- 🔔 **Mid-conversation ping** (Notification hook): Plays when Claude needs your input
+- 🎺 **Task complete sound** (Stop hook): Plays when all tasks are finished
 
-**The ping command:**
-```bash
-afplay /System/Library/Sounds/Ping.aiff
-```
+**No manual pinging needed!** The system automatically:
+- Plays "Ping.aiff" when waiting for your response
+- Plays "Hero.aiff" when all work is complete
+- Logs all notifications to `~/.claude/notification-log.txt`
+
+**Note:** These hooks are configured in `~/.claude/settings.json` and work across ALL projects.
 
 ---
 
