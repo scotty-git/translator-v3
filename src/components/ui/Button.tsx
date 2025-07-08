@@ -1,10 +1,10 @@
-import { ButtonHTMLAttributes, forwardRef, useEffect } from 'react'
+import { ButtonHTMLAttributes, forwardRef } from 'react'
 import { clsx } from 'clsx'
 import { useAccessibility } from '@/hooks/useAccessibility'
 import { useSounds } from '@/lib/sounds/SoundManager'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost'
+  variant?: 'primary' | 'secondary' | 'ghost' | 'outline' | 'default'
   size?: 'sm' | 'md' | 'lg'
   fullWidth?: boolean
   loading?: boolean
@@ -70,6 +70,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
             'bg-blue-600 text-white hover:bg-blue-700 focus:bg-blue-700': variant === 'primary',
             'bg-gray-200 text-gray-900 hover:bg-gray-300 focus:bg-gray-300': variant === 'secondary',
             'hover:bg-gray-100 focus:bg-gray-100 text-gray-700': variant === 'ghost',
+            'border border-gray-300 bg-white text-gray-700 hover:bg-gray-50': variant === 'outline',
+            'bg-gray-100 text-gray-900 hover:bg-gray-200': variant === 'default',
             // Sizes
             'h-8 px-3 text-sm rounded-md': size === 'sm',
             'h-10 px-4 text-base rounded-lg': size === 'md',

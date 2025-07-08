@@ -142,7 +142,7 @@ export function Phase4TestRunner() {
           </ul>
         </div>
         
-        {import.meta.env.VITE_RUN_API_TESTS !== 'true' && (
+        {true && ( {/* API tests available at runtime */}
           <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
             <span className="text-sm text-yellow-700">

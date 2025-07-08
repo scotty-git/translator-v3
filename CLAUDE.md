@@ -716,9 +716,71 @@ C) Let me handle it
 
 **User prefers continuous workflow** - They want to keep working in the same session.
 
+## ⚡ CRITICAL: Server & Command Timeout Optimization
+
+**MANDATORY**: NEVER wait 120+ seconds for commands that complete quickly. Use appropriate timeouts:
+
+### Server Startup Commands (20s max)
+```bash
+# Frontend servers
+npm run dev                    # timeout: 20000 (expect "ready in XXXms" ~15s)
+yarn dev                       # timeout: 20000
+pnpm dev                       # timeout: 20000
+vite                          # timeout: 20000
+
+# Backend servers
+uvicorn app.main:app --reload  # timeout: 20000 (expect "Uvicorn running" ~10s)
+fastapi dev                   # timeout: 20000
+python -m flask run           # timeout: 20000
+node server.js                # timeout: 20000
+
+# Database servers
+supabase start                # timeout: 20000
+docker-compose up             # timeout: 20000
+```
+
+### Quick Commands (10s max)
+```bash
+# Package managers
+npm install                   # timeout: 10000
+pip install                   # timeout: 10000
+yarn install                  # timeout: 10000
+
+# Build commands
+npm run build                 # timeout: 10000
+npm run test                  # timeout: 10000
+pytest                        # timeout: 10000
+
+# Git operations
+git status                    # timeout: 10000
+git commit                    # timeout: 10000
+git push                      # timeout: 10000
+```
+
+### Success Indicators - Stop Waiting When You See:
+- **Vite**: "ready in XXXms" or "Local: http://..."
+- **FastAPI**: "Uvicorn running on http://..." or "Application startup complete"
+- **React**: "webpack compiled" or "Local: http://..."
+- **Tests**: "X passing" or "All tests passed"
+- **Install**: "added X packages" or "Successfully installed"
+
+### Implementation Rule:
+**ALWAYS specify timeout parameter in Bash tool calls for these commands**
+
+```javascript
+// Example
+Bash({
+  command: "npm run dev",
+  timeout: 20000,  // 20 seconds max
+  description: "Start frontend dev server"
+})
+```
+
+**NEVER wait for default 120s timeout on development commands. This wastes 100+ seconds every time.**
+
 ## 🚀 Running Development Servers
 
-**⚠️ CRITICAL FIX**: The timeout approach KILLS the server! User gets "site can't be reached" errors because the server dies after 15 seconds.
+**⚠️ CRITICAL FIX**: The timeout approach KILLS the server! User gets "site can't be reached" errors because the server dies after timeout.
 
 **THE ONLY CORRECT WAY TO RUN DEV SERVER:**
 ```bash
