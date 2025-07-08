@@ -33,3 +33,9 @@ dist-ssr
 openaikeyandsupabase.md
 .vercel
 dist/
+
+# Claude Code local settings
+.claude/
+
+# Backup files
+*.backup
