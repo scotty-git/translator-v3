@@ -29,7 +29,8 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
   
   // In session mode, we want partner messages on the right side
   const isOwnMessage = message.user_id === userId
-  const isLeftAligned = isOwnMessage // User's messages on left, partner's on right
+  // In single device mode: English messages on left, other languages on right
+  const isLeftAligned = message.original_lang === 'en' // English on left, Spanish/Portuguese on right
 
   // Theme color mappings
   const themeColors = {

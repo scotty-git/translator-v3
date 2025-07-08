@@ -111,13 +111,11 @@ export function SingleDeviceTranslator() {
           !showTextInput) { // Don't trigger when in text mode
         event.preventDefault()
         
-        // Toggle recording state
-        if (!isProcessing) {
-          if (isRecording) {
-            handleStopRecording()
-          } else {
-            handleStartRecording()
-          }
+        // Toggle recording state - allow recording even while processing
+        if (isRecording) {
+          handleStopRecording()
+        } else {
+          handleStartRecording()
         }
       }
     }
@@ -169,8 +167,8 @@ export function SingleDeviceTranslator() {
 
     try {
       setIsRecording(false)
-      setCurrentActivity('processing')
-      setIsProcessing(true)
+      setCurrentActivity('idle') // Set to idle to allow new recordings
+      // Don't set global isProcessing - each message processes independently
       
       // Play recording stop sound
       playRecordingStop()
@@ -194,7 +192,7 @@ export function SingleDeviceTranslator() {
       audioRecorderRef.current.onError = (error: Error) => {
         setError('Recording failed: ' + error.message)
         setCurrentActivity('idle')
-        setIsProcessing(false)
+        // Don't need to set isProcessing false anymore
         playError()
       }
 
@@ -204,7 +202,7 @@ export function SingleDeviceTranslator() {
     } catch (err) {
       setError('Failed to process recording: ' + (err as Error).message)
       setCurrentActivity('idle')
-      setIsProcessing(false)
+      // Don't need to set isProcessing false anymore
       playError()
     }
   }
@@ -227,8 +225,7 @@ export function SingleDeviceTranslator() {
     console.log('   • Target Language:', targetLanguage)
     console.log('   • Current Context Size:', conversationContext.length, 'messages')
 
-    setCurrentActivity('processing')
-    setIsProcessing(true)
+    // Don't set global processing state - allow concurrent messages
 
     try {
       // Create initial message in queue
@@ -262,14 +259,16 @@ export function SingleDeviceTranslator() {
       console.log('║              🌐 TEXT TRANSLATION PROCESSING              ║')
       console.log('╚══════════════════════════════════════════════════════════╝')
       
-      // Simple language detection for text (could be enhanced)
-      const hasSpanishWords = /\b(hola|como|que|por|para|con|una|uno|este|esta)\b/i.test(messageText)
-      const hasPortugueseWords = /\b(olá|como|que|por|para|com|uma|um|este|esta|você)\b/i.test(messageText)
+      // Enhanced language detection for text with more patterns
+      const hasSpanishWords = /\b(hola|cómo|qué|por|para|con|una|uno|este|esta|está|estás|buenos|días|gracias|adiós|señor|señora)\b/i.test(messageText)
+      const hasPortugueseWords = /\b(olá|como|que|por|para|com|uma|um|este|esta|está|você|obrigado|obrigada|tchau|bom|dia)\b/i.test(messageText)
+      const hasSpanishChars = /[ñáéíóúü¿¡]/i.test(messageText)
+      const hasPortugueseChars = /[çãõâêôà]/i.test(messageText)
       
       let detectedLangCode = 'en' // Default to English
-      if (hasSpanishWords && !hasPortugueseWords) {
+      if ((hasSpanishWords || hasSpanishChars) && !hasPortugueseWords && !hasPortugueseChars) {
         detectedLangCode = 'es'
-      } else if (hasPortugueseWords && !hasSpanishWords) {
+      } else if ((hasPortugueseWords || hasPortugueseChars) && !hasSpanishWords && !hasSpanishChars) {
         detectedLangCode = 'pt'
       }
       
@@ -383,14 +382,13 @@ export function SingleDeviceTranslator() {
         msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
       ))
     } finally {
-      setCurrentActivity('idle')
-      setIsProcessing(false)
+      // Don't change global states - allow concurrent messages
       setTimeout(() => setError(null), 5000)
     }
   }
 
   const handleSendTextMessage = () => {
-    if (textMessage.trim() && !isProcessing) {
+    if (textMessage.trim()) {
       processTextMessage(textMessage.trim())
     }
   }
@@ -680,8 +678,7 @@ export function SingleDeviceTranslator() {
         msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
       ))
     } finally {
-      setCurrentActivity('idle')
-      setIsProcessing(false)
+      // Don't change global states - let each message process independently
       
       // Clear error after 5 seconds
       setTimeout(() => setError(null), 5000)
@@ -827,17 +824,17 @@ export function SingleDeviceTranslator() {
                     value={textMessage}
                     onChange={(e) => setTextMessage(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter' && textMessage.trim() && !isProcessing) {
+                      if (e.key === 'Enter' && textMessage.trim()) {
                         handleSendTextMessage()
                       }
                     }}
                     placeholder="Type your message..."
                     className="flex-1 px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
-                    disabled={isProcessing}
+                    disabled={false}
                   />
                   <Button
                     onClick={handleSendTextMessage}
-                    disabled={!textMessage.trim() || isProcessing}
+                    disabled={!textMessage.trim()}
                     size="sm"
                     className="px-4"
                   >
@@ -891,20 +888,18 @@ export function SingleDeviceTranslator() {
                 <button
                   data-testid="recording-button"
                   onClick={isRecording ? handleStopRecording : handleStartRecording}
-                  disabled={isProcessing}
+                  disabled={false} // Allow recording even while processing previous messages
                   className={`
                     w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu
                     ${isRecording 
                       ? 'bg-red-500 hover:bg-red-600 scale-110 shadow-lg shadow-red-500/50' 
                       : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
                     }
-                    ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'}
+                    active:scale-95
                     text-white
                   `}
                 >
-                  {isProcessing ? (
-                    <div className="animate-spin">⚙️</div>
-                  ) : isRecording ? (
+                  {isRecording ? (
                     <div className="animate-pulse">
                       <Mic className="h-8 w-8" />
                     </div>
@@ -931,13 +926,11 @@ export function SingleDeviceTranslator() {
             {/* Status Text */}
             <div className="text-center mt-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                {isProcessing 
-                  ? t('translator.processing', 'Processing your message...')
-                  : showTextInput
-                    ? 'Type your message and press Enter or click Send'
-                    : isRecording 
-                      ? t('translator.recording', 'Recording... Release to translate')
-                      : t('translator.instructions', 'Hold to record and translate, or press spacebar on desktop')
+                {showTextInput
+                  ? 'Type your message and press Enter or click Send'
+                  : isRecording 
+                    ? t('translator.recording', 'Recording... Release to translate')
+                    : t('translator.instructions', 'Hold to record and translate, or press spacebar on desktop')
                 }
               </p>
             </div>
