@@ -138,13 +138,13 @@ export function HomeScreen() {
             {/* Session Mode */}
             <div className="space-y-2">
               <Button
-                onClick={() => setMode('create')}
+                onClick={handleCreateSession}
                 size="lg"
                 fullWidth
                 variant="secondary"
                 disabled={isLoading}
               >
-                {t('home.createSession')}
+                {isLoading ? t('home.creating') : t('home.createSession')}
               </Button>
               <Button
                 onClick={() => setMode('join')}
@@ -159,41 +159,6 @@ export function HomeScreen() {
           </Card>
         )}
 
-        {/* Create Session */}
-        {mode === 'create' && (
-          <Card className="space-y-4">
-            <h2 className="text-xl font-semibold text-center">
-              {t('home.creatingSession')}
-            </h2>
-            <p className="text-sm text-gray-600 text-center">
-              {t('home.createDescription')}
-            </p>
-            <div className="flex gap-2">
-              <Button
-                onClick={handleCreateSession}
-                size="lg"
-                fullWidth
-                disabled={isLoading}
-              >
-                {isLoading ? t('home.creating') : t('home.createSessionButton')}
-              </Button>
-              <Button
-                onClick={() => {
-                  setMode(null)
-                  setError('')
-                }}
-                variant="ghost"
-                size="lg"
-                disabled={isLoading}
-              >
-                {t('common.cancel')}
-              </Button>
-            </div>
-            {error && (
-              <p className="text-sm text-red-600 dark:text-red-400 text-center">{error}</p>
-            )}
-          </Card>
-        )}
 
         {/* Join Session */}
         {mode === 'join' && (
