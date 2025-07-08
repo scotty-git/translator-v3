@@ -49,21 +49,21 @@ export function useBeforeUnload(
 }
 
 /**
- * Simplified hook for session-based warnings
+ * Simplified hook for conversation warnings
  */
-export function useSessionUnloadWarning(
-  hasActiveSession: boolean,
+export function useConversationUnloadWarning(
+  hasActiveConversation: boolean,
   customMessage?: string
 ) {
-  const defaultMessage = customMessage || 'Are you sure you want to leave? You will be disconnected from the session.'
+  const defaultMessage = customMessage || 'Are you sure you want to leave? Your current conversation will be lost.'
   
   useBeforeUnload(
     (event) => {
-      if (hasActiveSession) {
+      if (hasActiveConversation) {
         event.preventDefault()
         event.returnValue = defaultMessage
       }
     },
-    { enabled: hasActiveSession }
+    { enabled: hasActiveConversation }
   )
 }

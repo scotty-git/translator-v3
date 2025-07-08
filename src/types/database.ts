@@ -19,13 +19,11 @@ export interface Database {
 export type MessageStatus = 'queued' | 'processing' | 'displayed' | 'failed'
 
 /**
- * Message interface for solo mode
+ * Message interface for single-device mode
  * Contains all the fields needed for local message handling
  */
 export interface Message {
   id: string
-  session_id: string
-  user_id: string
   original: string
   translation: string | null
   original_lang: string

@@ -444,15 +444,6 @@ export class ErrorManager {
       case ErrorCode.AUDIO_DEVICE_ERROR:
         return 'Microphone problem. Please check your audio device.'
 
-      // Session errors
-      case ErrorCode.SESSION_NOT_FOUND:
-        return 'Session not found. The session may have expired or the code is incorrect.'
-      case ErrorCode.SESSION_EXPIRED:
-        return 'Session expired. Sessions last 4 hours. Please create a new session.'
-      case ErrorCode.SESSION_FULL:
-        return 'Session is full. Maximum 2 people per session.'
-      case ErrorCode.SESSION_INVALID_CODE:
-        return 'Invalid session code. Please check the 4-digit code and try again.'
 
       // Translation errors
       case ErrorCode.TRANSLATION_FAILED:

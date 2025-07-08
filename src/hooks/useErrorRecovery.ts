@@ -95,8 +95,6 @@ export function useErrorRecovery(
       case ErrorCategory.AUDIO:
         return createAudioRecoveryWorkflow(error, baseWorkflow)
       
-      case ErrorCategory.SESSION:
-        return createSessionRecoveryWorkflow(error, baseWorkflow)
       
       case ErrorCategory.API:
         return createAPIRecoveryWorkflow(error, baseWorkflow)
@@ -218,11 +216,11 @@ export function useErrorRecovery(
           errorOnFailure: true
         },
         {
-          id: 'restore-session',
-          title: 'Restore Session',
-          description: 'Reconnecting to your translation session',
+          id: 'restore-conversation',
+          title: 'Restore Conversation',
+          description: 'Reconnecting to your translator',
           action: async () => {
-            // This would integrate with session restoration logic
+            // This would integrate with conversation restoration logic
             await new Promise(resolve => setTimeout(resolve, 1000))
           },
           completed: false,
@@ -288,55 +286,6 @@ export function useErrorRecovery(
     } as RecoveryWorkflow
   }
 
-  /**
-   * Session recovery workflow
-   */
-  const createSessionRecoveryWorkflow = (
-    error: AppError,
-    base: Partial<RecoveryWorkflow>
-  ): RecoveryWorkflow => {
-    return {
-      ...base,
-      title: 'Session Recovery',
-      description: 'Let\'s restore your translation session and get you reconnected.',
-      steps: [
-        {
-          id: 'validate-session',
-          title: 'Validate Session',
-          description: 'Checking if your session is still active',
-          action: async () => {
-            // This would integrate with session validation logic
-            await new Promise(resolve => setTimeout(resolve, 1000))
-          },
-          completed: false,
-          skippable: false
-        },
-        {
-          id: 'reconnect-realtime',
-          title: 'Reconnect Real-time',
-          description: 'Restoring real-time connection with other participants',
-          action: async () => {
-            // This would integrate with Supabase real-time reconnection
-            await new Promise(resolve => setTimeout(resolve, 1500))
-          },
-          completed: false,
-          skippable: false,
-          errorOnFailure: true
-        },
-        {
-          id: 'sync-messages',
-          title: 'Sync Messages',
-          description: 'Synchronizing any missed messages',
-          action: async () => {
-            // This would integrate with message synchronization
-            await new Promise(resolve => setTimeout(resolve, 800))
-          },
-          completed: false,
-          skippable: true
-        }
-      ]
-    } as RecoveryWorkflow
-  }
 
   /**
    * API recovery workflow

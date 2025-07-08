@@ -598,42 +598,6 @@ export function MasterTestSuite() {
     }
   }
 
-  const testPhase4TranslationPipeline = async (): Promise<void> => {
-    const testId = 'p4-translation-pipeline'
-    updateTestResult(testId, { status: 'running' })
-    
-    try {
-      // Test end-to-end translation pipeline readiness
-      const hasApiKey = true // API key validation happens at runtime when needed
-      if (!hasApiKey) {
-        throw new Error('OpenAI API not configured for translation pipeline')
-      }
-      
-      // Test audio recording capability
-      const hasMediaDevices = navigator.mediaDevices && navigator.mediaDevices.getUserMedia
-      if (!hasMediaDevices) {
-        throw new Error('Media devices not available for recording')
-      }
-      
-      // Test speech synthesis
-      const hasSpeechSynthesis = 'speechSynthesis' in window
-      if (!hasSpeechSynthesis) {
-        throw new Error('Speech synthesis not available')
-      }
-      
-      logToConsole(`🔄 Translation pipeline ready for en → es`)
-      updateTestResult(testId, { 
-        status: 'passed', 
-        details: 'End-to-end pipeline: Record → Transcribe → Translate → TTS' 
-      })
-    } catch (error) {
-      logToConsole(`❌ Phase 4 translation pipeline failed: ${error.message}`)
-      updateTestResult(testId, { 
-        status: 'failed', 
-        details: error.message 
-      })
-    }
-  }
 
   const testPhase4CostTracking = async (): Promise<void> => {
     const testId = 'p4-cost-tracking'
@@ -1756,7 +1720,6 @@ export function MasterTestSuite() {
       await testPhase4WhisperTranscription()
       await testPhase4GPTTranslation()
       await testPhase4TTSSynthesis()
-      await testPhase4TranslationPipeline()
       await testPhase4CostTracking()
       
       // Phase 5 Tests

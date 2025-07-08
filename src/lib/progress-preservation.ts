@@ -14,8 +14,6 @@ export interface WorkflowStep {
 
 export interface WorkflowProgress {
   id: string
-  sessionId: string
-  userId: string
   messageId?: string
   steps: WorkflowStep[]
   currentStep: number
@@ -54,16 +52,12 @@ export class ProgressPreservationService {
    * Create a new workflow for tracking
    */
   static createWorkflow(
-    sessionId: string,
-    userId: string,
     steps: Omit<WorkflowStep, 'status' | 'startTime'>[]
   ): string {
     const workflowId = `workflow_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
     
     const workflow: WorkflowProgress = {
       id: workflowId,
-      sessionId,
-      userId,
       steps: steps.map(step => ({
         ...step,
         status: 'pending',

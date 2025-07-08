@@ -20,7 +20,7 @@ const NETWORK_FIRST = [
   '/api/',
   'supabase.co',
   'openai.com',
-  '/session/',
+  '/translator',
   '/conversations',
   '/settings'
 ]
@@ -202,7 +202,7 @@ self.addEventListener('sync', (event) => {
  */
 async function handleBackgroundSync() {
   try {
-    // Sync offline actions (messages, session data, etc.)
+    // Sync offline actions (messages, conversation data, etc.)
     console.log('🔧 [SW] Performing background sync')
     
     // Check for pending messages in IndexedDB

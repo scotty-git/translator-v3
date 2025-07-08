@@ -33,13 +33,6 @@ export enum ErrorCode {
   AUDIO_DEVICE_ERROR = 'AUDIO_DEVICE_ERROR',
   AUDIO_FORMAT_ERROR = 'AUDIO_FORMAT_ERROR',
   
-  // Session errors
-  SESSION_NOT_FOUND = 'SESSION_NOT_FOUND',
-  SESSION_EXPIRED = 'SESSION_EXPIRED',
-  SESSION_FULL = 'SESSION_FULL',
-  SESSION_CREATE_FAILED = 'SESSION_CREATE_FAILED',
-  SESSION_CONNECTION_LOST = 'SESSION_CONNECTION_LOST',
-  SESSION_INVALID_CODE = 'SESSION_INVALID_CODE',
   
   // Translation errors
   TRANSLATION_FAILED = 'TRANSLATION_FAILED',
@@ -117,7 +110,6 @@ export enum ErrorSeverity {
 export enum ErrorCategory {
   NETWORK = 'network',
   AUDIO = 'audio', 
-  SESSION = 'session',
   API = 'api',
   PERMISSION = 'permission',
   STORAGE = 'storage',
@@ -361,67 +353,6 @@ export const ERROR_REGISTRY: Record<ErrorCode, ErrorMetadata> = {
     logToAnalytics: true
   },
 
-  // Session errors
-  [ErrorCode.SESSION_NOT_FOUND]: {
-    code: ErrorCode.SESSION_NOT_FOUND,
-    severity: ErrorSeverity.HIGH,
-    category: ErrorCategory.SESSION,
-    retryable: false,
-    userActionRequired: true,
-    autoRecoverable: false,
-    showToUser: true,
-    logToAnalytics: true
-  },
-  [ErrorCode.SESSION_EXPIRED]: {
-    code: ErrorCode.SESSION_EXPIRED,
-    severity: ErrorSeverity.MEDIUM,
-    category: ErrorCategory.SESSION,
-    retryable: false,
-    userActionRequired: true,
-    autoRecoverable: false,
-    showToUser: true,
-    logToAnalytics: true
-  },
-  [ErrorCode.SESSION_FULL]: {
-    code: ErrorCode.SESSION_FULL,
-    severity: ErrorSeverity.MEDIUM,
-    category: ErrorCategory.SESSION,
-    retryable: false,
-    userActionRequired: true,
-    autoRecoverable: false,
-    showToUser: true,
-    logToAnalytics: true
-  },
-  [ErrorCode.SESSION_CREATE_FAILED]: {
-    code: ErrorCode.SESSION_CREATE_FAILED,
-    severity: ErrorSeverity.HIGH,
-    category: ErrorCategory.SESSION,
-    retryable: true,
-    userActionRequired: false,
-    autoRecoverable: true,
-    showToUser: true,
-    logToAnalytics: true
-  },
-  [ErrorCode.SESSION_CONNECTION_LOST]: {
-    code: ErrorCode.SESSION_CONNECTION_LOST,
-    severity: ErrorSeverity.HIGH,
-    category: ErrorCategory.NETWORK,
-    retryable: true,
-    userActionRequired: false,
-    autoRecoverable: true,
-    showToUser: true,
-    logToAnalytics: true
-  },
-  [ErrorCode.SESSION_INVALID_CODE]: {
-    code: ErrorCode.SESSION_INVALID_CODE,
-    severity: ErrorSeverity.MEDIUM,
-    category: ErrorCategory.USER_INPUT,
-    retryable: false,
-    userActionRequired: true,
-    autoRecoverable: false,
-    showToUser: true,
-    logToAnalytics: false
-  },
 
   // Translation errors
   [ErrorCode.TRANSLATION_FAILED]: {

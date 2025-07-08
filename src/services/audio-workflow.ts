@@ -125,7 +125,7 @@ export class AudioWorkflowService {
    */
   private async processRecording(audioResult: AudioRecordingResult): Promise<void> {
     console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
-    console.log('🎤 [PAIRED SESSION] STARTING AUDIO WORKFLOW PROCESSING')
+    console.log('🎤 [SINGLE DEVICE] STARTING AUDIO WORKFLOW PROCESSING')
     console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
     console.log('📊 AudioWorkflow Info:')
     console.log('   • Audio file size:', audioResult.audioFile.size, 'bytes')
@@ -145,18 +145,18 @@ export class AudioWorkflowService {
       const transcriptionStart = performance.now();
       
       console.log('╔══════════════════════════════════════════════════════════╗')
-      console.log('║          🎧 [PAIRED SESSION] WHISPER PROCESSING          ║')
+      console.log('║          🎧 [SINGLE DEVICE] WHISPER PROCESSING          ║')
       console.log('╚══════════════════════════════════════════════════════════╝')
       
       const whisperContext = ConversationContextManager.buildWhisperContext(this.conversationContext);
       
-      console.log('🎧 Calling Whisper API for paired session...')
+      console.log('🎧 Calling Whisper API for single device...')
       const transcription = await TranscriptionService.transcribe(
         audioResult.audioFile,
         whisperContext
       );
       
-      console.log('🎉 Whisper Response (Paired Session):')
+      console.log('🎉 Whisper Response (Single Device):')
       console.log('   • Transcribed text:', `"${transcription.text}"`)
       console.log('   • Detected language:', transcription.language)
       console.log('   • Audio duration:', transcription.duration, 'seconds')
@@ -169,14 +169,14 @@ export class AudioWorkflowService {
       const translationStart = performance.now();
       
       console.log('╔══════════════════════════════════════════════════════════╗')
-      console.log('║        🌐 [PAIRED SESSION] TRANSLATION PROCESSING        ║')
+      console.log('║        🌐 [SINGLE DEVICE] TRANSLATION PROCESSING        ║')
       console.log('╚══════════════════════════════════════════════════════════╝')
       
       // Determine actual translation direction based on detected language
       let fromLang = this.config.fromLanguage;
       let toLang = this.config.toLanguage;
       
-      console.log('🔍 Language Detection (Paired Session):')
+      console.log('🔍 Language Detection (Single Device):')
       console.log('   • Raw Whisper language:', transcription.language)
       console.log('   • Config FROM language:', this.config.fromLanguage)
       console.log('   • Config TO language:', this.config.toLanguage)
@@ -201,7 +201,7 @@ export class AudioWorkflowService {
       
       // Enhanced translation context using conversation context system
       console.log('')
-      console.log('🔧 Building context for GPT (Paired Session):')
+      console.log('🔧 Building context for GPT (Single Device):')
       const recentMessages = this.conversationContext.map(entry => entry.text).slice(-5);
       console.log('   • Recent messages extracted:', recentMessages.length)
       recentMessages.forEach((msg, i) => {
@@ -214,7 +214,7 @@ export class AudioWorkflowService {
       console.log('   • Conversation context entries:', this.conversationContext.length)
       
       console.log('')
-      console.log('⏳ Calling GPT Translation (Paired Session)...')
+      console.log('⏳ Calling GPT Translation (Single Device)...')
       console.log('   📝 Input:', `"${transcription.text}"`)
       console.log('   🔄 FROM:', fromLang)
       console.log('   🎯 TO:', toLang)
@@ -232,7 +232,7 @@ export class AudioWorkflowService {
         }
       );
       
-      console.log('🎉 Translation Complete (Paired Session)!')
+      console.log('🎉 Translation Complete (Single Device)!')
       console.log('   📝 Original:', `"${translation.originalText}"`)
       console.log('   🌐 Translated:', `"${translation.translatedText}"`)
       console.log('   🔤 From Language:', translation.originalLanguage)
@@ -272,12 +272,12 @@ export class AudioWorkflowService {
 
       console.log('')
       console.log('╔══════════════════════════════════════════════════════════╗')
-      console.log('║      📝 [PAIRED SESSION] UPDATING CONTEXT WINDOW         ║')
+      console.log('║      📝 [SINGLE DEVICE] UPDATING CONTEXT WINDOW         ║')
       console.log('╚══════════════════════════════════════════════════════════╝')
       
       // Update conversation context for future translations
       const detectedLanguageCode = LanguageDetectionService.mapWhisperLanguage(transcription.language);
-      console.log('🔧 Adding to conversation context (Paired Session):')
+      console.log('🔧 Adding to conversation context (Single Device):')
       console.log('   • Original text:', `"${transcription.text}"`)
       console.log('   • Detected language code:', detectedLanguageCode)
       console.log('   • Current context size:', this.conversationContext.length)
@@ -289,9 +289,9 @@ export class AudioWorkflowService {
         Date.now()
       );
       
-      console.log('✅ Context updated (Paired Session)!')
+      console.log('✅ Context updated (Single Device)!')
       console.log('   • New context size:', this.conversationContext.length)
-      console.log('   • Context ready for next session message')
+      console.log('   • Context ready for next conversation message')
 
       // Prepare final result
       const totalDuration = performance.now() - this.startTime;
@@ -314,9 +314,9 @@ export class AudioWorkflowService {
 
       console.log('')
       console.log('🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉')
-      console.log('🎉 [PAIRED SESSION] AUDIO WORKFLOW COMPLETE SUCCESS!')
+      console.log('🎉 [SINGLE DEVICE] AUDIO WORKFLOW COMPLETE SUCCESS!')
       console.log('🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉')
-      console.log('📊 PAIRED SESSION FINAL SUMMARY:')
+      console.log('📊 SINGLE DEVICE FINAL SUMMARY:')
       console.log('   • Original Text:', `"${transcription.text}"`)
       console.log('   • Translated Text:', `"${translation.translatedText}"`)
       console.log('   • From Language:', translation.originalLanguage)
@@ -325,13 +325,13 @@ export class AudioWorkflowService {
       console.log('   • Context Window Size:', this.conversationContext.length, 'messages')
       console.log('   • Total Duration:', totalDuration.toFixed(2), 'ms')
       console.log('')
-      console.log('⏱️  PAIRED SESSION PERFORMANCE:')
+      console.log('⏱️  SINGLE DEVICE PERFORMANCE:')
       console.log('   • Recording Time:', this.stepTimes.recording?.toFixed(2) || '0', 'ms')
       console.log('   • Transcription Time:', this.stepTimes.transcription?.toFixed(2) || '0', 'ms')
       console.log('   • Translation Time:', this.stepTimes.translation?.toFixed(2) || '0', 'ms')
       console.log('   • TTS Time:', this.stepTimes.tts?.toFixed(2) || '0', 'ms')
       console.log('')
-      console.log('🎯 PAIRED SESSION CONTEXT READY FOR NEXT MESSAGE!')
+      console.log('🎯 SINGLE DEVICE CONTEXT READY FOR NEXT MESSAGE!')
       console.log('═══════════════════════════════════════════════════════')
 
       this.onComplete?.(result);
@@ -364,7 +364,7 @@ export class AudioWorkflowService {
   }
 
   /**
-   * Set conversation context from external source (e.g., existing session messages)
+   * Set conversation context from external source (e.g., existing conversation messages)
    */
   setConversationContext(context: ConversationContextEntry[]): void {
     this.conversationContext = ConversationContextManager.sanitizeContext(context);

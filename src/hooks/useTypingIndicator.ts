@@ -1,18 +1,15 @@
 import { useEffect, useRef } from 'react'
 
-export function useTypingIndicator(
-  sessionId: string,
-  userId: string,
-  isTyping: boolean
-) {
+/**
+ * Simple typing indicator for single-device mode
+ * Used for local UI feedback only
+ */
+export function useTypingIndicator(isTyping: boolean) {
   const timeoutRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
-    if (!sessionId) return
-
     if (isTyping) {
-      // In real implementation, would call ActivityService.updateActivity(sessionId, userId, 'typing')
-      console.log('User started typing:', userId)
+      console.log('🔤 User started typing')
       
       // Clear existing timeout
       if (timeoutRef.current) {
@@ -21,12 +18,10 @@ export function useTypingIndicator(
       
       // Set timeout to mark as idle
       timeoutRef.current = setTimeout(() => {
-        // In real implementation: ActivityService.updateActivity(sessionId, userId, 'idle')
-        console.log('User stopped typing:', userId)
+        console.log('💤 User stopped typing')
       }, 3000)
     } else {
-      // Mark as idle
-      console.log('User stopped typing:', userId)
+      console.log('💤 User stopped typing')
       
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current)
@@ -38,5 +33,5 @@ export function useTypingIndicator(
         clearTimeout(timeoutRef.current)
       }
     }
-  }, [sessionId, userId, isTyping])
+  }, [isTyping])
 }
