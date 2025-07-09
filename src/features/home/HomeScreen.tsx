@@ -99,7 +99,7 @@ export function HomeScreen() {
   return (
     <MobileContainer 
       ref={registerPage}
-      className="min-h-screen flex flex-col justify-center py-12 bg-gray-50 dark:bg-gray-900"
+      className="min-h-screen flex flex-col py-20 bg-gray-50 dark:bg-gray-900"
       data-testid="home-screen"
     >
       {/* Top Navigation */}
@@ -130,7 +130,7 @@ export function HomeScreen() {
         </div>
       </div>
       
-      <div className="space-y-8">
+      <div className="space-y-8 mt-16">
         {/* Header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-4">
