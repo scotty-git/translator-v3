@@ -56,42 +56,30 @@ export function SingleDeviceTranslator() {
   }, [])
 
 
-  // Initialize persistent audio manager (like working project)
+  // Set up audio manager callbacks (but don't request permissions yet)
   useEffect(() => {
-    const initializePersistentAudio = async () => {
-      try {
-        console.log('🎙️ Initializing persistent audio manager...')
-        console.log('📱 Device info:', {
-          userAgent: navigator.userAgent,
-          platform: navigator.platform,
-          vendor: navigator.vendor
-        })
-        
-        // Set up event callbacks
-        audioManager.onAudioData = (level: number) => {
-          setAudioLevel(level)
-        }
-        
-        audioManager.onStateChange = (state) => {
-          console.log('🎤 Audio manager state changed:', state)
-        }
-        
-        audioManager.onError = (error) => {
-          console.error('🚨 Audio manager error:', error)
-          setError(error.message)
-        }
-        
-        // Initialize persistent stream (CRITICAL: like working project)
-        await audioManager.initializePersistentStream()
-        
-        console.log('✅ Persistent audio manager initialized successfully')
-      } catch (err) {
-        setError('Failed to initialize audio system. Please check microphone permissions.')
-        console.error('❌ Persistent audio manager initialization failed:', err)
-      }
+    console.log('🎙️ Setting up audio manager callbacks...')
+    console.log('📱 Device info:', {
+      userAgent: navigator.userAgent,
+      platform: navigator.platform,
+      vendor: navigator.vendor
+    })
+    
+    // Set up event callbacks
+    audioManager.onAudioData = (level: number) => {
+      setAudioLevel(level)
     }
     
-    initializePersistentAudio()
+    audioManager.onStateChange = (state) => {
+      console.log('🎤 Audio manager state changed:', state)
+    }
+    
+    audioManager.onError = (error) => {
+      console.error('🚨 Audio manager error:', error)
+      setError(error.message)
+    }
+    
+    console.log('✅ Audio manager callbacks configured')
     
     return () => {
       // Cleanup callbacks (but keep persistent stream alive)
@@ -182,11 +170,22 @@ export function SingleDeviceTranslator() {
       return
     }
     
-    // Check if stream is ready
+    // Check if stream is ready, if not request permissions
     if (!audioManager.isStreamReady()) {
-      console.error('❌ Persistent stream not ready')
-      setError('Audio system not ready. Please refresh the page.')
-      return
+      console.log('⚠️ Stream not ready, requesting permissions...')
+      try {
+        const hasPermissions = await audioManager.ensurePermissions()
+        if (!hasPermissions) {
+          console.error('❌ Failed to get microphone permissions')
+          setError('Microphone permission denied. Please grant permission and try again.')
+          return
+        }
+        console.log('✅ Permissions granted, stream ready')
+      } catch (err) {
+        console.error('❌ Permission error:', err)
+        setError(err instanceof Error ? err.message : 'Failed to access microphone')
+        return
+      }
     }
     
     try {
@@ -1028,7 +1027,8 @@ export function SingleDeviceTranslator() {
                     onClick={async (e) => {
                       console.log('🖱️ RECORDING BUTTON CLICKED!')
                       console.log('   🎤 isRecording:', isRecording)
-                      console.log('   🔧 audioRecorderRef exists:', !!audioRecorderRef.current)
+                      console.log('   🔧 audioManager exists:', !!audioManager)
+                      console.log('   📡 audioManager stream ready:', audioManager.isStreamReady())
                       
                       if (isRecording) {
                         console.log('   ▶️ Calling handleStopRecording()')

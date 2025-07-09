@@ -516,6 +516,34 @@ export class PersistentAudioManager {
     // Reinitialize
     await this.initializePersistentStream()
   }
+
+  /**
+   * Check and request permissions if not already granted
+   */
+  async ensurePermissions(): Promise<boolean> {
+    console.log('🔐 Checking microphone permissions...')
+    
+    // If stream already ready, permissions are granted
+    if (this.streamReady) {
+      console.log('✅ Stream already ready, permissions granted')
+      return true
+    }
+    
+    // If permission was previously denied, need user action
+    if (this.permissionDenied) {
+      console.log('❌ Permission previously denied')
+      throw new Error('Microphone permission denied. Please grant permission and refresh.')
+    }
+    
+    // Try to initialize stream (will request permissions)
+    try {
+      await this.initializePersistentStream()
+      return this.streamReady
+    } catch (error) {
+      console.error('❌ Failed to get permissions:', error)
+      return false
+    }
+  }
   
   /**
    * Get current state

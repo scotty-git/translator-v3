@@ -52,8 +52,8 @@ test.describe('Recording with API Fallback', () => {
     await recordButton.click()
     await page.screenshot({ path: 'test-results/api-fallback-recording.png' })
     
-    // Wait for recording state
-    await expect(page.locator('text=Recording')).toBeVisible({ timeout: 5000 })
+    // Wait for recording state - use more specific selector
+    await expect(page.locator('p:has-text("Recording...")')).toBeVisible({ timeout: 5000 })
     
     console.log('⏱️ Recording for 3 seconds...')
     await page.waitForTimeout(3000)
