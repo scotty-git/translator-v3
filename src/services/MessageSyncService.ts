@@ -36,6 +36,7 @@ export class MessageSyncService {
   private currentSessionId: string | null = null
   private currentUserId: string | null = null
   private connectionStatus: ConnectionStatus = 'disconnected'
+  private subscriptionReady: boolean = false
   
   // Network resilience
   private reconnectAttempts = 0
@@ -210,6 +211,8 @@ export class MessageSyncService {
    * Set up real-time message subscription
    */
   private async setupMessageSubscription(sessionId: string): Promise<void> {
+    console.log('📡 [MessageSyncService] Setting up message subscription for session:', sessionId)
+    
     this.messageChannel = supabase
       .channel(`session:${sessionId}`)
       .on('postgres_changes', {
@@ -218,6 +221,14 @@ export class MessageSyncService {
         table: 'messages',
         filter: `session_id=eq.${sessionId}`
       }, (payload) => {
+        console.log('📨 [MessageSyncService] Postgres INSERT event received:', {
+          messageId: payload.new.id,
+          sessionId: payload.new.session_id,
+          senderId: payload.new.sender_id,
+          currentUserId: this.currentUserId,
+          originalText: payload.new.original_text,
+          translatedText: payload.new.translated_text
+        })
         this.handleIncomingMessage(payload.new as SessionMessage)
       })
       .on('postgres_changes', {
@@ -226,16 +237,41 @@ export class MessageSyncService {
         table: 'messages',
         filter: `session_id=eq.${sessionId}`
       }, (payload) => {
+        console.log('📨 [MessageSyncService] Postgres UPDATE event received:', {
+          messageId: payload.new.id,
+          sessionId: payload.new.session_id,
+          senderId: payload.new.sender_id,
+          isDelivered: payload.new.is_delivered
+        })
         this.handleMessageUpdate(payload.new as SessionMessage)
       })
       .subscribe((status) => {
-        console.log('📡 [MessageSyncService] Message subscription status:', status)
+        console.log('📡 [MessageSyncService] Message subscription status changed:', {
+          status,
+          sessionId,
+          channelName: `session:${sessionId}`,
+          currentUserId: this.currentUserId,
+          timestamp: new Date().toISOString()
+        })
+        
         if (status === 'SUBSCRIBED') {
+          console.log('✅ [MessageSyncService] Message subscription is now ACTIVE')
+          this.subscriptionReady = true
           this.updateConnectionStatus('connected')
+          // Process any queued messages now that subscription is ready
+          setTimeout(() => this.processMessageQueue(), 500)
         } else if (status === 'CLOSED') {
+          console.log('❌ [MessageSyncService] Message subscription CLOSED')
+          this.subscriptionReady = false
+          this.updateConnectionStatus('disconnected')
+        } else if (status === 'CHANNEL_ERROR') {
+          console.error('❌ [MessageSyncService] Message subscription ERROR')
+          this.subscriptionReady = false
           this.updateConnectionStatus('disconnected')
         }
       })
+      
+    console.log('📡 [MessageSyncService] Message subscription setup completed for session:', sessionId)
   }
 
   /**
@@ -344,9 +380,15 @@ export class MessageSyncService {
 
     console.log('📤 [MessageSyncService] Queuing message:', message.id)
 
-    // Try to send immediately if connected
-    if (this.connectionStatus === 'connected') {
+    // Try to send immediately if connected and subscription is ready
+    if (this.connectionStatus === 'connected' && this.subscriptionReady) {
+      console.log('⚡ [MessageSyncService] Subscription ready, sending message immediately')
       await this.attemptSendMessage(sessionMessage)
+    } else {
+      console.log('⏳ [MessageSyncService] Waiting for subscription to be ready:', {
+        connectionStatus: this.connectionStatus,
+        subscriptionReady: this.subscriptionReady
+      })
     }
   }
 
@@ -358,20 +400,33 @@ export class MessageSyncService {
       message.status = 'sending'
       message.lastAttempt = new Date()
       
-      console.log('🚀 [MessageSyncService] Attempting to send message:', message.id)
+      console.log('🚀 [MessageSyncService] Attempting to send message:', {
+        messageId: message.id,
+        sessionId: message.session_id,
+        senderId: message.sender_id,
+        currentSessionId: this.currentSessionId,
+        currentUserId: this.currentUserId,
+        originalText: message.original_text,
+        translatedText: message.translated_text,
+        connectionStatus: this.connectionStatus
+      })
+
+      const insertData = {
+        id: message.id,
+        session_id: message.session_id,
+        sender_id: message.sender_id,
+        original_text: message.original_text,
+        translated_text: message.translated_text,
+        original_language: message.original_language,
+        timestamp: message.timestamp,
+        sequence_number: message.sequence_number
+      }
+      
+      console.log('💾 [MessageSyncService] Inserting message to database:', insertData)
 
       const { data, error } = await supabase
         .from('messages')
-        .insert({
-          id: message.id,
-          session_id: message.session_id,
-          sender_id: message.sender_id,
-          original_text: message.original_text,
-          translated_text: message.translated_text,
-          original_language: message.original_language,
-          timestamp: message.timestamp,
-          sequence_number: message.sequence_number
-        })
+        .insert(insertData)
         .select()
         .single()
 
@@ -434,7 +489,12 @@ export class MessageSyncService {
    * Process all queued messages (called on reconnection)
    */
   private async processMessageQueue(): Promise<void> {
-    if (this.isProcessingQueue || this.connectionStatus !== 'connected') {
+    if (this.isProcessingQueue || this.connectionStatus !== 'connected' || !this.subscriptionReady) {
+      console.log('⏳ [MessageSyncService] Skipping queue processing:', {
+        isProcessingQueue: this.isProcessingQueue,
+        connectionStatus: this.connectionStatus,
+        subscriptionReady: this.subscriptionReady
+      })
       return
     }
 
@@ -460,12 +520,23 @@ export class MessageSyncService {
    * Handle incoming message from real-time subscription
    */
   private handleIncomingMessage(message: SessionMessage): void {
+    console.log('📨 [MessageSyncService] handleIncomingMessage called:', {
+      messageId: message.id,
+      sessionId: message.session_id,
+      senderId: message.sender_id,
+      currentUserId: this.currentUserId,
+      originalText: message.original_text,
+      translatedText: message.translated_text,
+      timestamp: message.timestamp
+    })
+    
     // Don't process our own messages
     if (message.sender_id === this.currentUserId) {
+      console.log('⚠️ [MessageSyncService] Skipping own message:', message.id)
       return
     }
 
-    console.log('📨 [MessageSyncService] Received message:', message.id)
+    console.log('✅ [MessageSyncService] Processing partner message:', message.id)
     this.onMessageReceived?.(message)
   }
 
@@ -621,8 +692,9 @@ export class MessageSyncService {
       console.log('🔌 [MessageSyncService] Connection status:', status)
       this.onConnectionStatusChanged?.(status)
 
-      // Process queue when we reconnect
-      if (status === 'connected') {
+      // Process queue when we reconnect and subscription is ready
+      if (status === 'connected' && this.subscriptionReady) {
+        console.log('🔄 [MessageSyncService] Connection ready, processing queue')
         setTimeout(() => this.processMessageQueue(), 1000)
       }
     }
@@ -647,6 +719,14 @@ export class MessageSyncService {
   }
 
   /**
+   * Validate if a string is a valid UUID format
+   */
+  private isValidUUID(id: string): boolean {
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    return uuidRegex.test(id)
+  }
+
+  /**
    * Load message queue from localStorage
    */
   private loadQueueFromStorage(): void {
@@ -656,14 +736,35 @@ export class MessageSyncService {
         const parsed = JSON.parse(queueData)
         this.messageQueue.clear()
         
+        let loadedCount = 0
+        let skippedCount = 0
+        
         parsed.forEach(({ id, message }: any) => {
+          // Skip messages with invalid UUID format (old timestamp-based IDs)
+          if (!this.isValidUUID(id)) {
+            console.log('⚠️ [MessageSyncService] Skipping invalid UUID message:', id)
+            skippedCount++
+            return
+          }
+          
           this.messageQueue.set(id, {
             ...message,
             lastAttempt: new Date(message.lastAttempt)
           })
+          loadedCount++
         })
         
-        console.log('📦 [MessageSyncService] Loaded queue from storage:', this.messageQueue.size, 'messages')
+        console.log('📦 [MessageSyncService] Loaded queue from storage:', {
+          loaded: loadedCount,
+          skipped: skippedCount,
+          total: parsed.length
+        })
+        
+        // If we skipped any messages, save the cleaned queue back to storage
+        if (skippedCount > 0) {
+          console.log('🧹 [MessageSyncService] Cleaning up localStorage - removing invalid UUID messages')
+          this.saveQueueToStorage()
+        }
       }
     } catch (error) {
       console.error('Failed to load queue from storage:', error)
@@ -765,6 +866,7 @@ export class MessageSyncService {
     this.currentSessionId = null
     this.currentUserId = null
     this.reconnectAttempts = 0
+    this.subscriptionReady = false
 
     this.updateConnectionStatus('disconnected')
   }
