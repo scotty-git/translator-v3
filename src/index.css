@@ -57,3 +57,14 @@ span:not(.text-xs):not(.text-sm):not(.text-lg):not(.text-xl):not(.text-2xl) {
     font-size: var(--font-size-desktop);
   }
 }
+
+/* Secondary text in message bubbles (80% of base size) */
+.message-text-secondary {
+  font-size: calc(var(--font-size-mobile) * 0.8);
+}
+
+@media (min-width: 768px) {
+  .message-text-secondary {
+    font-size: calc(var(--font-size-desktop) * 0.8);
+  }
+}
