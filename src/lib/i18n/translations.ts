@@ -20,6 +20,9 @@ export const translations = {
       subtitle: 'Break language barriers instantly',
       singleDevice: 'Start Translating',
       singleDeviceDescription: 'Perfect for face-to-face conversations. Auto-detects languages.',
+      startSession: 'Start Session',
+      joinSession: 'Join Session',
+      sessionDescription: 'Connect two devices for remote translation. Share the 4-digit code to connect.',
     },
     
     // Settings screen
@@ -123,6 +126,9 @@ export const translations = {
       subtitle: 'Rompe las barreras del idioma al instante',
       singleDevice: 'Comenzar a Traducir',
       singleDeviceDescription: 'Perfecto para conversaciones cara a cara. Detecta idiomas automáticamente.',
+      startSession: 'Iniciar Sesión',
+      joinSession: 'Unirse a Sesión',
+      sessionDescription: 'Conecta dos dispositivos para traducción remota. Comparte el código de 4 dígitos para conectar.',
     },
     
     
@@ -226,6 +232,9 @@ export const translations = {
       subtitle: 'Quebre as barreiras do idioma instantaneamente',
       singleDevice: 'Começar a Traduzir',
       singleDeviceDescription: 'Perfeito para conversas cara a cara. Detecta idiomas automaticamente.',
+      startSession: 'Iniciar Sessão',
+      joinSession: 'Participar da Sessão',
+      sessionDescription: 'Conecte dois dispositivos para tradução remota. Compartilhe o código de 4 dígitos para conectar.',
     },
     
     

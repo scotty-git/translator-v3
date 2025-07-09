@@ -84,6 +84,15 @@ export enum ErrorCode {
   INPUT_TOO_LONG = 'INPUT_TOO_LONG',
   INPUT_INVALID_FORMAT = 'INPUT_INVALID_FORMAT',
   
+  // Session errors
+  SESSION_NOT_FOUND = 'SESSION_NOT_FOUND',
+  SESSION_EXPIRED = 'SESSION_EXPIRED',
+  SESSION_FULL = 'SESSION_FULL',
+  SESSION_CREATE_FAILED = 'SESSION_CREATE_FAILED',
+  SESSION_JOIN_FAILED = 'SESSION_JOIN_FAILED',
+  DATABASE_ERROR = 'DATABASE_ERROR',
+  VALIDATION_ERROR = 'VALIDATION_ERROR',
+  
   // Browser/Device errors
   BROWSER_NOT_SUPPORTED = 'BROWSER_NOT_SUPPORTED',
   DEVICE_ORIENTATION_ERROR = 'DEVICE_ORIENTATION_ERROR',
@@ -753,6 +762,78 @@ export const ERROR_REGISTRY: Record<ErrorCode, ErrorMetadata> = {
     userActionRequired: false,
     autoRecoverable: false,
     showToUser: false,
+    logToAnalytics: false
+  },
+
+  // Session errors
+  [ErrorCode.SESSION_NOT_FOUND]: {
+    code: ErrorCode.SESSION_NOT_FOUND,
+    severity: ErrorSeverity.MEDIUM,
+    category: ErrorCategory.USER_INPUT,
+    retryable: false,
+    userActionRequired: true,
+    autoRecoverable: false,
+    showToUser: true,
+    logToAnalytics: false
+  },
+  [ErrorCode.SESSION_EXPIRED]: {
+    code: ErrorCode.SESSION_EXPIRED,
+    severity: ErrorSeverity.MEDIUM,
+    category: ErrorCategory.SYSTEM,
+    retryable: false,
+    userActionRequired: true,
+    autoRecoverable: false,
+    showToUser: true,
+    logToAnalytics: true
+  },
+  [ErrorCode.SESSION_FULL]: {
+    code: ErrorCode.SESSION_FULL,
+    severity: ErrorSeverity.LOW,
+    category: ErrorCategory.USER_INPUT,
+    retryable: false,
+    userActionRequired: true,
+    autoRecoverable: false,
+    showToUser: true,
+    logToAnalytics: false
+  },
+  [ErrorCode.SESSION_CREATE_FAILED]: {
+    code: ErrorCode.SESSION_CREATE_FAILED,
+    severity: ErrorSeverity.HIGH,
+    category: ErrorCategory.SYSTEM,
+    retryable: true,
+    userActionRequired: false,
+    autoRecoverable: true,
+    showToUser: true,
+    logToAnalytics: true
+  },
+  [ErrorCode.SESSION_JOIN_FAILED]: {
+    code: ErrorCode.SESSION_JOIN_FAILED,
+    severity: ErrorSeverity.MEDIUM,
+    category: ErrorCategory.SYSTEM,
+    retryable: true,
+    userActionRequired: false,
+    autoRecoverable: true,
+    showToUser: true,
+    logToAnalytics: true
+  },
+  [ErrorCode.DATABASE_ERROR]: {
+    code: ErrorCode.DATABASE_ERROR,
+    severity: ErrorSeverity.HIGH,
+    category: ErrorCategory.SYSTEM,
+    retryable: true,
+    userActionRequired: false,
+    autoRecoverable: true,
+    showToUser: true,
+    logToAnalytics: true
+  },
+  [ErrorCode.VALIDATION_ERROR]: {
+    code: ErrorCode.VALIDATION_ERROR,
+    severity: ErrorSeverity.LOW,
+    category: ErrorCategory.USER_INPUT,
+    retryable: false,
+    userActionRequired: true,
+    autoRecoverable: false,
+    showToUser: true,
     logToAnalytics: false
   },
 

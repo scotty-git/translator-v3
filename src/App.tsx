@@ -7,6 +7,7 @@ import { Spinner } from '@/components/ui/Spinner'
 // Lazy load main components for code splitting
 const HomeScreen = lazy(() => import('@/features/home/HomeScreen').then(m => ({ default: m.HomeScreen })))
 const SingleDeviceTranslator = lazy(() => import('@/features/translator/SingleDeviceTranslator').then(m => ({ default: m.SingleDeviceTranslator })))
+const SessionTranslator = lazy(() => import('@/features/translator/SessionTranslator').then(m => ({ default: m.SessionTranslator })))
 
 // Lazy load test components (only loaded when needed)
 const Phase4Test = lazy(() => import('@/features/test/Phase4Test').then(m => ({ default: m.Phase4Test })))
@@ -122,6 +123,7 @@ function App() {
                 </Layout>
               } />
               <Route path="/translator" element={<SingleDeviceTranslator />} />
+              <Route path="/session" element={<SessionTranslator />} />
               <Route path="/test/phase4" element={
                 <Layout>
                   <Phase4Test />

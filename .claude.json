@@ -11,6 +11,13 @@
       "env": {
         "SUPABASE_ACCESS_TOKEN": "sbp_ace62b032309231cd0018277bfff89638c39a0be"
       }
+    },
+    "puppeteer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ]
     }
   }
 }

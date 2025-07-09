@@ -19,7 +19,7 @@ This phase establishes the core foundation for session-based translation, focusi
 - **No lobby screen** - immediate translator access upon joining
 - **Session persistence** - users can rejoin if one person remains connected
 
-### Database Schema (To be run by user)
+### Database Schema (✅ COMPLETED)
 ```sql
 -- Sessions table
 CREATE TABLE sessions (
