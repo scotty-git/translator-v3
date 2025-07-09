@@ -40,7 +40,7 @@ export class UserManager {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
       language: this.detectUserLanguage(),
-      mode: 'casual',
+      mode: 'fun',
       isLeft: Math.random() > 0.5,
     }
     

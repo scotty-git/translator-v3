@@ -114,7 +114,8 @@ export function HomeScreen() {
           >
             <Settings className="h-5 w-5" />
           </Button>
-          <Button
+          {/* Conversations feature - Work in Progress */}
+          {/* <Button
             variant="ghost"
             size="sm"
             onClick={() => navigate('/conversations')}
@@ -122,7 +123,7 @@ export function HomeScreen() {
             ariaLabel="View conversations"
           >
             <MessageSquare className="h-5 w-5" />
-          </Button>
+          </Button> */}
         </div>
         <div className="flex gap-2 items-center">
           <ThemeToggle />

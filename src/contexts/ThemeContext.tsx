@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 
-type Theme = 'light' | 'dark' | 'system'
+type Theme = 'light' | 'dark'
 
 interface ThemeContextType {
   theme: Theme
@@ -12,41 +12,24 @@ const ThemeContext = createContext<ThemeContextType | null>(null)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    if (typeof window === 'undefined') return 'system'
+    if (typeof window === 'undefined') return 'dark'
     const stored = localStorage.getItem('theme') as Theme
-    return stored || 'system'
+    return stored || 'dark'
   })
 
   const [actualTheme, setActualTheme] = useState<'light' | 'dark'>(() => {
-    if (typeof window === 'undefined') return 'light'
+    if (typeof window === 'undefined') return 'dark'
     
     // Initialize immediately to prevent flash
     const stored = localStorage.getItem('theme') as Theme
-    const initialTheme = stored || 'system'
+    const initialTheme = stored || 'dark'
     
-    if (initialTheme === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-    }
     return initialTheme === 'dark' ? 'dark' : 'light'
   })
 
   useEffect(() => {
-    const updateActualTheme = () => {
-      if (theme === 'system') {
-        const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-        setActualTheme(systemTheme)
-      } else {
-        setActualTheme(theme as 'light' | 'dark')
-      }
-    }
-
-    updateActualTheme()
-
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-      mediaQuery.addEventListener('change', updateActualTheme)
-      return () => mediaQuery.removeEventListener('change', updateActualTheme)
-    }
+    // Since we no longer support 'system', directly set the theme
+    setActualTheme(theme)
   }, [theme])
 
   useEffect(() => {
