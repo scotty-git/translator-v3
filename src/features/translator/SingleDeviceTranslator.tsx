@@ -8,7 +8,7 @@ import { MobileContainer } from '@/components/layout/MobileContainer'
 import { MessageBubble } from '@/features/messages/MessageBubble'
 import { ActivityIndicator } from '@/features/messages/ActivityIndicator'
 import { messageQueue, type QueuedMessage } from '@/features/messages/MessageQueue'
-import { AudioRecorderService, type AudioRecordingResult } from '@/services/audio/recorder'
+import { createOptimizedAudioRecorder, type AudioRecordingResult } from '@/services/audio/ios-recorder'
 import { SecureWhisperService as WhisperService } from '@/services/openai/whisper-secure'
 import { SecureTranslationService as TranslationService } from '@/services/openai/translation-secure'
 import { performanceLogger } from '@/lib/performance'
@@ -45,7 +45,7 @@ export function SingleDeviceTranslator() {
     (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
   )
   
-  const audioRecorderRef = useRef<AudioRecorderService | null>(null)
+  const audioRecorderRef = useRef<ReturnType<typeof createOptimizedAudioRecorder> | null>(null)
 
   // Debug logging for conversation context system
   useEffect(() => {
@@ -57,8 +57,10 @@ export function SingleDeviceTranslator() {
   useEffect(() => {
     const initializeRecorder = async () => {
       try {
-        audioRecorderRef.current = new AudioRecorderService({
-          maxDuration: 60 // 1 minute max
+        audioRecorderRef.current = createOptimizedAudioRecorder({
+          maxDuration: 60, // 1 minute max
+          enableIOSOptimizations: true,
+          autoResumeAudioContext: true
         })
         
         // Set up real-time audio visualization callback
@@ -150,7 +152,9 @@ export function SingleDeviceTranslator() {
   }, [])
 
   const handleStartRecording = async () => {
-    if (!audioRecorderRef.current) return
+    if (!audioRecorderRef.current) {
+      return
+    }
     
     try {
       setError(null)
@@ -169,7 +173,8 @@ export function SingleDeviceTranslator() {
       console.log('🎤 Recording started with real-time audio visualization')
       
     } catch (err) {
-      setError('Failed to start recording: ' + (err as Error).message)
+      const errorMsg = (err as Error).message
+      setError(errorMsg)
       setIsRecording(false)
       setCurrentActivity('idle')
       playError()
