@@ -46,11 +46,64 @@ export function SingleDeviceTranslator() {
   )
   
   const audioRecorderRef = useRef<ReturnType<typeof createOptimizedAudioRecorder> | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const [streamReady, setStreamReady] = useState(false)
+  const [permissionDenied, setPermissionDenied] = useState(false)
 
   // Debug logging for conversation context system
   useEffect(() => {
     console.log('🔧 [ConversationContext] SingleDeviceTranslator initialized with conversation context system')
     console.log('📊 [ConversationContext] Initial context state:', conversationContext.length, 'messages')
+  }, [])
+
+  // Request microphone permission immediately on app load
+  useEffect(() => {
+    const initializeMicrophoneAccess = async () => {
+      try {
+        // Check if mediaDevices is available
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          setError('Your browser does not support audio recording. Please use Chrome or Safari.')
+          return
+        }
+
+        // Request microphone permission immediately
+        console.log('🎤 Requesting microphone permission on app load...')
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true
+          }
+        })
+
+        // Keep the stream ready for instant recording
+        streamRef.current = stream
+        setStreamReady(true)
+        setPermissionDenied(false)
+        console.log('✅ Microphone permission granted and stream ready')
+
+      } catch (err: any) {
+        console.error('❌ Microphone permission error:', err)
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          setPermissionDenied(true)
+          setError('Microphone access denied. Please allow microphone permissions to use the translator.')
+        } else if (err.name === 'NotFoundError') {
+          setError('No microphone found on your device.')
+        } else {
+          setError(`Microphone error: ${err.name} - ${err.message}`)
+        }
+      }
+    }
+
+    initializeMicrophoneAccess()
+
+    // Cleanup stream on unmount
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop())
+        streamRef.current = null
+      }
+    }
   }, [])
 
   // Initialize audio recorder
@@ -106,6 +159,29 @@ export function SingleDeviceTranslator() {
     console.log(`🎯 Mode switched to: ${newMode}`)
   }
 
+  const retryMicrophonePermission = async () => {
+    try {
+      setError(null)
+      console.log('🎤 Retrying microphone permission...')
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true
+        }
+      })
+      streamRef.current = stream
+      setStreamReady(true)
+      setPermissionDenied(false)
+      console.log('✅ Microphone permission granted on retry')
+    } catch (err: any) {
+      console.error('❌ Microphone permission retry failed:', err)
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setError('Microphone access still denied. Please check your browser settings.')
+      }
+    }
+  }
+
   // Audio level is now handled by the AudioRecorderService via Web Audio API
   // The onAudioData callback provides real-time audio levels
   
@@ -156,37 +232,15 @@ export function SingleDeviceTranslator() {
       setError('Audio recorder not initialized')
       return
     }
+
+    // Check if we have permission already
+    if (!streamReady) {
+      setError('Microphone permission not granted. Please allow microphone access.')
+      return
+    }
     
     try {
       setError(null)
-      
-      // Check if mediaDevices is available
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        setError('Your browser does not support audio recording. Please use Chrome or Safari.')
-        return
-      }
-      
-      // FIRST - Request microphone permission directly with simple constraints
-      let stream: MediaStream | null = null
-      try {
-        // Simple audio constraints for mobile
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: true,
-          video: false 
-        })
-        // Stop the test stream immediately
-        stream.getTracks().forEach(track => track.stop())
-      } catch (permError: any) {
-        // Check specific error
-        if (permError.name === 'NotAllowedError') {
-          setError('Microphone access denied. Go to browser settings to enable.')
-        } else if (permError.name === 'NotFoundError') {
-          setError('No microphone found on your device.')
-        } else {
-          setError(`Microphone error: ${permError.name} - ${permError.message}`)
-        }
-        return
-      }
       
       // Play recording start sound
       playRecordingStart()
@@ -984,20 +1038,39 @@ export function SingleDeviceTranslator() {
               </div>
             </div>
 
+            {/* Permission Denied UI */}
+            {permissionDenied && !showTextInput && (
+              <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-300 dark:border-yellow-700 rounded-lg text-center">
+                <p className="text-yellow-800 dark:text-yellow-200 text-sm mb-3">
+                  🎤 Microphone access is required to use voice translation
+                </p>
+                <Button
+                  onClick={retryMicrophonePermission}
+                  size="sm"
+                  variant="primary"
+                  className="mx-auto"
+                >
+                  Enable Microphone
+                </Button>
+              </div>
+            )}
+
             {/* Recording Button with Audio Visualization */}
             {!showTextInput && (
               <div className="flex flex-col items-center">
                 <button
                   data-testid="recording-button"
                   onClick={isRecording ? handleStopRecording : handleStartRecording}
-                  disabled={false} // Allow recording even while processing previous messages
+                  disabled={permissionDenied || !streamReady}
                   className={`
                     w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu
                     ${isRecording 
                       ? 'bg-red-500 hover:bg-red-600 scale-110 shadow-lg shadow-red-500/50' 
-                      : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
+                      : permissionDenied || !streamReady
+                        ? 'bg-gray-400 cursor-not-allowed opacity-50'
+                        : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
                     }
-                    active:scale-95
+                    ${!permissionDenied && streamReady ? 'active:scale-95' : ''}
                     text-white
                   `}
                 >

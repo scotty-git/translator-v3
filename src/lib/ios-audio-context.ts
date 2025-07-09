@@ -101,7 +101,9 @@ export class IOSAudioContextManager {
             sampleRate: this.config.sampleRate
           }
 
-          this.audioContext = new AudioContext(contextOptions)
+          // Use webkit fallback for Safari
+          const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext
+          this.audioContext = new AudioContextClass(contextOptions)
 
           // iOS requires resuming the audio context after user interaction
           if (this.audioContext.state === 'suspended') {
