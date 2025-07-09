@@ -273,7 +273,7 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
         <div className="mb-1">
           {/* Primary text (translation) with placeholder handling */}
           <p className={clsx(
-            'message-text leading-relaxed',
+            'message-text text-base leading-relaxed',
             !useOwnMessageStyling && 'text-gray-900 dark:text-gray-100',
             {
               'text-gray-500 italic': message.status === 'queued' && primaryText === '...',
@@ -291,7 +291,7 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
           {/* Secondary text (original) if translation exists */}
           {secondaryText && (
             <p className={clsx(
-              'message-text-secondary mt-1 opacity-70 leading-relaxed',
+              'message-text-secondary text-sm mt-1 opacity-70 leading-relaxed',
               useOwnMessageStyling ? colors.text : 'text-gray-600 dark:text-gray-400'
             )}>
               {secondaryText}

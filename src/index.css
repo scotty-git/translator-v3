@@ -1,70 +1,44 @@
 @import "tailwindcss";
 
-/* Font Size System - based on oldappfeatures.md */
+/* Font Size System for Message Bubbles */
 :root {
-  --font-size-mobile: 16px;
-  --font-size-desktop: 18px;
+  --message-scale: 1;
 }
 
-/* Responsive font sizing classes */
+/* Font size scales - each step is ~25% bigger */
 .font-small {
-  --font-size-mobile: 14px;
-  --font-size-desktop: 16px;
+  --message-scale: 0.9;
 }
 
 .font-medium {
-  --font-size-mobile: 16px;
-  --font-size-desktop: 18px;
+  --message-scale: 1;
 }
 
 .font-large {
-  --font-size-mobile: 20px;
-  --font-size-desktop: 22px;
+  --message-scale: 1.25;
 }
 
 .font-xl {
-  --font-size-mobile: 24px;
-  --font-size-desktop: 28px;
+  --message-scale: 1.5;
 }
 
-/* Apply responsive font sizes to body and text elements */
-body, 
-.text-base,
-.message-text,
-p,
-span:not(.text-xs):not(.text-sm):not(.text-lg):not(.text-xl):not(.text-2xl) {
-  font-size: var(--font-size-mobile);
+/* Apply scaling to message text (primary translation) */
+.message-text {
+  font-size: calc(1rem * var(--message-scale)) !important;
 }
 
-/* Desktop responsiveness */
-@media (min-width: 768px) {
-  body, 
-  .text-base,
-  .message-text,
-  p,
-  span:not(.text-xs):not(.text-sm):not(.text-lg):not(.text-xl):not(.text-2xl) {
-    font-size: var(--font-size-desktop);
-  }
-}
-
-/* Ensure message bubbles use the font size system */
-.message-bubble {
-  font-size: var(--font-size-mobile);
-}
-
-@media (min-width: 768px) {
-  .message-bubble {
-    font-size: var(--font-size-desktop);
-  }
-}
-
-/* Secondary text in message bubbles (80% of base size) */
+/* Apply scaling to secondary text (original) - slightly smaller */
 .message-text-secondary {
-  font-size: calc(var(--font-size-mobile) * 0.8);
+  font-size: calc(0.875rem * var(--message-scale)) !important;
 }
 
-@media (min-width: 768px) {
+/* Mobile adjustments */
+@media (max-width: 640px) {
+  .message-text {
+    font-size: calc(0.9375rem * var(--message-scale)) !important;
+  }
+  
   .message-text-secondary {
-    font-size: calc(var(--font-size-desktop) * 0.8);
+    font-size: calc(0.8125rem * var(--message-scale)) !important;
   }
 }
