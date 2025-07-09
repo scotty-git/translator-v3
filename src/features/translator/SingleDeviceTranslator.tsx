@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Mic, MicOff, Settings, Sun, Moon } from 'lucide-react'
+import { ArrowLeft, Mic, MicOff, Settings, Sun, Moon, Wifi, WifiOff, RotateCcw, Users } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { AudioVisualization } from '@/components/ui/AudioVisualization'
@@ -37,17 +37,54 @@ interface SingleDeviceTranslatorProps {
   messages?: QueuedMessage[]
   isSessionMode?: boolean
   partnerActivity?: 'idle' | 'recording' | 'processing' | 'typing'
+  sessionInfo?: {
+    code: string
+    status: 'connected' | 'connecting' | 'reconnecting' | 'disconnected'
+    partnerOnline: boolean
+  }
 }
 
 export function SingleDeviceTranslator({ 
   onNewMessage, 
   messages: externalMessages, 
   isSessionMode = false,
-  partnerActivity = 'idle'
+  partnerActivity = 'idle',
+  sessionInfo
 }: SingleDeviceTranslatorProps = {}) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { playRecordingStart, playRecordingStop, playTranslationComplete, playError, playMessageSent } = useSounds()
+  
+  // Helper functions for session status
+  const getSessionStatusIcon = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return <Wifi className="h-3 w-3 text-green-600" />
+      case 'connecting':
+        return <Wifi className="h-3 w-3 text-yellow-600 animate-pulse" />
+      case 'reconnecting':
+        return <RotateCcw className="h-3 w-3 text-yellow-600 animate-spin" />
+      case 'disconnected':
+        return <WifiOff className="h-3 w-3 text-red-600" />
+      default:
+        return null
+    }
+  }
+  
+  const getSessionStatusText = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return t('session.connected', 'Connected')
+      case 'connecting':
+        return t('session.connecting', 'Connecting...')
+      case 'reconnecting':
+        return t('session.reconnecting', 'Reconnecting...')
+      case 'disconnected':
+        return t('session.disconnected', 'Disconnected')
+      default:
+        return ''
+    }
+  }
   
   // State
   const [internalMessages, setInternalMessages] = useState<QueuedMessage[]>([])
@@ -1009,6 +1046,36 @@ export function SingleDeviceTranslator({
                 </div>
               </div>
 
+              {/* Center - Session Info (only in session mode) */}
+              {isSessionMode && sessionInfo && (
+                <div className="flex items-center gap-3 text-xs">
+                  {/* Session Code */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gray-600 dark:text-gray-400">Session:</span>
+                    <span className="font-mono font-semibold text-blue-600 dark:text-blue-400 text-sm">
+                      {sessionInfo.code}
+                    </span>
+                  </div>
+                  
+                  {/* Connection Status */}
+                  <div className="flex items-center gap-1.5">
+                    {getSessionStatusIcon(sessionInfo.status)}
+                    <span className="text-gray-600 dark:text-gray-400">{getSessionStatusText(sessionInfo.status)}</span>
+                  </div>
+                  
+                  {/* Partner Status */}
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-3 w-3 text-gray-500" />
+                    <span className={`text-xs ${sessionInfo.partnerOnline ? 'text-green-600' : 'text-gray-500'}`}>
+                      {sessionInfo.partnerOnline 
+                        ? t('session.partnerOnline', 'Partner Online')
+                        : t('session.partnerOffline', 'Waiting for partner...')
+                      }
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Right side - Mode Toggle & Target Language */}
               <div className="flex items-center gap-2">
                 {/* Mode Toggle - Ultra Compact */}
@@ -1048,12 +1115,11 @@ export function SingleDeviceTranslator({
           </div>
         </header>
         
-        {/* Message Area - Takes remaining space with padding for fixed header */}
+        {/* Message Area - Takes remaining space with padding for fixed header and footer */}
         <div className="overflow-y-auto p-4 space-y-4" style={{
-          height: isSessionMode 
-            ? 'calc(100vh - 64px - 64px - 60px)' // Session mode: viewport - session header - translator header - footer
-            : 'calc(100vh - 64px - 60px)', // Solo mode: viewport - translator header - footer
+          height: 'calc(100vh - 64px - 80px)', // Full viewport minus header (64px) and footer (80px)
           marginTop: '64px', // Space for fixed header
+          paddingBottom: '80px', // Space for fixed footer
           touchAction: 'pan-y',
           overscrollBehavior: 'contain',
           WebkitOverflowScrolling: 'touch'
@@ -1124,8 +1190,8 @@ export function SingleDeviceTranslator({
             <div ref={messagesEndRef} />
         </div>
         
-        {/* Recording Controls - Sticky at bottom */}
-        <div className="flex-shrink-0 p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50 sticky bottom-0">
+        {/* Recording Controls - Fixed at bottom */}
+        <div className="fixed bottom-0 left-0 right-0 p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50 z-40">
             {/* Enhanced Error Display */}
             {error && (
               <ErrorDisplay 

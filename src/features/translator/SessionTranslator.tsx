@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import SingleDeviceTranslator from './SingleDeviceTranslator'
-import { SessionHeader } from '@/components/SessionHeader'
 import { Layout } from '@/components/layout/Layout'
 import { sessionManager } from '@/services/SessionManager'
 import { messageSyncService } from '@/services/MessageSyncService'
@@ -307,16 +306,7 @@ export function SessionTranslator() {
         overscrollBehavior: 'none',
         WebkitOverflowScrolling: 'touch'
       }}>
-        {/* Session Header - Fixed at top */}
-        <div className="flex-shrink-0 z-50 fixed top-0 left-0 right-0 h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50">
-          <SessionHeader 
-            code={sessionState.sessionCode}
-            status={connectionStatus}
-            partnerOnline={partnerOnline}
-          />
-        </div>
-        
-        {/* SingleDeviceTranslator - Takes remaining space */}
+        {/* SingleDeviceTranslator - Takes full space with integrated session header */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <SingleDeviceTranslator 
             onNewMessage={handleNewMessage}
@@ -331,6 +321,11 @@ export function SessionTranslator() {
             })()}
             isSessionMode={true}
             partnerActivity={partnerActivity}
+            sessionInfo={{
+              code: sessionState.sessionCode,
+              status: connectionStatus,
+              partnerOnline: partnerOnline
+            }}
           />
         </div>
       </div>
