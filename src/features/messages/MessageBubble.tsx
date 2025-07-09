@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { clsx } from 'clsx'
-import { Check, Clock, AlertCircle, Play, Pause, Loader2, Volume2, Edit3 } from 'lucide-react'
+import { Check, Clock, AlertCircle, Play, Pause, Loader2, Volume2, Edit3, CheckCheck } from 'lucide-react'
 import type { QueuedMessage } from './MessageQueue'
 import { messageQueue } from './MessageQueue'
 import { SecureTTSService as TTSService } from '../../services/openai/tts-secure'
@@ -12,13 +12,20 @@ export interface MessageBubbleProps {
   message: QueuedMessage
   onPlayAudio?: (audioUrl: string) => void
   theme?: 'blue' | 'emerald' | 'purple' | 'rose' | 'amber'
+  currentUserId?: string // For session mode
+  isSessionMode?: boolean
 }
 
 type TTSStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'error'
 
-export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
+export function MessageBubble({ 
+  message, 
+  theme = 'blue', 
+  currentUserId, 
+  isSessionMode = false 
+}: MessageBubbleProps) {
   // In solo mode, use a consistent userId for all messages
-  const userId = 'single-user'
+  const userId = currentUserId || 'single-user'
   const [ttsStatus, setTtsStatus] = useState<TTSStatus>('idle')
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -27,13 +34,22 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const messageRef = useRef<HTMLDivElement | null>(null)
   
-  // In single device mode: English messages on left, other languages on right
-  const isLeftAligned = message.original_lang === 'en' // English on left, Spanish/Portuguese on right
-  
-  // For styling purposes in single-device mode, use language instead of ownership
-  // English messages get "received" styling (gray), Spanish/Portuguese get "sent" styling (colored)
+  // Determine message alignment and styling based on mode
   const isOwnMessage = message.user_id === userId
-  const useOwnMessageStyling = !isLeftAligned // Spanish/Portuguese messages get "own message" styling
+  
+  let isLeftAligned: boolean
+  let useOwnMessageStyling: boolean
+  
+  if (isSessionMode) {
+    // Session mode: Use chat interface pattern
+    // Own messages on right, partner messages on left
+    isLeftAligned = !isOwnMessage
+    useOwnMessageStyling = isOwnMessage
+  } else {
+    // Solo mode: English messages on left, other languages on right
+    isLeftAligned = message.original_lang === 'en'
+    useOwnMessageStyling = !isLeftAligned // Spanish/Portuguese messages get "own message" styling
+  }
 
   // Theme color mappings
   const themeColors = {
@@ -325,7 +341,12 @@ export function MessageBubble({ message, theme = 'blue' }: MessageBubbleProps) {
               <div className="opacity-75">
                 {message.status === 'queued' && <Clock className="h-3 w-3" />}
                 {message.status === 'processing' && <Clock className="h-3 w-3 animate-spin" />}
-                {message.status === 'displayed' && <Check className="h-3 w-3" />}
+                {message.status === 'displayed' && !isSessionMode && <Check className="h-3 w-3" />}
+                {message.status === 'displayed' && isSessionMode && (
+                  // In session mode, show delivery status
+                  // TODO: Add delivery confirmation from MessageSyncService
+                  <CheckCheck className="h-3 w-3 text-green-400" />
+                )}
                 {message.status === 'failed' && <AlertCircle className="h-3 w-3 text-red-400" />}
               </div>
             )}

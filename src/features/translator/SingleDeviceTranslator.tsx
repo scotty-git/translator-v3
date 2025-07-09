@@ -1038,6 +1038,20 @@ export function SingleDeviceTranslator({
                     key={message.id} 
                     message={message} 
                     theme="blue"
+                    currentUserId={(() => {
+                      // Get current user ID from session context or use default
+                      const sessionState = localStorage.getItem('activeSession')
+                      if (sessionState) {
+                        try {
+                          const parsed = JSON.parse(sessionState)
+                          return parsed.userId
+                        } catch (e) {
+                          console.error('Failed to parse session state:', e)
+                        }
+                      }
+                      return 'single-user'
+                    })()}
+                    isSessionMode={isSessionMode}
                   />
                 ))}
               </>

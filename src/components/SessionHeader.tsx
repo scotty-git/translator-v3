@@ -1,9 +1,10 @@
-import { Users, Wifi, WifiOff } from 'lucide-react'
+import { Users, Wifi, WifiOff, RotateCcw } from 'lucide-react'
 import { useTranslation } from '@/lib/i18n/useTranslation'
+import type { ConnectionStatus } from '@/types/database'
 
 interface SessionHeaderProps {
   code: string
-  status: 'connecting' | 'connected' | 'disconnected'
+  status: ConnectionStatus
   partnerOnline: boolean
 }
 
@@ -16,6 +17,8 @@ export function SessionHeader({ code, status, partnerOnline }: SessionHeaderProp
         return <Wifi className="h-3 w-3 text-green-600" />
       case 'connecting':
         return <Wifi className="h-3 w-3 text-yellow-600 animate-pulse" />
+      case 'reconnecting':
+        return <RotateCcw className="h-3 w-3 text-yellow-600 animate-spin" />
       case 'disconnected':
         return <WifiOff className="h-3 w-3 text-red-600" />
     }
@@ -27,19 +30,27 @@ export function SessionHeader({ code, status, partnerOnline }: SessionHeaderProp
         return t('session.connected', 'Connected')
       case 'connecting':
         return t('session.connecting', 'Connecting...')
+      case 'reconnecting':
+        return t('session.reconnecting', 'Reconnecting...')
       case 'disconnected':
         return t('session.disconnected', 'Disconnected')
     }
   }
   
   return (
-    <div className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-4 py-2">
+    <div 
+      className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-4 py-2"
+      data-testid="session-header"
+    >
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-3">
           {/* Session Code */}
           <div className="flex items-center gap-1.5">
             <span className="text-gray-600 dark:text-gray-400">{t('session.code', 'Session:')}</span>
-            <span className="font-mono font-semibold text-blue-600 dark:text-blue-400 text-base">
+            <span 
+              className="font-mono font-semibold text-blue-600 dark:text-blue-400 text-base"
+              data-testid="session-code"
+            >
               {code}
             </span>
           </div>

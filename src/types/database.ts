@@ -9,8 +9,90 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
-      // No Supabase tables needed for solo mode
-      // All data is handled locally in the SingleDeviceTranslator
+      sessions: {
+        Row: {
+          id: string
+          code: string
+          created_at: string
+          expires_at: string
+          is_active: boolean
+        }
+        Insert: {
+          id?: string
+          code: string
+          created_at?: string
+          expires_at?: string
+          is_active?: boolean
+        }
+        Update: {
+          id?: string
+          code?: string
+          created_at?: string
+          expires_at?: string
+          is_active?: boolean
+        }
+      }
+      session_participants: {
+        Row: {
+          id: string
+          session_id: string
+          user_id: string
+          joined_at: string
+          is_online: boolean
+          last_seen: string
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          user_id: string
+          joined_at?: string
+          is_online?: boolean
+          last_seen?: string
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          user_id?: string
+          joined_at?: string
+          is_online?: boolean
+          last_seen?: string
+        }
+      }
+      messages: {
+        Row: {
+          id: string
+          session_id: string
+          sender_id: string
+          original_text: string
+          translated_text: string | null
+          original_language: string
+          timestamp: string
+          is_delivered: boolean
+          sequence_number: number
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          sender_id: string
+          original_text: string
+          translated_text?: string | null
+          original_language: string
+          timestamp?: string
+          is_delivered?: boolean
+          sequence_number?: number
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          sender_id?: string
+          original_text?: string
+          translated_text?: string | null
+          original_language?: string
+          timestamp?: string
+          is_delivered?: boolean
+          sequence_number?: number
+        }
+      }
     }
   }
 }
@@ -119,4 +201,35 @@ export type DefaultReactionEmoji = typeof DEFAULT_REACTION_EMOJIS[number]
 export interface MessageWithReactions extends Message {
   /** Optional emoji reactions for this message */
   reactions?: MessageReactions
+}
+
+// Session-related types
+export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'reconnecting'
+
+export interface SessionMessage {
+  id: string
+  session_id: string
+  sender_id: string
+  original_text: string
+  translated_text: string | null
+  original_language: string
+  timestamp: string
+  is_delivered: boolean
+  sequence_number: number
+}
+
+export interface QueuedSessionMessage {
+  id: string
+  tempId: string
+  session_id: string
+  sender_id: string
+  original_text: string
+  translated_text: string | null
+  original_language: string
+  timestamp: string
+  is_delivered: boolean
+  sequence_number: number
+  status: 'pending' | 'sending' | 'sent' | 'failed'
+  retryCount: number
+  lastAttempt: Date
 }
