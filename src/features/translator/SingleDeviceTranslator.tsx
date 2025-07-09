@@ -8,7 +8,7 @@ import { MobileContainer } from '@/components/layout/MobileContainer'
 import { MessageBubble } from '@/features/messages/MessageBubble'
 import { ActivityIndicator } from '@/features/messages/ActivityIndicator'
 import { messageQueue, type QueuedMessage } from '@/features/messages/MessageQueue'
-import { AudioRecorderService, type AudioRecordingResult } from '@/services/audio/recorder'
+import { persistentAudioManager, type AudioRecordingResult } from '@/services/audio/PersistentAudioManager'
 import { SecureWhisperService as WhisperService } from '@/services/openai/whisper-secure'
 import { SecureTranslationService as TranslationService } from '@/services/openai/translation-secure'
 import { performanceLogger } from '@/lib/performance'
@@ -46,7 +46,8 @@ export function SingleDeviceTranslator() {
     (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)
   )
   
-  const audioRecorderRef = useRef<AudioRecorderService | null>(null)
+  // Using persistent audio manager instead of ref
+  const audioManager = persistentAudioManager
 
   // Debug logging for conversation context system
   useEffect(() => {
@@ -55,68 +56,48 @@ export function SingleDeviceTranslator() {
   }, [])
 
 
-  // Initialize audio recorder and permissions
+  // Initialize persistent audio manager (like working project)
   useEffect(() => {
-    const initializeRecorder = async () => {
+    const initializePersistentAudio = async () => {
       try {
-        console.log('🎙️ Initializing audio recorder...')
+        console.log('🎙️ Initializing persistent audio manager...')
         console.log('📱 Device info:', {
           userAgent: navigator.userAgent,
           platform: navigator.platform,
           vendor: navigator.vendor
         })
         
-        // Request microphone permissions immediately on app load
-        console.log('🔐 Requesting microphone permissions on app load...')
-        try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-          console.log('✅ Microphone permissions granted')
-          // Stop the test stream immediately
-          stream.getTracks().forEach(track => track.stop())
-        } catch (permErr) {
-          console.error('❌ Microphone permissions denied or failed:', permErr)
-          console.error('📋 Permission error details:', {
-            name: permErr.name,
-            message: permErr.message,
-            stack: permErr.stack
-          })
-          // Don't show error immediately - let the user try recording first
-          // The actual recording will handle permission requests
-          console.log('⚠️ Initial permission request failed, but recording will try again when needed')
-        }
-        
-        audioRecorderRef.current = new AudioRecorderService({
-          maxDuration: 60 // 1 minute max
-        })
-        
-        // Set up real-time audio visualization callback
-        audioRecorderRef.current.onAudioData = (level: number) => {
-          console.log('🎚️ Audio level:', level)
+        // Set up event callbacks
+        audioManager.onAudioData = (level: number) => {
           setAudioLevel(level)
         }
         
-        audioRecorderRef.current.onStateChange = (state) => {
-          console.log('🎤 Recorder state changed:', state)
+        audioManager.onStateChange = (state) => {
+          console.log('🎤 Audio manager state changed:', state)
         }
         
-        audioRecorderRef.current.onError = (error) => {
-          console.error('🚨 Recorder error:', error)
+        audioManager.onError = (error) => {
+          console.error('🚨 Audio manager error:', error)
+          setError(error.message)
         }
         
-        console.log('✅ Audio recorder initialized successfully')
+        // Initialize persistent stream (CRITICAL: like working project)
+        await audioManager.initializePersistentStream()
+        
+        console.log('✅ Persistent audio manager initialized successfully')
       } catch (err) {
-        setError('Failed to initialize audio recorder. Please check microphone permissions.')
-        console.error('❌ Audio recorder initialization failed:', err)
+        setError('Failed to initialize audio system. Please check microphone permissions.')
+        console.error('❌ Persistent audio manager initialization failed:', err)
       }
     }
     
-    initializeRecorder()
+    initializePersistentAudio()
     
     return () => {
-      // Cleanup recorder if needed
-      if (audioRecorderRef.current) {
-        audioRecorderRef.current.onAudioData = undefined
-      }
+      // Cleanup callbacks (but keep persistent stream alive)
+      audioManager.onAudioData = undefined
+      audioManager.onStateChange = undefined
+      audioManager.onError = undefined
     }
   }, [])
 
@@ -188,14 +169,12 @@ export function SingleDeviceTranslator() {
 
   const handleStartRecording = async () => {
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🎬 STARTING RECORDING FLOW - MAXIMUM DETAIL LOGGING')
+    console.log('🎬 STARTING RECORDING WITH PERSISTENT STREAM')
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     console.log('📍 handleStartRecording called at:', new Date().toISOString())
     console.log('🎤 isRecording state:', isRecording)
     console.log('⚡ currentActivity state:', currentActivity)
-    console.log('🔧 audioRecorderRef.current exists:', !!audioRecorderRef.current)
-    console.log('📱 Window dimensions:', { width: window.innerWidth, height: window.innerHeight })
-    console.log('🎯 Click origin: Recording button clicked')
+    console.log('🔧 Audio manager ready:', audioManager.isStreamReady())
     
     // Check if already recording
     if (isRecording) {
@@ -203,14 +182,10 @@ export function SingleDeviceTranslator() {
       return
     }
     
-    if (audioRecorderRef.current) {
-      console.log('🎙️ AudioRecorder state:', audioRecorderRef.current.getState())
-      console.log('🔊 AudioRecorder static isSupported:', AudioRecorderService.isSupported())
-    }
-    
-    if (!audioRecorderRef.current) {
-      console.error('❌ Audio recorder not initialized')
-      setError('Audio recorder not initialized')
+    // Check if stream is ready
+    if (!audioManager.isStreamReady()) {
+      console.error('❌ Persistent stream not ready')
+      setError('Audio system not ready. Please refresh the page.')
       return
     }
     
@@ -218,258 +193,17 @@ export function SingleDeviceTranslator() {
       setError(null)
       console.log('🧹 Error state cleared')
       
-      // Device and browser detection
-      const userAgent = navigator.userAgent || ''
-      const isIOS = /iPad|iPhone|iPod/.test(userAgent) && !window.MSStream
-      const isChrome = /Chrome/.test(userAgent)
-      const isSafari = /Safari/.test(userAgent) && !isChrome
+      console.log('🔊 Playing recording start sound...')
+      playRecordingStart()
       
-      console.log('📱 DEVICE & BROWSER DETECTION:')
-      console.log('   📱 User Agent:', userAgent)
-      console.log('   🍎 Is iOS:', isIOS)
-      console.log('   🌐 Is Chrome:', isChrome)
-      console.log('   🦊 Is Safari:', isSafari)
-      console.log('   🏠 Platform:', navigator.platform)
-      console.log('   🏭 Vendor:', navigator.vendor)
+      console.log('⏱️ Starting performance logger...')
+      performanceLogger.start('single-device-recording')
       
-      // Check permissions first
-      console.log('🔐 CHECKING MICROPHONE PERMISSIONS...')
-      try {
-        const permissionStatus = await navigator.permissions.query({ name: 'microphone' as PermissionName })
-        console.log('🔐 Microphone permission state:', permissionStatus.state)
-      } catch (permErr) {
-        console.log('⚠️ Could not check permissions:', permErr)
-      }
+      console.log('🎤 Starting recording with persistent stream...')
+      console.log('   📊 Pre-recording state:', audioManager.getState())
       
-      // Check media devices availability
-      console.log('🎛️ CHECKING MEDIA DEVICES...')
-      if (navigator.mediaDevices) {
-        console.log('✅ navigator.mediaDevices is available')
-        try {
-          const devices = await navigator.mediaDevices.enumerateDevices()
-          const audioInputs = devices.filter(device => device.kind === 'audioinput')
-          console.log('🎤 Audio input devices found:', audioInputs.length)
-          audioInputs.forEach((device, index) => {
-            console.log(`   Device ${index}:`, {
-              deviceId: device.deviceId,
-              label: device.label || 'Unknown',
-              groupId: device.groupId
-            })
-          })
-        } catch (enumErr) {
-          console.error('❌ Error enumerating devices:', enumErr)
-        }
-      } else {
-        console.error('❌ navigator.mediaDevices not available')
-      }
-      
-      // For iOS: Initialize audio context on user interaction (button press)
-      if (isIOS) {
-        console.log('📱 iOS AUDIO CONTEXT INITIALIZATION...')
-        console.log('   🔧 Attempting to initialize audio context on user interaction')
-        
-        try {
-          // Check if AudioContext is available
-          const AudioContext = window.AudioContext || (window as any).webkitAudioContext
-          console.log('   🎛️ AudioContext constructor available:', !!AudioContext)
-          
-          if (AudioContext) {
-            console.log('   🆕 Creating new AudioContext...')
-            const tempContext = new AudioContext()
-            console.log('   📊 AudioContext created with state:', tempContext.state)
-            console.log('   🔢 AudioContext sampleRate:', tempContext.sampleRate)
-            
-            // Resume the context if it's suspended
-            if (tempContext.state === 'suspended') {
-              console.log('   ⏯️ AudioContext is suspended, attempting to resume...')
-              await tempContext.resume()
-              console.log('   ✅ AudioContext resumed, new state:', tempContext.state)
-            }
-            
-            // Create a silent buffer to "unlock" iOS audio
-            console.log('   🔇 Creating silent buffer to unlock iOS audio...')
-            const buffer = tempContext.createBuffer(1, 1, 22050)
-            const source = tempContext.createBufferSource()
-            source.buffer = buffer
-            source.connect(tempContext.destination)
-            source.start(0)
-            console.log('   🎵 Silent audio buffer started')
-            
-            // Clean up
-            setTimeout(() => {
-              console.log('   🧹 Cleaning up temporary AudioContext...')
-              source.disconnect()
-              tempContext.close()
-              console.log('   ✅ Temporary AudioContext cleaned up')
-            }, 100)
-            
-            console.log('   ✅ iOS audio context initialization completed')
-          } else {
-            console.error('   ❌ AudioContext constructor not available')
-          }
-        } catch (iosAudioErr) {
-          console.error('   ❌ iOS audio context initialization failed:', iosAudioErr)
-          console.error('   📋 Error details:', {
-            name: iosAudioErr.name,
-            message: iosAudioErr.message,
-            stack: iosAudioErr.stack
-          })
-        }
-      }
-      
-      console.log('🔊 PLAYING RECORDING START SOUND...')
-      try {
-        playRecordingStart()
-        console.log('✅ Recording start sound played successfully')
-      } catch (soundErr) {
-        console.error('❌ Failed to play recording start sound:', soundErr)
-      }
-      
-      console.log('⏱️ STARTING PERFORMANCE LOGGER...')
-      try {
-        performanceLogger.start('single-device-recording')
-        console.log('✅ Performance logger started')
-      } catch (perfErr) {
-        console.error('❌ Failed to start performance logger:', perfErr)
-      }
-      
-      console.log('🎤 CALLING AUDIO RECORDER START RECORDING...')
-      console.log('   📊 Pre-recording recorder state:', audioRecorderRef.current.getState())
-      
-      try {
-        await audioRecorderRef.current.startRecording()
-        console.log('✅ audioRecorderRef.current.startRecording() completed successfully!')
-        console.log('   📊 Post-recording recorder state:', audioRecorderRef.current.getState())
-      } catch (recorderErr) {
-        console.error('❌ audioRecorderRef.current.startRecording() failed:', recorderErr)
-        console.error('   📋 Recorder error details:', {
-          name: recorderErr.name,
-          message: recorderErr.message,
-          stack: recorderErr.stack
-        })
-        throw recorderErr // Re-throw to be caught by outer try-catch
-      }
-      
-      console.log('🎯 UPDATING REACT STATE...')
-      
-      // Only set recording state AFTER successful start
-      console.log('   ⚡ Setting isRecording to true...')
-      setIsRecording(true)
-      console.log('   ⚡ Setting currentActivity to recording...')
-      setCurrentActivity('recording')
-      
-      // Audio level monitoring is now handled by the AudioRecorderService
-      console.log('🎤 Recording state updated, visualizer should be active')
-      console.log('✅ RECORDING FLOW COMPLETED SUCCESSFULLY!')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      
-    } catch (err) {
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.error('💥 RECORDING FLOW FAILED - DETAILED ERROR ANALYSIS')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.error('❌ Recording failed with error:', err)
-      console.error('📋 Error details:', {
-        name: (err as Error).name,
-        message: (err as Error).message,
-        stack: (err as Error).stack,
-        toString: (err as Error).toString()
-      })
-      
-      // Log current state for debugging
-      console.log('🔍 CURRENT STATE ANALYSIS:')
-      console.log('   🎤 isRecording:', isRecording)
-      console.log('   ⚡ currentActivity:', currentActivity)
-      console.log('   🔧 audioRecorderRef exists:', !!audioRecorderRef.current)
-      
-      if (audioRecorderRef.current) {
-        try {
-          console.log('   📊 Recorder state:', audioRecorderRef.current.getState())
-        } catch (stateErr) {
-          console.error('   ❌ Could not get recorder state:', stateErr)
-        }
-      }
-      
-      // Check if it's a specific type of error
-      const errorMsg = (err as Error).message
-      console.log('📝 Setting error message to UI:', errorMsg)
-      
-      console.log('🔄 RESETTING STATE AFTER ERROR...')
-      setError(errorMsg)
-      setIsRecording(false)
-      setCurrentActivity('idle')
-      
-      console.log('🔊 Playing error sound...')
-      try {
-        playError()
-        console.log('✅ Error sound played')
-      } catch (soundErr) {
-        console.error('❌ Failed to play error sound:', soundErr)
-      }
-      
-      console.log('💥 RECORDING FLOW COMPLETED WITH ERROR')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    }
-  }
-
-  const handleStopRecording = async () => {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🛑 STOPPING RECORDING FLOW - MAXIMUM DETAIL LOGGING')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('📍 handleStopRecording called at:', new Date().toISOString())
-    console.log('🎤 isRecording state:', isRecording)
-    console.log('⚡ currentActivity state:', currentActivity)
-    console.log('🔧 audioRecorderRef.current exists:', !!audioRecorderRef.current)
-    
-    // Pre-validation checks
-    console.log('🔍 PRE-VALIDATION CHECKS:')
-    
-    if (!audioRecorderRef.current) {
-      console.error('❌ audioRecorderRef.current is null/undefined')
-      console.warn('⚠️ Cannot stop - no recorder available')
-      return
-    }
-    
-    if (!isRecording) {
-      console.warn('⚠️ isRecording state is false - UI thinks we are not recording')
-      console.warn('⚠️ Cannot stop - not recording according to state')
-      return
-    }
-    
-    // Check if recorder is actually recording before trying to stop
-    let recorderState: string | undefined
-    try {
-      recorderState = audioRecorderRef.current.getState()
-      console.log('🎤 Recorder internal state:', recorderState)
-    } catch (stateErr) {
-      console.error('❌ Could not get recorder state:', stateErr)
-      recorderState = 'unknown'
-    }
-    
-    if (recorderState !== 'recording') {
-      console.warn('⚠️ Recorder not in recording state, resetting UI')
-      console.log('🔄 Resetting UI state...')
-      // Reset UI state and return
-      setIsRecording(false)
-      setCurrentActivity('idle')
-      console.log('✅ UI state reset completed')
-      return
-    }
-    
-    console.log('✅ All pre-validation checks passed, proceeding to stop recording')
-
-    try {
-      console.log('🛑 Stopping recording...')
-      setIsRecording(false)
-      setCurrentActivity('idle') // Set to idle to allow new recordings
-      
-      // Play recording stop sound
-      playRecordingStop()
-      
-      // Reset audio level to 0
-      resetAudioLevel()
-
-      // Set up completion handler before stopping
-      audioRecorderRef.current.onComplete = async (result: AudioRecordingResult) => {
+      // Set up completion handler
+      audioManager.onComplete = async (result: AudioRecordingResult) => {
         performanceLogger.end('single-device-recording')
         
         // Convert File to Blob for compatibility
@@ -477,24 +211,96 @@ export function SingleDeviceTranslator() {
           type: result.audioFile.type 
         })
         
-        // Process with real OpenAI APIs
+        // Process with OpenAI APIs
         await processAudioMessage(audioBlob)
       }
-
-      audioRecorderRef.current.onError = (error: Error) => {
-        setError('Recording failed: ' + error.message)
-        setCurrentActivity('idle')
-        // Don't need to set isProcessing false anymore
-        playError()
+      
+      // Start recording using persistent stream
+      await audioManager.startRecording()
+      
+      console.log('✅ Recording started successfully!')
+      console.log('   📊 Post-recording state:', audioManager.getState())
+      
+      // Update React state
+      setIsRecording(true)
+      setCurrentActivity('recording')
+      
+      console.log('🎤 Recording state updated, visualizer should be active')
+      console.log('✅ RECORDING FLOW COMPLETED SUCCESSFULLY!')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      
+    } catch (err) {
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.error('💥 RECORDING FLOW FAILED')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.error('❌ Recording failed with error:', err)
+      
+      // Show user-friendly error message
+      if ((err as Error).message.includes('not ready')) {
+        setError('Audio system not ready. Please refresh the page.')
+      } else if ((err as Error).message.includes('Permission denied')) {
+        setError('Please allow microphone access to record audio.')
+      } else {
+        setError('Recording failed. Please check your microphone and try again.')
       }
+      
+      // Reset states
+      setIsRecording(false)
+      setCurrentActivity('idle')
+      resetAudioLevel()
+      playError()
+      
+      console.log('💥 RECORDING FLOW FAILED - Error handling completed')
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    }
+  }
 
-      // Stop recording - this will trigger onComplete
-      await audioRecorderRef.current.stopRecording()
+  const handleStopRecording = async () => {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('🛑 STOPPING RECORDING WITH PERSISTENT STREAM')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.log('📍 handleStopRecording called at:', new Date().toISOString())
+    console.log('🎤 isRecording state:', isRecording)
+    console.log('⚡ currentActivity state:', currentActivity)
+    console.log('🔧 Audio manager state:', audioManager.getState())
+    
+    // Pre-validation checks
+    if (!isRecording) {
+      console.warn('⚠️ Not recording according to state - cannot stop')
+      return
+    }
+    
+    if (audioManager.getState() !== 'recording') {
+      console.warn('⚠️ Audio manager not in recording state, resetting UI')
+      setIsRecording(false)
+      setCurrentActivity('idle')
+      return
+    }
+    
+    console.log('✅ Pre-validation checks passed, proceeding to stop recording')
+
+    try {
+      console.log('🛑 Stopping recording...')
+      
+      // Update UI state immediately
+      setIsRecording(false)
+      setCurrentActivity('idle')
+      
+      // Play recording stop sound
+      playRecordingStop()
+      
+      // Reset audio level to 0
+      resetAudioLevel()
+
+      // Stop recording using persistent stream
+      await audioManager.stopRecording()
+      
+      console.log('✅ Recording stopped successfully')
 
     } catch (err) {
-      setError('Failed to process recording: ' + (err as Error).message)
+      console.error('❌ Failed to stop recording:', err)
+      setError('Failed to stop recording: ' + (err as Error).message)
       setCurrentActivity('idle')
-      // Don't need to set isProcessing false anymore
       playError()
     }
   }

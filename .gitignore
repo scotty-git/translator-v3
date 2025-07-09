@@ -39,3 +39,4 @@ dist/
 
 # Backup files
 *.backup
+test-data/

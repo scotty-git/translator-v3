@@ -1,10 +1,11 @@
 /**
- * OpenAI Proxy Client - Secure API calls through local proxy server
+ * OpenAI Proxy Client - Secure API calls through proxy server
  * This replaces direct OpenAI client calls to hide API keys from browser
  */
 
 export class OpenAIProxyClient {
   private baseUrl = '/api/openai';
+
 
   /**
    * Create chat completion via proxy server
