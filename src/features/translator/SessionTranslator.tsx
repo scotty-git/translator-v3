@@ -80,6 +80,9 @@ export function SessionTranslator() {
       onMessageReceived: (message: SessionMessage) => {
         console.log('📨 [SessionTranslator] Received message from partner:', message.id)
         
+        // Immediately clear partner activity when message is received
+        setPartnerActivity('idle')
+        
         // Convert SessionMessage to QueuedMessage for display
         const queuedMessage: QueuedMessage = {
           id: message.id,
@@ -134,13 +137,6 @@ export function SessionTranslator() {
       onPartnerActivityChanged: (activity: 'idle' | 'recording' | 'processing' | 'typing') => {
         console.log('🎯 [SessionTranslator] Partner activity changed:', activity)
         setPartnerActivity(activity)
-        
-        // Clear processing activity after a delay to avoid persistence
-        if (activity === 'processing') {
-          setTimeout(() => {
-            setPartnerActivity(prev => prev === 'processing' ? 'idle' : prev)
-          }, 3000) // Clear after 3 seconds
-        }
       }
     })
     
