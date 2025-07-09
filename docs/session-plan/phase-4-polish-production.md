@@ -1,56 +1,142 @@
 # Phase 4: Polish & Production Ready
 
 ## Overview
-This final phase transforms the functional session mode into a polished, production-ready feature. We add the finishing touches that make the difference between a prototype and a professional product.
+This final phase transforms the functional session mode into a polished, production-ready feature. Focus on critical UX improvements and production stability.
 
 ## Prerequisites
 - Phases 1-3 completed: Sessions work, UI polished, real-time sync reliable
 - All core functionality tested and stable
 - Network resilience proven through testing
 
-## Goals
-1. Add refined status indicators (typing, recording, processing)
-2. Implement message history persistence and retrieval
-3. Add session management features (leave session, session info)
-4. Implement 12-hour auto-expiry with graceful handling
-5. Performance optimizations for production scale
-6. Polish all edge cases and error states
+## Goals (Prioritized)
+1. **Fix message display UX** - Messages should not appear below footer, auto-scroll on new messages
+2. **Fix font size functionality** - Should affect message bubble text only (both original and translated)
+3. **Implement partner activity indicators** - Use existing ActivityIndicator component
+4. **Audio compression** - Reduce bandwidth usage
+5. **Enhanced error handling** - Production-ready error states
+6. **Message history persistence** - Load previous messages on rejoin
+7. **Session management features** - Leave session, session info
+8. **12-hour auto-expiry** - Graceful session expiration
 
 ## Implementation Details
 
-### 1. Enhanced Status Indicators
+### 1. Fix Message Display UX (CRITICAL)
 
-**Real-time Activity Indicators**:
+**Problem**: Messages can appear below the footer, requiring manual scroll
+**Solution**:
 ```typescript
-// Broadcast when user starts recording
-onRecordingStart: () => {
-  broadcastActivity({ type: 'recording', userId })
-}
+// Auto-scroll to bottom on new message
+useEffect(() => {
+  if (messages.length > 0) {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+}, [messages])
 
-// Broadcast when translation in progress
-onTranslationStart: () => {
-  broadcastActivity({ type: 'translating', userId })
-}
-
-// Show partner activity
-"Partner is recording..." 
-"Partner's message is being translated..."
-"Partner is typing..." (if text mode implemented)
+// Ensure messages container respects footer
+<div className="flex-1 overflow-y-auto pb-[footer-height]">
+  {messages}
+  <div ref={messagesEndRef} />
+</div>
 ```
 
-**Visual Enhancements**:
-- Pulsing dot for recording
-- Animated ellipsis for processing
-- Smooth transitions between states
-- Mobile-optimized indicators
+### 2. Fix Font Size Functionality (CRITICAL)
 
-### 2. Message History Management
-
-**On Session Rejoin**:
+**Problem**: Font size settings don't work, should only affect message text
+**Solution**:
 ```typescript
-async function loadSessionHistory(sessionId: string, userId: string) {
-  // Fetch last 50 messages from Supabase
-  // Restore conversation context
+// In MessageBubble component
+const fontSizeClasses = {
+  small: 'text-sm',
+  medium: 'text-base',
+  large: 'text-lg',
+  xl: 'text-xl'
+}
+
+// Apply to both original and translated text
+<p className={clsx('message-text', fontSizeClasses[fontSize])}>
+  {translatedText}
+</p>
+<p className={clsx('message-text-secondary text-opacity-70', 
+  fontSize === 'small' ? 'text-xs' : 
+  fontSize === 'medium' ? 'text-sm' : 
+  fontSize === 'large' ? 'text-base' : 'text-lg'
+)}>
+  {originalText}
+</p>
+```
+
+### 3. Partner Activity Indicators
+
+**Use existing ActivityIndicator component**:
+```typescript
+// In SessionTranslator
+{partnerActivity && (
+  <ActivityIndicator 
+    activity={partnerActivity} 
+    userName="Partner"
+    isOwnMessage={false}
+  />
+)}
+
+// Broadcast activity via MessageSyncService
+onRecordingStart: () => {
+  messageSyncService.broadcastActivity('recording')
+}
+onProcessing: () => {
+  messageSyncService.broadcastActivity('processing')
+}
+```
+
+### 4. Audio Compression
+
+**Reduce bandwidth usage**:
+```typescript
+// Before sending audio to Whisper
+async function compressAudio(audioBlob: Blob): Promise<Blob> {
+  // Use Web Audio API to downsample
+  // Target: 16kHz, mono (from 48kHz stereo)
+  // Reduces size by ~66%
+  return compressedBlob
+}
+```
+
+### 5. Enhanced Error Handling
+
+**Production-ready error states**:
+```typescript
+// Specific, actionable error messages
+const errorMessages = {
+  SESSION_NOT_FOUND: {
+    title: "Session not found",
+    message: "This session may have expired. Would you like to start a new one?",
+    action: () => navigate('/'),
+    actionText: "Start New Session"
+  },
+  CONNECTION_LOST: {
+    title: "Connection lost",
+    message: "We're trying to reconnect you...",
+    showRetry: true,
+    retryAction: () => messageSyncService.reconnect()
+  },
+  PARTNER_DISCONNECTED: {
+    title: "Partner disconnected",
+    message: "Your partner's connection was interrupted. They can rejoin when ready.",
+    showWaiting: true
+  }
+}
+```
+
+### 6. Message History Persistence
+
+**Load on rejoin**:
+```typescript
+async function loadSessionHistory(sessionId: string) {
+  const { data: messages } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('session_id', sessionId)
+    .order('sequence_number', { ascending: true })
+    .limit(50)
   // Mark messages as read
   // Scroll to last position
 }
@@ -181,44 +267,29 @@ const checkExpiry = () => {
 - High contrast mode support
 - Focus management
 
-## Testing Requirements
+## Testing Focus (User will handle extensive testing)
 
-### Comprehensive E2E Tests (`tests/session-production.spec.ts`)
+### Critical Tests Only
 
-1. **Full User Journey**
-   - Create session
-   - Share code (simulated)
-   - Partner joins
-   - Exchange 10+ messages
-   - Handle disconnection
-   - Reconnect and continue
-   - Graceful session end
-   - Screenshot each step
+1. **Message Display UX**
+   - Verify no messages appear below footer
+   - Confirm auto-scroll works on new messages
+   - Test with 50+ messages
 
-2. **12-Hour Expiry Test**
-   ```typescript
-   // Mock time progression
-   await page.evaluate(() => {
-     Date.now = () => new Date('2024-01-01T11:30:00').getTime()
-   })
-   // Verify 30-minute warning
-   // Verify 5-minute warning
-   // Verify expiry handling
-   ```
+2. **Font Size Settings**
+   - Verify all size options work
+   - Confirm both original and translated text scale
+   - Maintain relative size difference
 
-3. **Load Testing**
-   - 100+ messages in session
-   - Rapid message exchange
-   - Large audio files
-   - Memory usage monitoring
-   - Performance metrics
+3. **Activity Indicators**
+   - Partner recording indicator shows/hides correctly
+   - Processing indicator during translation
+   - Smooth transitions between states
 
-4. **Edge Case Matrix**
-   - Both users leave simultaneously
-   - Rejoin after partner left
-   - Multiple reconnections
-   - Clock skew between devices
-   - Browser back/forward navigation
+4. **Audio Compression**
+   - Verify audio still works after compression
+   - Measure bandwidth reduction
+   - Ensure quality remains acceptable
 
 ### Performance Benchmarks
 - Message delivery < 500ms on 4G
@@ -241,17 +312,17 @@ const checkExpiry = () => {
 3. `/docs/deployment/production-checklist.md` - Deploy requirements
 4. `/docs/api/session-api-reference.md` - Complete API reference
 
-## Success Criteria
-- [ ] All status indicators working smoothly
-- [ ] Message history loads on rejoin
-- [ ] Session management features complete
-- [ ] 12-hour expiry works gracefully
-- [ ] Performance benchmarks met
-- [ ] All edge cases handled
-- [ ] Accessibility standards met
-- [ ] Production error handling complete
-- [ ] All E2E tests passing
-- [ ] Documentation complete
+## Success Criteria (Updated)
+- [ ] **Messages never appear below footer** - Critical UX fix
+- [ ] **Auto-scroll on new messages** - Smooth user experience
+- [ ] **Font size settings working** - All sizes affect message text only
+- [ ] **Partner activity indicators** - Recording/processing states visible
+- [ ] **Audio compression implemented** - ~66% bandwidth reduction
+- [ ] **Enhanced error handling** - Clear, actionable error messages
+- [ ] **Message history on rejoin** - Last 50 messages load
+- [ ] **Session management features** - Leave session, session info
+- [ ] **12-hour expiry handling** - Warnings and graceful expiration
+- [ ] **Performance targets met** - <500ms delivery, smooth UI
 
 ## Production Readiness Checklist
 
@@ -293,6 +364,11 @@ const checkExpiry = () => {
 
 ## Summary
 
-Phase 4 transforms the functional session mode into a polished, production-ready feature that users will love. Every detail has been considered, from graceful error handling to smooth animations. The feature is now ready for real-world use at scale.
+Phase 4 focuses on critical UX improvements and production stability. The priorities have been adjusted based on real user needs:
 
-The implementation maintains the core principle throughout all phases: maximum reuse of existing components with minimal modifications. The session mode feels like a natural extension of the solo translator, not a separate feature.
+1. **Critical UX Fixes**: Message display and font size issues that directly impact usability
+2. **Activity Indicators**: Leverage existing components for partner status
+3. **Performance**: Audio compression for bandwidth efficiency
+4. **Polish**: Enhanced error handling and session management
+
+The implementation continues to maintain the core principle: maximum reuse of existing components with minimal modifications. These targeted improvements will make the session mode truly production-ready.
