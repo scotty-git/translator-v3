@@ -78,7 +78,18 @@ export function SessionTranslator() {
   
   // Handle new messages from SingleDeviceTranslator
   const handleNewMessage = (message: QueuedMessage) => {
-    if (!sessionState) return
+    console.log('🔍 [SessionTranslator] handleNewMessage called with:', {
+      id: message.id,
+      status: message.status,
+      original: message.original,
+      translation: message.translation,
+      sessionState: sessionState ? 'exists' : 'null'
+    })
+    
+    if (!sessionState) {
+      console.warn('⚠️ [SessionTranslator] No session state, ignoring message')
+      return
+    }
     
     // Add session context to message
     const sessionMessage: QueuedMessage = {
@@ -87,28 +98,65 @@ export function SessionTranslator() {
       user_id: sessionState.userId
     }
     
+    console.log('📝 [SessionTranslator] Created session message:', {
+      id: sessionMessage.id,
+      status: sessionMessage.status,
+      original: sessionMessage.original,
+      translation: sessionMessage.translation
+    })
+    
     // Handle message updates properly
     setMessages(prev => {
+      console.log('📊 [SessionTranslator] Current messages before update:', prev.map(m => ({
+        id: m.id,
+        status: m.status,
+        original: m.original,
+        translation: m.translation
+      })))
+      
       const existingIndex = prev.findIndex(m => m.id === message.id)
       if (existingIndex >= 0) {
         // Update existing message
         const updated = [...prev]
+        const oldMessage = updated[existingIndex]
         updated[existingIndex] = sessionMessage
-        console.log('💬 [SessionTranslator] Message updated:', {
+        
+        console.log('🔄 [SessionTranslator] Message updated:', {
+          id: message.id,
+          oldStatus: oldMessage.status,
+          newStatus: sessionMessage.status,
+          oldOriginal: oldMessage.original,
+          newOriginal: sessionMessage.original,
+          oldTranslation: oldMessage.translation,
+          newTranslation: sessionMessage.translation
+        })
+        
+        console.log('📊 [SessionTranslator] Messages after update:', updated.map(m => ({
+          id: m.id,
+          status: m.status,
+          original: m.original,
+          translation: m.translation
+        })))
+        
+        return updated
+      } else {
+        // Add new message
+        const newMessages = [...prev, sessionMessage]
+        console.log('➕ [SessionTranslator] Message added:', {
           id: message.id,
           status: message.status,
           original: message.original,
           translation: message.translation
         })
-        return updated
-      } else {
-        // Add new message
-        console.log('💬 [SessionTranslator] Message added:', {
-          id: message.id,
-          status: message.status,
-          original: message.original
-        })
-        return [...prev, sessionMessage]
+        
+        console.log('📊 [SessionTranslator] Messages after add:', newMessages.map(m => ({
+          id: m.id,
+          status: m.status,
+          original: m.original,
+          translation: m.translation
+        })))
+        
+        return newMessages
       }
     })
   }
@@ -132,7 +180,15 @@ export function SessionTranslator() {
         <div className="flex-1 relative">
           <SingleDeviceTranslator 
             onNewMessage={handleNewMessage}
-            messages={messages}
+            messages={(() => {
+              console.log('🎯 [SessionTranslator] Passing messages to SingleDeviceTranslator:', messages.map(m => ({
+                id: m.id,
+                status: m.status,
+                original: m.original,
+                translation: m.translation
+              })))
+              return messages
+            })()}
             isSessionMode={true}
           />
         </div>

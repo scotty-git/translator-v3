@@ -382,7 +382,12 @@ export function SingleDeviceTranslator({
       // Add message to state based on mode
       if (onNewMessage && externalMessages) {
         // Session mode: notify parent of new message
-        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of new message:', initialMessage.id)
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of new message:', {
+          id: initialMessage.id,
+          status: initialMessage.status,
+          original: initialMessage.original,
+          translation: initialMessage.translation
+        })
         onNewMessage(initialMessage)
       } else {
         // Solo mode: update internal state
@@ -501,7 +506,14 @@ export function SingleDeviceTranslator({
       // Update message based on mode
       if (onNewMessage && externalMessages) {
         // Session mode: notify parent of updated message
-        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of completed message:', finalMessage.id)
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of completed message:', {
+          id: finalMessage.id,
+          status: finalMessage.status,
+          original: finalMessage.original,
+          translation: finalMessage.translation,
+          originalLang: finalMessage.original_lang,
+          targetLang: finalMessage.target_lang
+        })
         onNewMessage(finalMessage)
       } else {
         // Solo mode: update internal state
@@ -601,7 +613,12 @@ export function SingleDeviceTranslator({
       // Add message to state based on mode
       if (onNewMessage && externalMessages) {
         // Session mode: notify parent of new message
-        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of new message:', initialMessage.id)
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of new message:', {
+          id: initialMessage.id,
+          status: initialMessage.status,
+          original: initialMessage.original,
+          translation: initialMessage.translation
+        })
         onNewMessage(initialMessage)
       } else {
         // Solo mode: update internal state
@@ -803,7 +820,14 @@ export function SingleDeviceTranslator({
       // Update message based on mode
       if (onNewMessage && externalMessages) {
         // Session mode: notify parent of updated message
-        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of completed message:', finalMessage.id)
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of completed message:', {
+          id: finalMessage.id,
+          status: finalMessage.status,
+          original: finalMessage.original,
+          translation: finalMessage.translation,
+          originalLang: finalMessage.original_lang,
+          targetLang: finalMessage.target_lang
+        })
         onNewMessage(finalMessage)
       } else {
         // Solo mode: update internal state
