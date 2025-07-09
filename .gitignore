@@ -37,6 +37,9 @@ dist/
 # Claude Code local settings
 .claude/
 
+# MCP configuration (contains sensitive tokens)
+.mcp.json
+
 # Backup files
 *.backup
 test-data/
