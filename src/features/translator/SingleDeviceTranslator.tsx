@@ -159,6 +159,14 @@ export function SingleDeviceTranslator() {
     try {
       setError(null)
       
+      // FIRST - Request microphone permission directly
+      try {
+        await navigator.mediaDevices.getUserMedia({ audio: true })
+      } catch (permError) {
+        setError('Microphone permission denied. Please allow microphone access.')
+        return
+      }
+      
       // Play recording start sound
       playRecordingStart()
       
