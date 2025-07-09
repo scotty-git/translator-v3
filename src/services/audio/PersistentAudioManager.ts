@@ -362,6 +362,13 @@ export class PersistentAudioManager {
     try {
       const duration = (Date.now() - this.startTime) / 1000
       
+      // Check minimum recording duration - mobile devices need longer recordings
+      const minDuration = this.isMobileDevice() ? 0.3 : 0.5
+      if (duration < minDuration) {
+        console.warn('⚠️ Recording too short:', duration.toFixed(2) + 's', '(min:', minDuration + 's)')
+        throw new Error(`Recording too short: ${duration.toFixed(2)}s (minimum: ${minDuration}s)`)
+      }
+      
       // Combine all chunks into single blob
       const audioBlob = new Blob(this.recordingChunks, {
         type: this.supportedFormat!.mimeType || 'audio/webm'
@@ -408,12 +415,21 @@ export class PersistentAudioManager {
       return false
     }
     
-    if (audioBlob.size < 1000) { // Less than 1KB
-      console.error('❌ Invalid audio blob: too small')
+    // Mobile devices (especially iOS) may generate smaller audio blobs
+    const minSize = this.isMobileDevice() ? 100 : 1000
+    if (audioBlob.size < minSize) {
+      console.error('❌ Invalid audio blob: too small -', audioBlob.size, 'bytes (min:', minSize, 'bytes)')
       return false
     }
     
     return true
+  }
+  
+  /**
+   * Detect if running on mobile device
+   */
+  private isMobileDevice(): boolean {
+    return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
   }
   
   /**

@@ -85,29 +85,31 @@ export function SessionTranslator() {
       ...message,
       session_id: sessionState.sessionId,
       user_id: sessionState.userId
-      // In session mode, user's own messages are always on the right
-      // This will be handled by message display logic in Phase 3
     }
     
-    // Add to local messages (will sync in Phase 3)
+    // Handle message updates properly
     setMessages(prev => {
-      // If it's an update to existing message, replace it
       const existingIndex = prev.findIndex(m => m.id === message.id)
       if (existingIndex >= 0) {
+        // Update existing message
         const updated = [...prev]
         updated[existingIndex] = sessionMessage
+        console.log('💬 [SessionTranslator] Message updated:', {
+          id: message.id,
+          status: message.status,
+          original: message.original,
+          translation: message.translation
+        })
         return updated
+      } else {
+        // Add new message
+        console.log('💬 [SessionTranslator] Message added:', {
+          id: message.id,
+          status: message.status,
+          original: message.original
+        })
+        return [...prev, sessionMessage]
       }
-      // Otherwise add new message
-      return [...prev, sessionMessage]
-    })
-    
-    console.log('💬 [SessionTranslator] Message handled:', {
-      id: message.id,
-      text: message.original,
-      sessionId: sessionState.sessionId,
-      userId: sessionState.userId,
-      side: 'right'
     })
   }
   

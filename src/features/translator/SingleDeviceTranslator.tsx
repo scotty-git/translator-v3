@@ -40,45 +40,12 @@ export function SingleDeviceTranslator({
   // Message handling helpers
   const handleMessageUpdate = (updater: (prev: QueuedMessage[]) => QueuedMessage[]) => {
     if (onNewMessage && externalMessages) {
-      // In session mode, calculate the new messages and call the callback
-      const oldMessages = externalMessages
-      const newMessages = updater(externalMessages)
-      
-      // Find which message was added or updated
-      if (newMessages.length > oldMessages.length) {
-        // New message added
-        const latestMessage = newMessages[newMessages.length - 1]
-        if (latestMessage) {
-          console.log('📨 [SessionTranslator] New message added:', latestMessage.id, latestMessage.original)
-          onNewMessage(latestMessage)
-        }
-      } else {
-        // Message updated - find which one changed
-        for (let i = 0; i < newMessages.length; i++) {
-          const oldMessage = oldMessages[i]
-          const newMessage = newMessages[i]
-          
-          // Compare key properties that indicate a message update
-          if (oldMessage && newMessage && (
-            oldMessage.original !== newMessage.original ||
-            oldMessage.translation !== newMessage.translation ||
-            oldMessage.status !== newMessage.status
-          )) {
-            console.log('📨 [SessionTranslator] Message updated:', newMessage.id, {
-              oldStatus: oldMessage.status,
-              newStatus: newMessage.status,
-              oldOriginal: oldMessage.original,
-              newOriginal: newMessage.original,
-              oldTranslation: oldMessage.translation,
-              newTranslation: newMessage.translation
-            })
-            onNewMessage(newMessage)
-            break
-          }
-        }
-      }
+      // Session mode: Don't update external messages directly
+      // Let the parent (SessionTranslator) handle the state
+      // Just notify on specific events via direct onNewMessage calls
+      console.log('📨 [SingleDeviceTranslator] Session mode - message update handled by parent')
     } else {
-      // In solo mode, update internal state
+      // Solo mode: Handle internally (unchanged)
       setInternalMessages(updater)
     }
   }
@@ -294,10 +261,15 @@ export function SingleDeviceTranslator({
       console.error('❌ Recording failed with error:', err)
       
       // Show user-friendly error message
-      if ((err as Error).message.includes('not ready')) {
+      const errorMessage = (err as Error).message
+      if (errorMessage.includes('not ready')) {
         setError('Audio system not ready. Please refresh the page.')
-      } else if ((err as Error).message.includes('Permission denied')) {
+      } else if (errorMessage.includes('Permission denied')) {
         setError('Please allow microphone access to record audio.')
+      } else if (errorMessage.includes('Recording too short')) {
+        setError('Recording too short. Please hold the button longer (minimum 0.5 seconds).')
+      } else if (errorMessage.includes('Invalid audio blob')) {
+        setError('Recording failed. Please try again and hold the button longer.')
       } else {
         setError('Recording failed. Please check your microphone and try again.')
       }
@@ -406,7 +378,16 @@ export function SingleDeviceTranslator({
       }
 
       await messageQueue.add(initialMessage)
-      setMessages(prev => [...prev, initialMessage])
+      
+      // Add message to state based on mode
+      if (onNewMessage && externalMessages) {
+        // Session mode: notify parent of new message
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of new message:', initialMessage.id)
+        onNewMessage(initialMessage)
+      } else {
+        // Solo mode: update internal state
+        setInternalMessages(prev => [...prev, initialMessage])
+      }
 
       // Detect language and determine translation direction
       const translationStart = Date.now()
@@ -516,9 +497,18 @@ export function SingleDeviceTranslator({
       }
 
       await messageQueue.add(finalMessage)
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId ? finalMessage : msg
-      ))
+      
+      // Update message based on mode
+      if (onNewMessage && externalMessages) {
+        // Session mode: notify parent of updated message
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of completed message:', finalMessage.id)
+        onNewMessage(finalMessage)
+      } else {
+        // Solo mode: update internal state
+        setInternalMessages(prev => prev.map(msg => 
+          msg.id === messageId ? finalMessage : msg
+        ))
+      }
 
       // Play message sent sound
       playMessageSent()
@@ -533,9 +523,18 @@ export function SingleDeviceTranslator({
       setError(`Processing failed: ${(err as Error).message}`)
       playError()
       
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
-      ))
+      // Update message to failed state based on mode
+      const failedMessage = { ...messages.find(m => m.id === messageId), status: 'failed' as const }
+      if (onNewMessage && externalMessages) {
+        // Session mode: notify parent of failed message
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of failed message:', messageId)
+        onNewMessage(failedMessage)
+      } else {
+        // Solo mode: update internal state
+        setInternalMessages(prev => prev.map(msg => 
+          msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
+        ))
+      }
     } finally {
       // Don't change global states - allow concurrent messages
       setTimeout(() => setError(null), 5000)
@@ -598,7 +597,16 @@ export function SingleDeviceTranslator({
       }
 
       await messageQueue.add(initialMessage)
-      setMessages(prev => [...prev, initialMessage])
+      
+      // Add message to state based on mode
+      if (onNewMessage && externalMessages) {
+        // Session mode: notify parent of new message
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of new message:', initialMessage.id)
+        onNewMessage(initialMessage)
+      } else {
+        // Solo mode: update internal state
+        setInternalMessages(prev => [...prev, initialMessage])
+      }
 
       // Step 1: Whisper transcription with conversation context
       performanceLogger.start('whisper-transcription')
@@ -791,9 +799,18 @@ export function SingleDeviceTranslator({
       }
 
       await messageQueue.add(finalMessage)
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId ? finalMessage : msg
-      ))
+      
+      // Update message based on mode
+      if (onNewMessage && externalMessages) {
+        // Session mode: notify parent of updated message
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of completed message:', finalMessage.id)
+        onNewMessage(finalMessage)
+      } else {
+        // Solo mode: update internal state
+        setInternalMessages(prev => prev.map(msg => 
+          msg.id === messageId ? finalMessage : msg
+        ))
+      }
 
       // Play message sent sound
       playMessageSent()
@@ -826,10 +843,18 @@ export function SingleDeviceTranslator({
       // Play error sound
       playError()
       
-      // Update message to failed state
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
-      ))
+      // Update message to failed state based on mode
+      const failedMessage = { ...messages.find(m => m.id === messageId), status: 'failed' as const }
+      if (onNewMessage && externalMessages) {
+        // Session mode: notify parent of failed message
+        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of failed message:', messageId)
+        onNewMessage(failedMessage)
+      } else {
+        // Solo mode: update internal state
+        setInternalMessages(prev => prev.map(msg => 
+          msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
+        ))
+      }
     } finally {
       // Don't change global states - let each message process independently
       

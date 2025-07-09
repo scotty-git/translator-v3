@@ -13,10 +13,11 @@
       }
     },
     "puppeteer": {
+      "type": "stdio",
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-puppeteer"
+        "@modelcontextprotocol/server-puppeteer@latest"
       ]
     }
   }
