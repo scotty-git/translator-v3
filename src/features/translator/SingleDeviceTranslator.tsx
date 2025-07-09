@@ -18,13 +18,42 @@ import { useSounds } from '@/lib/sounds/SoundManager'
 import { ConversationContextManager, type ConversationContextEntry } from '@/lib/conversation/ConversationContext'
 import { DebugConsole } from '@/components/debug/DebugConsole'
 
-export function SingleDeviceTranslator() {
+interface SingleDeviceTranslatorProps {
+  onNewMessage?: (message: QueuedMessage) => void
+  messages?: QueuedMessage[]
+  isSessionMode?: boolean
+}
+
+export function SingleDeviceTranslator({ 
+  onNewMessage, 
+  messages: externalMessages, 
+  isSessionMode = false 
+}: SingleDeviceTranslatorProps = {}) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { playRecordingStart, playRecordingStop, playTranslationComplete, playError, playMessageSent } = useSounds()
   
   // State
-  const [messages, setMessages] = useState<QueuedMessage[]>([])
+  const [internalMessages, setInternalMessages] = useState<QueuedMessage[]>([])
+  const messages = externalMessages || internalMessages
+  
+  // Message handling helpers
+  const handleMessageUpdate = (updater: (prev: QueuedMessage[]) => QueuedMessage[]) => {
+    if (onNewMessage && externalMessages) {
+      // In session mode, calculate the new messages and call the callback
+      const newMessages = updater(externalMessages)
+      // Find the new or updated message
+      const latestMessage = newMessages[newMessages.length - 1]
+      if (latestMessage) {
+        onNewMessage(latestMessage)
+      }
+    } else {
+      // In solo mode, update internal state
+      setInternalMessages(updater)
+    }
+  }
+  
+  const setMessages = handleMessageUpdate
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentActivity, setCurrentActivity] = useState<'idle' | 'recording' | 'processing' | 'typing'>('idle')

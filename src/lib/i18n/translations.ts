@@ -103,6 +103,16 @@ export const translations = {
       audioTooShort: 'No speech detected. Please speak clearly.',
       audioTooLong: 'Recording is too long. Please keep it under 5 minutes.',
     },
+    
+    // Session
+    session: {
+      code: 'Session:',
+      connected: 'Connected',
+      connecting: 'Connecting...',
+      disconnected: 'Disconnected',
+      partnerOnline: 'Partner Online',
+      partnerOffline: 'Waiting for partner...',
+    },
   },
   
   es: {
@@ -209,6 +219,16 @@ export const translations = {
       buildDate: 'Fecha de Compilación',
       footer: 'Hecho con ❤️ para comunicación perfecta',
     },
+    
+    // Session
+    session: {
+      code: 'Sesión:',
+      connected: 'Conectado',
+      connecting: 'Conectando...',
+      disconnected: 'Desconectado',
+      partnerOnline: 'Compañero en línea',
+      partnerOffline: 'Esperando al compañero...',
+    },
   },
   
   pt: {
@@ -314,6 +334,16 @@ export const translations = {
       version: 'Versão',
       buildDate: 'Data de Compilação',
       footer: 'Feito com ❤️ para comunicação perfeita',
+    },
+    
+    // Session
+    session: {
+      code: 'Sessão:',
+      connected: 'Conectado',
+      connecting: 'Conectando...',
+      disconnected: 'Desconectado',
+      partnerOnline: 'Parceiro Online',
+      partnerOffline: 'Aguardando parceiro...',
     },
   },
 }
