@@ -1106,7 +1106,7 @@ export function SingleDeviceTranslator({
             {isSessionMode && partnerActivity !== 'idle' && (
               <ActivityIndicator 
                 activity={partnerActivity} 
-                userName={t('translator.partner', 'Partner')}
+                userName="Partner"
                 isOwnMessage={false}
               />
             )}

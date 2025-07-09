@@ -295,18 +295,9 @@ export function MessageBubble({
             fontSize === 'small' ? 'text-sm' : 
             fontSize === 'medium' ? 'text-base' : 
             fontSize === 'large' ? 'text-lg' : 'text-xl',
-            !useOwnMessageStyling && 'text-gray-900 dark:text-gray-100',
-            {
-              'text-gray-500 italic': message.status === 'queued' && primaryText === '...',
-              'text-gray-600 italic': message.status === 'processing' && !message.translation
-            }
+            !useOwnMessageStyling && 'text-gray-900 dark:text-gray-100'
           )}>
-            {message.status === 'queued' && primaryText === '...' ? 
-              'Processing your message...' : 
-              message.status === 'processing' && !message.translation ?
-              'Translating...' :
-              primaryText
-            }
+            {primaryText}
           </p>
           
           {/* Secondary text (original) if translation exists */}

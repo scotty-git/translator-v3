@@ -99,7 +99,7 @@ export function HomeScreen() {
   return (
     <MobileContainer 
       ref={registerPage}
-      className="min-h-screen flex flex-col py-20 bg-gray-50 dark:bg-gray-900"
+      className="min-h-screen flex flex-col py-4 bg-gray-50 dark:bg-gray-900"
       data-testid="home-screen"
     >
       {/* Top Navigation */}
@@ -130,25 +130,19 @@ export function HomeScreen() {
         </div>
       </div>
       
-      <div className="space-y-8 mt-16">
+      <div className="space-y-4 mt-12">
         {/* Header */}
-        <div className="text-center space-y-2">
-          <div className="flex justify-center mb-4">
-            <div className="relative">
-              <Languages className="h-16 w-16 text-blue-600" />
-              <Users className="h-8 w-8 text-blue-500 absolute -bottom-1 -right-1" />
-            </div>
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+        <div className="text-center space-y-1">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {t('home.title')}
           </h1>
-          <p className="text-gray-600 dark:text-gray-300">
+          <p className="text-sm text-gray-600 dark:text-gray-300">
             {t('home.subtitle')}
           </p>
         </div>
 
         {/* Main Actions */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {/* Solo Translator */}
           <Card className="space-y-4 animate-stagger-2">
             <Button
