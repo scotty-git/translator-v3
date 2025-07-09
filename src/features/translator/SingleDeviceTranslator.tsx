@@ -817,10 +817,10 @@ export function SingleDeviceTranslator() {
                       {/* Font Size Setting */}
                       <div className="mb-3">
                         <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">
-                          {t('settings.fontSize', 'Font Size')}
+                          Font Size
                         </label>
-                        <div className="grid grid-cols-3 gap-1">
-                          {(['small', 'medium', 'large'] as const).map((size) => (
+                        <div className="grid grid-cols-4 gap-1">
+                          {(['small', 'medium', 'large', 'xl'] as const).map((size) => (
                             <button
                               key={size}
                               onClick={() => {
@@ -851,7 +851,7 @@ export function SingleDeviceTranslator() {
                           className="w-full flex items-center justify-between px-2 py-1.5 text-xs rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         >
                           <span className="text-gray-700 dark:text-gray-300">
-                            {isDarkMode ? t('settings.lightMode', 'Light Mode') : t('settings.darkMode', 'Dark Mode')}
+                            Theme
                           </span>
                           {isDarkMode ? <Sun className="h-4 w-4 text-yellow-500" /> : <Moon className="h-4 w-4 text-gray-600" />}
                         </button>

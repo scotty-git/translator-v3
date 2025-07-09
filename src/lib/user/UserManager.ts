@@ -331,7 +331,7 @@ export class UserManager {
       small: 'Small',
       medium: 'Medium', 
       large: 'Large',
-      xl: 'Extra Large'
+      xl: 'XL'
     }
     return names[size]
   }

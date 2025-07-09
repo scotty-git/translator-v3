@@ -14,13 +14,16 @@
   - combobox:
     - option "ES" [selected]
     - option "PT"
-  - heading "Ready to Translate" [level=3]
-  - paragraph: Click the button below to start recording and translate between languages automatically.
+  - paragraph: Probando tamaños de fuente.
+  - paragraph: Testing font sizes
+  - text: 01:41 PM
+  - button "Play audio"
+  - button "Edit message"
+  - textbox "Type message..."
+  - button "Send" [disabled]
   - button "Voice"
   - button "Type":
     - img
     - text: Type
-  - button
-  - paragraph: Tap to record
 - paragraph: iPhone 14 Pro Max (390×844)
 ```
