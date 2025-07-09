@@ -153,17 +153,38 @@ export function SingleDeviceTranslator() {
 
   const handleStartRecording = async () => {
     if (!audioRecorderRef.current) {
+      setError('Audio recorder not initialized')
       return
     }
     
     try {
       setError(null)
       
-      // FIRST - Request microphone permission directly
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setError('Your browser does not support audio recording. Please use Chrome or Safari.')
+        return
+      }
+      
+      // FIRST - Request microphone permission directly with simple constraints
+      let stream: MediaStream | null = null
       try {
-        await navigator.mediaDevices.getUserMedia({ audio: true })
-      } catch (permError) {
-        setError('Microphone permission denied. Please allow microphone access.')
+        // Simple audio constraints for mobile
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: true,
+          video: false 
+        })
+        // Stop the test stream immediately
+        stream.getTracks().forEach(track => track.stop())
+      } catch (permError: any) {
+        // Check specific error
+        if (permError.name === 'NotAllowedError') {
+          setError('Microphone access denied. Go to browser settings to enable.')
+        } else if (permError.name === 'NotFoundError') {
+          setError('No microphone found on your device.')
+        } else {
+          setError(`Microphone error: ${permError.name} - ${permError.message}`)
+        }
         return
       }
       
