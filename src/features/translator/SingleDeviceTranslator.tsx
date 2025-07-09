@@ -154,14 +154,16 @@ export function SingleDeviceTranslator() {
     
     try {
       setError(null)
-      setIsRecording(true)
-      setCurrentActivity('recording')
       
       // Play recording start sound
       playRecordingStart()
       
       performanceLogger.start('single-device-recording')
       await audioRecorderRef.current.startRecording()
+      
+      // Only set recording state AFTER successful start
+      setIsRecording(true)
+      setCurrentActivity('recording')
       
       // Audio level monitoring is now handled by the AudioRecorderService
       console.log('🎤 Recording started with real-time audio visualization')
@@ -176,6 +178,14 @@ export function SingleDeviceTranslator() {
 
   const handleStopRecording = async () => {
     if (!audioRecorderRef.current || !isRecording) return
+    
+    // Check if recorder is actually recording before trying to stop
+    if (audioRecorderRef.current.getState() !== 'recording') {
+      // Reset UI state and return
+      setIsRecording(false)
+      setCurrentActivity('idle')
+      return
+    }
 
     try {
       setIsRecording(false)

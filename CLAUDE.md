@@ -1,16 +1,23 @@
-# CLAUDE.md - Project Guide
+:) # CLAUDE.md - Project Guide
 
-## 🎺 AUTO-COMPLETE NOTIFICATION - CONFIGURED WITH HOOKS
+## 🎺 AUTO-COMPLETE NOTIFICATION & CHAT LOGGING SYSTEM
 
-**AUTOMATIC COMPLETION SOUND ACTIVE!**
+**AUTOMATIC FEATURES ACTIVE!**
 
-Claude Code now uses an automated Stop hook that:
-- 🎺 **Plays "Hero" sound** when ALL tasks are complete (70% louder)
+### Chat Logging System v2.0
+- 📁 **Logs Location**: `chat-logs/` directory in each project
+- 🎯 **Auto-Summary**: Generated at message #4, updated every 10 messages
+- 🧹 **Auto-Cleanup**: Logs older than 7 days are automatically removed
+- 🛡️ **Safe Design**: Comprehensive error handling prevents crashes
+
+### Completion Notifications
+- 🎺 **Plays "Hero" sound** when ALL tasks are complete (170% volume)
+- 🗣️ **Voice announcement** of project completion
 - 📝 **Logs completions** to `~/.claude/notification-log.txt`
 
-**Perfect for knowing when Claude is fully done!** No more wondering if work is still in progress.
+**Perfect for tracking conversations and knowing when Claude is done!**
 
-**Note:** This hook is configured in `~/.claude/settings.json` and works across ALL projects.
+**Note:** Hooks are configured in `~/.claude/settings.json` and work across ALL projects.
 
 ---
 
@@ -23,6 +30,7 @@ Claude Code now uses an automated Stop hook that:
 5. [Phase Documentation](#phase-documentation)
 6. [Troubleshooting](#troubleshooting)
 7. [Settings & Configuration](#settings-configuration)
+8. [Chat Logging System](#chat-logging-system)
 
 ---
 
@@ -95,6 +103,9 @@ Generate user-friendly instructions for this app. Analyze ALL features and funct
 
 ### /test-console-logging
 Always put test results and as much debugging info as possible in the browser console with clear formatting and emoji prefixes.
+
+### /pp
+Pre-planning phase for vibe coders. Analyzes your request from multiple perspectives (UX, technical, scope, risks) and asks clarifying questions to maximize understanding before implementation. Perfect for speech-dictated requests that need refinement.
 
 ---
 
@@ -355,6 +366,72 @@ jq '.mcpServers' ~/.claude.json
 
 # Restart Claude Code for changes to take effect
 ```
+
+---
+
+## 📝 Chat Logging System
+
+### Overview
+The chat logging system automatically creates markdown logs of all Claude conversations in each project, with smart summarization and safe file handling.
+
+### Log Structure
+```
+project-root/
+├── chat-logs/
+│   ├── 2025-01-09/
+│   │   ├── chat_2025-01-09_14-30-45.md
+│   │   └── chat_2025-01-09_16-45-22.md
+│   └── .gitignore (auto-created)
+```
+
+### Features
+
+#### 1. **Automatic Logging**
+- Creates timestamped markdown files for each session
+- Organizes by date for easy navigation
+- Includes user messages, Claude responses, and timestamps
+
+#### 2. **Smart Summarization**
+- **First Summary** (at message #4): Captures the initial request
+- **Updated Summary** (every 10 messages): Shows recent conversation topics
+- Helps quickly understand what each log contains
+
+#### 3. **Safety Features**
+- Never writes to system files (protects ~/.claude.json)
+- Validates file permissions before writing
+- Handles special characters and multiline content
+- Uses timeouts to prevent hanging
+- Fails gracefully without crashing Claude
+
+#### 4. **Auto-Cleanup**
+- Removes logs older than 7 days automatically
+- Cleans up empty directories
+- Maintains .gitignore to keep logs out of version control
+
+### Example Log Format
+```markdown
+# Claude Chat Log - Jan 9, 2-30PM
+
+## Summary
+Working on: Help me fix the authentication bug in my app
+
+---
+
+### 🧑 USER (2:30:45 PM)
+> Help me fix the authentication bug in my app
+
+### 🤖 Claude (2:31:02 PM)
+I'll help you debug the authentication issue. Let me first examine...
+
+---
+
+*Session ended at 3:45:22 PM*
+```
+
+### Accessing Logs
+- View current session: `cat chat-logs/[today's-date]/[latest-file].md`
+- Search all logs: `grep -r "search term" chat-logs/`
+- Reference in new sessions: "See chat-logs/2025-01-09/chat_14-30-45.md"
 
 ---
 
