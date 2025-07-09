@@ -41,11 +41,41 @@ export function SingleDeviceTranslator({
   const handleMessageUpdate = (updater: (prev: QueuedMessage[]) => QueuedMessage[]) => {
     if (onNewMessage && externalMessages) {
       // In session mode, calculate the new messages and call the callback
+      const oldMessages = externalMessages
       const newMessages = updater(externalMessages)
-      // Find the new or updated message
-      const latestMessage = newMessages[newMessages.length - 1]
-      if (latestMessage) {
-        onNewMessage(latestMessage)
+      
+      // Find which message was added or updated
+      if (newMessages.length > oldMessages.length) {
+        // New message added
+        const latestMessage = newMessages[newMessages.length - 1]
+        if (latestMessage) {
+          console.log('📨 [SessionTranslator] New message added:', latestMessage.id, latestMessage.original)
+          onNewMessage(latestMessage)
+        }
+      } else {
+        // Message updated - find which one changed
+        for (let i = 0; i < newMessages.length; i++) {
+          const oldMessage = oldMessages[i]
+          const newMessage = newMessages[i]
+          
+          // Compare key properties that indicate a message update
+          if (oldMessage && newMessage && (
+            oldMessage.original !== newMessage.original ||
+            oldMessage.translation !== newMessage.translation ||
+            oldMessage.status !== newMessage.status
+          )) {
+            console.log('📨 [SessionTranslator] Message updated:', newMessage.id, {
+              oldStatus: oldMessage.status,
+              newStatus: newMessage.status,
+              oldOriginal: oldMessage.original,
+              newOriginal: newMessage.original,
+              oldTranslation: oldMessage.translation,
+              newTranslation: newMessage.translation
+            })
+            onNewMessage(newMessage)
+            break
+          }
+        }
       }
     } else {
       // In solo mode, update internal state
