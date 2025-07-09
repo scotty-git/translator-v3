@@ -144,9 +144,15 @@ export function SessionTranslator() {
         // Add this user as participant
         await sessionManager.addParticipant(sessionState.sessionId, sessionState.userId)
         
-        // Initialize MessageSyncService
+        // Initialize MessageSyncService  
         await messageSyncService.initializeSession(sessionState.sessionId, sessionState.userId)
         console.log('✅ [SessionTranslator] Real-time sync initialized')
+        
+        // Force a session readiness check after initialization
+        setTimeout(() => {
+          console.log('🔄 [SessionTranslator] Running delayed session readiness check...')
+          messageSyncService.validateSessionReady?.()
+        }, 2000)
       } catch (error) {
         console.error('❌ [SessionTranslator] Failed to initialize real-time sync:', error)
         setConnectionStatus('disconnected')
@@ -267,7 +273,12 @@ export function SessionTranslator() {
         console.log('📤 [SessionTranslator] Sending message to MessageSyncService:', message.id)
         await messageSyncService.sendMessage(message)
       } catch (error) {
-        console.error('❌ [SessionTranslator] Failed to send message:', error)
+        console.error('❌ [SessionTranslator] Failed to send message:', {
+          messageId: message.id,
+          error: error instanceof Error ? error.message : String(error),
+          errorDetails: error,
+          sessionState: sessionState ? 'exists' : 'null'
+        })
       }
     }
   }

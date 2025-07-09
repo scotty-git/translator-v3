@@ -170,15 +170,16 @@ export class MessageSyncService {
    * Initialize session with real-time subscriptions
    */
   async initializeSession(sessionId: string, userId: string): Promise<void> {
-    console.log('🔗 [MessageSyncService] Initializing session:', sessionId)
+    console.log('🔗 [MessageSyncService] Initializing session:', { sessionId, userId })
     
     this.currentSessionId = sessionId
     this.currentUserId = userId
+    console.log('📝 [MessageSyncService] Set current user ID:', this.currentUserId)
     this.updateConnectionStatus('connecting')
 
     try {
-      // Clean up existing subscriptions
-      await this.cleanup()
+      // Clean up existing subscriptions (but preserve session info)
+      await this.cleanupSubscriptions()
 
       // Set up message subscription
       await this.setupMessageSubscription(sessionId)
@@ -186,14 +187,17 @@ export class MessageSyncService {
       // Set up presence subscription
       await this.setupPresenceSubscription(sessionId, userId)
 
-      // Add user as participant
-      await this.addUserToSession(sessionId, userId)
+      // Note: User participant management is handled by SessionManager
+      // No need to add user here as it causes duplicate key conflicts
 
       // Process any queued messages
       await this.processMessageQueue()
 
       this.updateConnectionStatus('connected')
       console.log('✅ [MessageSyncService] Session initialized successfully')
+      
+      // Check if we need to validate partner presence
+      await this.validateSessionReady()
       
     } catch (error) {
       console.error('❌ [MessageSyncService] Failed to initialize session:', error)
@@ -244,14 +248,17 @@ export class MessageSyncService {
         const state = this.presenceChannel?.presenceState()
         console.log('👥 [MessageSyncService] Presence sync:', state)
         this.updatePartnerPresence(state)
+        this.validateSessionReady()
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
         console.log('👋 [MessageSyncService] User joined:', key, newPresences)
         this.updatePartnerPresence(this.presenceChannel?.presenceState())
+        this.validateSessionReady()
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
         console.log('👋 [MessageSyncService] User left:', key, leftPresences)
         this.updatePartnerPresence(this.presenceChannel?.presenceState())
+        this.validateSessionReady()
       })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
@@ -275,6 +282,34 @@ export class MessageSyncService {
     // Validate message content
     if (!message.original || message.original.trim().length === 0) {
       throw new Error('Message content cannot be empty')
+    }
+
+    // Check if session is ready for messaging (both users connected)
+    try {
+      const { data: participants, error } = await supabase
+        .from('session_participants')
+        .select('user_id, is_online')
+        .eq('session_id', this.currentSessionId)
+
+      if (error) {
+        console.error('❌ [MessageSyncService] Failed to check session participants:', error)
+        throw new Error('Failed to validate session state')
+      }
+
+      if (!participants || participants.length < 2) {
+        console.log('⚠️ [MessageSyncService] Session not ready - waiting for partner to join')
+        throw new Error('Session not ready - waiting for partner to join')
+      }
+
+      const partnerOnline = participants.some(p => p.user_id !== this.currentUserId && p.is_online)
+      if (!partnerOnline) {
+        console.log('⚠️ [MessageSyncService] Partner not online - queuing message')
+        // Don't throw error here - we'll queue the message for later delivery
+      }
+
+    } catch (error) {
+      // If validation fails, still queue the message for retry
+      console.warn('⚠️ [MessageSyncService] Session validation failed, queuing message for retry:', error)
     }
     
     // Check if queue is full (prevent memory issues)
@@ -341,6 +376,24 @@ export class MessageSyncService {
         .single()
 
       if (error) {
+        // Handle specific database conflicts
+        if (error.code === '23505') {
+          console.warn('⚠️ [MessageSyncService] Duplicate message detected:', message.id)
+          // Mark as sent since it's already in the database
+          message.status = 'sent'
+          message.is_delivered = true
+          this.messageQueue.delete(message.id)
+          this.saveQueueToStorage()
+          this.onMessageDelivered?.(message.id)
+          return
+        }
+        
+        // Handle other specific error codes
+        if (error.code === '23503') {
+          console.error('❌ [MessageSyncService] Foreign key constraint violation:', error.message)
+          throw new Error('Session or user not found')
+        }
+        
         throw error
       }
 
@@ -432,34 +485,130 @@ export class MessageSyncService {
    * Update partner presence based on channel state
    */
   private updatePartnerPresence(presenceState: any): void {
-    if (!presenceState || !this.currentUserId) return
-
-    const allUsers = Object.keys(presenceState)
-    const partnerOnline = allUsers.some(key => {
-      const presences = presenceState[key]
-      return presences.some((p: any) => p.user_id !== this.currentUserId)
+    console.log('👥 [MessageSyncService] updatePartnerPresence called:', {
+      hasPresenceState: !!presenceState,
+      currentUserId: this.currentUserId,
+      presenceKeys: presenceState ? Object.keys(presenceState) : 'none'
     })
 
-    console.log('👥 [MessageSyncService] Partner online:', partnerOnline)
+    if (!presenceState || !this.currentUserId) {
+      console.log('❌ [MessageSyncService] Missing presence state or user ID:', {
+        presenceState: !!presenceState,
+        currentUserId: this.currentUserId
+      })
+      this.onPartnerPresenceChanged?.(false)
+      return
+    }
+
+    console.log('👥 [MessageSyncService] Checking presence state:', {
+      presenceState,
+      currentUserId: this.currentUserId,
+      allKeys: Object.keys(presenceState)
+    })
+
+    // Check if there are any other users present besides the current user
+    const otherUsers = Object.keys(presenceState).filter(key => {
+      const presences = presenceState[key]
+      return Array.isArray(presences) && presences.some((p: any) => {
+        console.log('👥 [MessageSyncService] Checking presence:', { key, presence: p })
+        return p && p.user_id && p.user_id !== this.currentUserId
+      })
+    })
+
+    const partnerOnline = otherUsers.length > 0
+
+    console.log('👥 [MessageSyncService] Partner presence check:', {
+      otherUsers,
+      partnerOnline,
+      currentUserId: this.currentUserId
+    })
+
     this.onPartnerPresenceChanged?.(partnerOnline)
   }
 
   /**
-   * Add user as session participant
+   * Validate if session is ready for both users (public for external calling)
    */
-  private async addUserToSession(sessionId: string, userId: string): Promise<void> {
+  async validateSessionReady(): Promise<void> {
+    console.log('🔍 [MessageSyncService] validateSessionReady called:', {
+      currentSessionId: this.currentSessionId,
+      currentUserId: this.currentUserId
+    })
+
+    if (!this.currentSessionId || !this.currentUserId) {
+      console.log('❌ [MessageSyncService] Missing session ID or user ID for validation')
+      return
+    }
+
     try {
-      await supabase
+      // Check how many participants are in the session
+      const { data: participants, error } = await supabase
         .from('session_participants')
-        .upsert({
-          session_id: sessionId,
-          user_id: userId,
-          is_online: true,
+        .select('user_id, is_online')
+        .eq('session_id', this.currentSessionId)
+
+      if (error) {
+        console.error('❌ [MessageSyncService] Failed to validate session participants:', error)
+        return
+      }
+
+      console.log('🔍 [MessageSyncService] Session participants check:', {
+        sessionId: this.currentSessionId,
+        currentUserId: this.currentUserId,
+        participants: participants?.map(p => ({ user_id: p.user_id, is_online: p.is_online })),
+        participantCount: participants?.length
+      })
+
+      // If we have less than 2 participants, keep waiting
+      if (!participants || participants.length < 2) {
+        console.log('👥 [MessageSyncService] Waiting for partner to join...')
+        this.onPartnerPresenceChanged?.(false)
+        return
+      }
+
+      // Check if both participants are online
+      const allOnline = participants.every(p => p.is_online)
+      const partnerOnline = participants.some(p => p.user_id !== this.currentUserId && p.is_online)
+
+      console.log('🔍 [MessageSyncService] Session readiness check:', {
+        allOnline,
+        partnerOnline,
+        participants: participants.map(p => ({ user_id: p.user_id, is_online: p.is_online }))
+      })
+
+      this.onPartnerPresenceChanged?.(partnerOnline)
+
+    } catch (error) {
+      console.error('❌ [MessageSyncService] Failed to validate session readiness:', error)
+    }
+  }
+
+  /**
+   * Update user online status in session (called by SessionManager only)
+   */
+  async updateUserOnlineStatus(sessionId: string, userId: string, isOnline: boolean): Promise<void> {
+    try {
+      console.log('👤 [MessageSyncService] Updating user online status:', { sessionId, userId, isOnline })
+      
+      const { error } = await supabase
+        .from('session_participants')
+        .update({
+          is_online: isOnline,
           last_seen: new Date().toISOString()
         })
+        .eq('session_id', sessionId)
+        .eq('user_id', userId)
+      
+      if (error) {
+        console.error('❌ [MessageSyncService] Failed to update user online status:', error)
+        throw error
+      }
+      
+      console.log('✅ [MessageSyncService] User online status updated successfully')
+      
     } catch (error) {
-      console.error('Failed to add user to session:', error)
-      // Don't throw here as this isn't critical for basic functionality
+      console.error('❌ [MessageSyncService] Critical error updating user online status:', error)
+      throw error
     }
   }
 
@@ -561,10 +710,10 @@ export class MessageSyncService {
   }
 
   /**
-   * Clean up subscriptions and resources
+   * Clean up only subscriptions (used during initialization)
    */
-  async cleanup(): Promise<void> {
-    console.log('🧹 [MessageSyncService] Cleaning up...')
+  private async cleanupSubscriptions(): Promise<void> {
+    console.log('🧹 [MessageSyncService] Cleaning up subscriptions only...')
     
     // Cancel reconnection attempts
     this.cancelReconnect()
@@ -583,6 +732,18 @@ export class MessageSyncService {
       await supabase.removeChannel(this.presenceChannel)
       this.presenceChannel = null
     }
+
+    // Note: Don't reset session state here as we're reinitializing
+  }
+
+  /**
+   * Clean up subscriptions and resources
+   */
+  async cleanup(): Promise<void> {
+    console.log('🧹 [MessageSyncService] Full cleanup...')
+    
+    // Clean up subscriptions first
+    await this.cleanupSubscriptions()
 
     // Update participant status to offline
     if (this.currentSessionId && this.currentUserId) {

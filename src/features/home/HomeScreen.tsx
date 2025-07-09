@@ -203,6 +203,8 @@ export function HomeScreen() {
                 <div className="flex gap-2">
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     maxLength={4}
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, ''))}

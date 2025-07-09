@@ -182,40 +182,39 @@ export class SessionManager {
   }
 
   /**
-   * Add a participant to a session
+   * Add a participant to a session (with proper conflict resolution)
    */
   async addParticipant(sessionId: string, userId: string): Promise<void> {
     try {
+      console.log('👤 [SessionManager] Adding participant:', { sessionId, userId })
+      
+      // Use upsert to handle conflicts properly
       const { error } = await supabase
         .from('session_participants')
-        .insert({
+        .upsert({
           session_id: sessionId,
           user_id: userId,
-          is_online: true
+          is_online: true,
+          last_seen: new Date().toISOString(),
+          joined_at: new Date().toISOString()
+        }, {
+          onConflict: 'session_id,user_id',
+          ignoreDuplicates: false
         })
 
       if (error) {
-        // Check if it's a duplicate key error (user already in session)
-        if (error.code === '23505') {
-          // User already in session, update their online status
-          await supabase
-            .from('session_participants')
-            .update({
-              is_online: true,
-              last_seen: new Date().toISOString()
-            })
-            .eq('session_id', sessionId)
-            .eq('user_id', userId)
-          return
-        }
-        throw error
+        console.error('❌ [SessionManager] Failed to add participant:', error)
+        throw ErrorManager.createError(
+          ErrorCode.DATABASE_ERROR,
+          `Failed to add participant to session: ${error.message}`
+        )
       }
+      
+      console.log('✅ [SessionManager] Participant added/updated successfully')
+      
     } catch (error) {
-      console.error('Failed to add participant:', error)
-      throw ErrorManager.createError(
-        ErrorCode.DATABASE_ERROR,
-        'Failed to add participant to session'
-      )
+      console.error('❌ [SessionManager] Critical error adding participant:', error)
+      throw error
     }
   }
 

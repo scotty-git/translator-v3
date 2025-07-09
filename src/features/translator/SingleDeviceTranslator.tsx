@@ -18,6 +18,18 @@ import { useSounds } from '@/lib/sounds/SoundManager'
 import { ConversationContextManager, type ConversationContextEntry } from '@/lib/conversation/ConversationContext'
 import { DebugConsole } from '@/components/debug/DebugConsole'
 
+/**
+ * Generate a unique message ID using UUID
+ * Uses crypto.randomUUID if available, falls back to timestamp-based ID
+ */
+function generateMessageId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  // Fallback for environments without crypto.randomUUID
+  return `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+}
+
 interface SingleDeviceTranslatorProps {
   onNewMessage?: (message: QueuedMessage) => void
   messages?: QueuedMessage[]
@@ -338,7 +350,7 @@ export function SingleDeviceTranslator({
   const processTextMessage = async (messageText: string) => {
     if (!messageText.trim()) return
 
-    const messageId = `single-text-${Date.now()}`
+    const messageId = generateMessageId()
     let translationTime = 0
     let totalStartTime = Date.now()
     
@@ -560,7 +572,7 @@ export function SingleDeviceTranslator({
   }
 
   const processAudioMessage = async (audioBlob: Blob) => {
-    const messageId = `single-msg-${Date.now()}`
+    const messageId = generateMessageId()
     let whisperTime = 0
     let translationTime = 0
     let totalStartTime = Date.now()
