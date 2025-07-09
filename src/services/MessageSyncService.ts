@@ -69,15 +69,11 @@ export class MessageSyncService {
     })
     
     // Supabase connection monitoring
-    supabase.realtime.on('connection_state_change', (state) => {
-      console.log('🔌 [MessageSyncService] Supabase connection state:', state)
-      
-      if (state === 'OPEN') {
-        this.handleSupabaseOnline()
-      } else if (state === 'CLOSED') {
-        this.handleSupabaseOffline()
-      }
-    })
+    // Note: Use channel-based connection monitoring instead of global realtime
+    console.log('🔌 [MessageSyncService] Network monitoring initialized')
+    
+    // We'll monitor connection through individual channels
+    // Connection state will be monitored per channel
   }
 
   /**
