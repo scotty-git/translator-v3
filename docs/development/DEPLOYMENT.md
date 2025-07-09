@@ -469,6 +469,36 @@ vercel --prod --force
 
 ## 🔧 Advanced Configuration
 
+### Vercel Serverless Functions
+
+**API Proxy Configuration**:
+
+The app uses Vercel serverless functions to securely proxy OpenAI API calls:
+
+```typescript
+// api/openai/[...path].ts
+export default async function handler(req: Request) {
+  // Proxy requests to OpenAI API
+  // API key stored securely in Vercel environment
+  const openaiUrl = `https://api.openai.com/v1/${path}`
+  
+  return fetch(openaiUrl, {
+    method: req.method,
+    headers: {
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: req.body
+  })
+}
+```
+
+**Benefits**:
+- ✅ **API key security** - Never exposed to client
+- ✅ **CORS handling** - Automatic CORS configuration
+- ✅ **Rate limiting** - Vercel handles abuse protection
+- ✅ **Global edge network** - Low latency worldwide
+
 ### Vercel Configuration File
 
 **Complete `vercel.json`**:
@@ -480,7 +510,7 @@ vercel --prod --force
   "framework": "vite",
   "regions": ["iad1", "sfo1"],
   "functions": {
-    "app/**/*.ts": {
+    "api/**/*.ts": {
       "maxDuration": 30
     }
   },

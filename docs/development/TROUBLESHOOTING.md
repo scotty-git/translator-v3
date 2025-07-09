@@ -256,7 +256,18 @@ WHERE table_schema = 'public';
 
 **Solutions**:
 
-**1. Browser Permissions**:
+**1. Check PersistentAudioManager**:
+```typescript
+// In browser console:
+const audioManager = PersistentAudioManager.getInstance()
+console.log('Stream ready:', audioManager.isStreamReady())
+console.log('Permission denied:', audioManager.permissionDenied)
+
+// If stream not ready, ensure permissions:
+await audioManager.ensurePermissions()
+```
+
+**2. Browser Permissions**:
 ```bash
 # Chrome: Settings → Privacy and security → Site settings → Microphone
 # Allow for localhost/127.0.0.1
@@ -265,20 +276,29 @@ WHERE table_schema = 'public';
 # Allow for localhost
 ```
 
-**2. System Permissions (macOS)**:
+**3. Permission Timing**:
+```typescript
+// The app requests permission on first recording attempt, not on load
+// If no permission prompt appears:
+// 1. Check if permission was previously denied
+// 2. Clear site data and try again
+// 3. Check browser's permission settings
+```
+
+**4. System Permissions (macOS)**:
 ```bash
 # System Preferences → Security & Privacy → Privacy → Microphone
 # Enable for Chrome/Firefox/Safari
 ```
 
-**3. HTTPS Requirement**:
+**5. HTTPS Requirement**:
 ```bash
 # Audio only works on HTTPS or localhost
 # For production, ensure SSL certificate is active
 # For development, use localhost or 127.0.0.1
 ```
 
-**4. Audio Format Issues**:
+**6. Audio Format Issues**:
 ```typescript
 // Check browser support
 console.log('Audio recording supported:', 
@@ -320,6 +340,42 @@ const constraints = {
 # Whisper API limit: 25MB
 # Automatic compression handles this
 # Check file size in browser DevTools → Network tab
+```
+
+### PersistentAudioManager Specific Issues
+
+**Problem**: Stream lost or not persisting between recordings
+
+**Debug Steps**:
+```typescript
+// Check stream state
+const audioManager = PersistentAudioManager.getInstance()
+const stream = audioManager.stream
+console.log('Stream active:', stream?.active)
+console.log('Audio tracks:', stream?.getAudioTracks().length)
+
+// Force recreate stream if needed
+audioManager.cleanup()
+await audioManager.ensurePermissions()
+```
+
+**Common Issues**:
+1. **iOS Safari**: May stop stream after inactivity
+   - Solution: App automatically recreates stream when needed
+   
+2. **Permission denied**: User blocked microphone
+   - Solution: Direct user to browser settings to unblock
+   
+3. **Multiple instances**: Accidentally creating multiple managers
+   - Solution: Always use `getInstance()` method
+
+**Mobile-Specific Troubleshooting**:
+```typescript
+// iOS Safari audio context fix (handled automatically)
+if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+  // PersistentAudioManager handles this internally
+  console.log('iOS device detected, using optimized audio handling')
+}
 ```
 
 ---

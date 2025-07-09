@@ -28,7 +28,7 @@ Understanding how the Real-time Translator v3 works under the hood.
 │ • Real-time │         │ • Whisper   │         │ • Audio     │
 │ • Database  │         │ • GPT-4o    │         │ • Storage   │
 │ • Sessions  │         │ • TTS       │         │ • PWA       │
-│ • Messages  │         │ • Translation│         │ • Offline   │
+│ • Messages  │         │ • Translation│         │ • Persistent Stream │
 └─────────────┘         └─────────────┘         └─────────────┘
 ```
 
@@ -50,13 +50,15 @@ Understanding how the Real-time Translator v3 works under the hood.
 
 1️⃣ USER SPEAKS
    │ User taps/clicks record button
-   │ Browser requests microphone permission
+   │ Permission requested on first attempt only
+   │ PersistentAudioManager provides stream
    │ Audio recording starts (WebRTC AudioRecorder)
    │
    ▼
 
 2️⃣ AUDIO CAPTURE
-   │ AudioRecorderService captures audio stream
+   │ PersistentAudioManager maintains single MediaStream
+   │ AudioRecorderService captures from persistent stream
    │ Real-time audio visualization (5 bars)
    │ Recording saved as .webm/.m4a blob
    │ User stops recording
@@ -119,6 +121,8 @@ src/
 │   ├── openai/          # Translation pipeline
 │   ├── supabase/        # Database & real-time
 │   └── audio/           # Recording & playback
+│       ├── PersistentAudioManager.ts  # Persistent stream management
+│       └── AudioRecorderService.ts    # Recording functionality
 │
 ├── lib/                 # Core utilities
 │   ├── performance.ts   # Monitoring & logging
@@ -338,6 +342,83 @@ class MessagesService {
       .subscribe()
   }
 }
+```
+
+---
+
+## 🎙️ PersistentAudioManager Architecture
+
+### Persistent Stream Strategy
+
+Unlike traditional approaches that create/destroy MediaStreams for each recording, PersistentAudioManager maintains a single stream throughout the session:
+
+```typescript
+// Traditional Approach (problematic on mobile)
+startRecording() {
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+  // Use stream
+}
+stopRecording() {
+  stream.getTracks().forEach(track => track.stop())
+  // Stream destroyed, need new permission next time
+}
+
+// PersistentAudioManager Approach (mobile-optimized)
+class PersistentAudioManager {
+  private stream: MediaStream | null = null
+  
+  async ensurePermissions() {
+    if (!this.stream) {
+      this.stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    }
+    return this.stream
+  }
+  
+  // Stream persists between recordings
+  startRecording() {
+    const recorder = new MediaRecorder(this.stream)
+    // No new permission needed
+  }
+}
+```
+
+### Key Benefits
+
+1. **Mobile Performance**
+   - No iOS Safari audio context issues
+   - Faster recording startup (no stream creation)
+   - Reduced battery usage
+
+2. **Better UX**
+   - Permission requested only on first recording
+   - No repeated permission prompts
+   - Instant recording after first use
+
+3. **Reliability**
+   - Stream persists through component re-renders
+   - Survives navigation within app
+   - Automatic recovery on stream loss
+
+### Permission Flow
+
+```
+User Opens App
+     │
+     ▼
+No Permission Request ✓
+     │
+     ▼
+User Clicks Record
+     │
+     ▼
+First Time? ──Yes──▶ Request Permission
+     │                      │
+     No                     ▼
+     │                 Create Persistent Stream
+     │                      │
+     ▼                      ▼
+Use Existing ◀──────────────┘
+   Stream
 ```
 
 ---

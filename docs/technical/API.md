@@ -13,6 +13,7 @@ The Real-time Translator integrates with several external services to provide tr
 | **OpenAI** | STT, Translation, TTS | `src/services/openai/` |
 | **Supabase** | Database, Real-time | `src/services/supabase/` |
 | **Browser APIs** | Audio, Storage, PWA | `src/services/audio/` |
+| **PersistentAudioManager** | Persistent MediaStream | `src/services/audio/PersistentAudioManager.ts` |
 
 ---
 
@@ -174,6 +175,97 @@ const result = await TTSService.textToSpeech("Hola mundo", "nova")
 - **Format**: MP3
 - **Response Time**: ~1-2 seconds
 - **Cost**: $15.00 per 1M characters
+
+---
+
+## 🎙️ Browser APIs - Audio Integration
+
+### PersistentAudioManager Service
+
+**Purpose**: Maintain a persistent MediaStream throughout the session for optimal mobile performance
+
+```typescript
+// src/services/audio/PersistentAudioManager.ts
+class PersistentAudioManager {
+  private static instance: PersistentAudioManager | null = null
+  private stream: MediaStream | null = null
+  private streamReady = false
+  private permissionDenied = false
+  
+  static getInstance(): PersistentAudioManager
+  async ensurePermissions(): Promise<boolean>
+  isStreamReady(): boolean
+  async getStream(): Promise<MediaStream>
+  cleanup(): void
+}
+```
+
+**Usage Example**:
+```typescript
+// Get singleton instance
+const audioManager = PersistentAudioManager.getInstance()
+
+// Request permissions on first recording attempt
+if (!audioManager.isStreamReady()) {
+  const hasPermissions = await audioManager.ensurePermissions()
+  if (!hasPermissions) {
+    throw new Error('Microphone permission denied')
+  }
+}
+
+// Use persistent stream for recording
+const stream = await audioManager.getStream()
+const recorder = new MediaRecorder(stream)
+```
+
+**Key Features**:
+- **Singleton Pattern**: One instance per app lifecycle
+- **Lazy Permission Request**: Only asks when user tries to record
+- **Stream Persistence**: Maintains stream between recordings
+- **Error Recovery**: Handles permission denial and stream loss
+- **Mobile Optimized**: No iOS Safari audio context issues
+
+**Permission Flow**:
+1. App loads → No permission request
+2. User clicks record → Check if stream ready
+3. If not ready → Request permission once
+4. Stream persists for all future recordings
+5. Automatic cleanup on app unmount
+
+### AudioRecorderService
+
+**Purpose**: Handle audio recording using the persistent stream
+
+```typescript
+// src/services/audio/AudioRecorderService.ts
+class AudioRecorderService {
+  static async startRecording(stream: MediaStream): Promise<MediaRecorder>
+  static async stopRecording(recorder: MediaRecorder): Promise<Blob>
+  static getAudioVisualization(stream: MediaStream): number[]
+}
+```
+
+**Integration with PersistentAudioManager**:
+```typescript
+// Example: Complete recording flow
+const audioManager = PersistentAudioManager.getInstance()
+
+// Ensure permissions
+if (!audioManager.isStreamReady()) {
+  await audioManager.ensurePermissions()
+}
+
+// Get persistent stream
+const stream = await audioManager.getStream()
+
+// Start recording
+const recorder = await AudioRecorderService.startRecording(stream)
+
+// ... user records ...
+
+// Stop and get audio blob
+const audioBlob = await AudioRecorderService.stopRecording(recorder)
+```
 
 ---
 

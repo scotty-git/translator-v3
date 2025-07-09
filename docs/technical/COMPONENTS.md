@@ -568,6 +568,76 @@ const ExpensiveComponent = memo(({ data }) => {
 
 ---
 
+## 🎤 Recording Components
+
+### Audio Recording Integration
+
+The recording functionality uses the **PersistentAudioManager** for optimal mobile performance:
+
+```tsx
+// SingleDeviceTranslator.tsx
+import { PersistentAudioManager } from '@/services/audio/PersistentAudioManager'
+
+function RecordingComponent() {
+  const audioManager = useMemo(() => PersistentAudioManager.getInstance(), [])
+  const [isRecording, setIsRecording] = useState(false)
+  
+  const handleRecordClick = async () => {
+    // Permission requested on first use only
+    if (!audioManager.isStreamReady()) {
+      const hasPermission = await audioManager.ensurePermissions()
+      if (!hasPermission) {
+        setError('Microphone permission denied')
+        return
+      }
+    }
+    
+    // Start/stop recording with persistent stream
+    if (isRecording) {
+      await stopRecording()
+    } else {
+      await startRecording()
+    }
+  }
+  
+  return (
+    <Button
+      onClick={handleRecordClick}
+      className={cn(
+        "recording-button",
+        isRecording && "recording-active"
+      )}
+    >
+      <MicIcon className={isRecording ? "animate-pulse-recording" : ""} />
+    </Button>
+  )
+}
+```
+
+### Key Features
+
+1. **Lazy Permission Request**: No permission prompt until user clicks record
+2. **Persistent Stream**: MediaStream maintained between recordings
+3. **Mobile Optimized**: Works perfectly on iOS Safari and Android Chrome
+4. **Visual Feedback**: Pulse animation while recording
+
+### Audio Visualization
+
+```tsx
+// Audio bars visualization during recording
+<div className="audio-visualizer">
+  {audioLevels.map((level, i) => (
+    <div
+      key={i}
+      className="audio-bar"
+      style={{ height: `${level * 100}%` }}
+    />
+  ))}
+</div>
+```
+
+---
+
 ## 🎨 Component Patterns
 
 ### Compound Components

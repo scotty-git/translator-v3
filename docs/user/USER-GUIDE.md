@@ -13,14 +13,15 @@ Go to your translator website or open the installed app
 
 **Step 2**: Start translating 🎯  
 - Tap **Start Translating** on the home screen
-- Grant microphone permission when prompted
+- No permission needed yet!
 
 **Step 3**: Have your conversation! 🎤  
 - You speak in your language (English/Spanish/Portuguese)
-- Tap the record button and speak clearly
+- Tap the record button - you'll be asked for microphone permission on first use
+- Speak clearly after granting permission
 - See your translation appear instantly
 - Hand the device to the other person
-- They can respond in their language
+- They can respond in their language (no new permission needed)
 
 **Step 4**: Watch the magic ✨  
 - Your speech appears in your language
@@ -58,6 +59,11 @@ Go to your translator website or open the installed app
 ### 🎤 Voice Translation Features
 
 **Recording Your Voice**
+
+*First Time Recording*:
+- When you tap/click record for the first time, you'll see a permission prompt
+- Grant microphone access to enable voice translation
+- This only happens once - future recordings won't ask again!
 
 *On Mobile* 📱:
 - **Tap** the blue record button to start
@@ -187,6 +193,29 @@ Sometimes typing is better than talking:
 
 ---
 
+### 📱 Mobile Features
+
+**Optimized for Mobile Devices**:
+- ⚡ **Instant recording** - Persistent audio stream means no delays
+- 🎯 **One-tap permission** - Only asks for microphone on first use
+- 📴 **Works offline** - Install as PWA for offline access to UI
+- 🔋 **Battery friendly** - Optimized to minimize power usage
+- 🌐 **Works on all devices** - iOS Safari, Android Chrome, tablets
+
+**Mobile Recording Excellence**:
+- ✅ **No iOS audio issues** - Works perfectly on all iPhones
+- ✅ **Fast startup** - Recording starts instantly after first use
+- ✅ **Reliable on slow networks** - Smart quality adjustment
+- ✅ **Touch-optimized** - Large buttons, easy to use while holding device
+
+**Install as App** (PWA):
+1. Open the translator in your mobile browser
+2. Look for "Add to Home Screen" prompt
+3. Tap to install - no app store needed!
+4. Launch from home screen like any app
+
+---
+
 ### ⚙️ Settings & Customization
 
 **Theme Settings**:
@@ -265,10 +294,11 @@ Sometimes typing is better than talking:
 ### 📞 Common Questions & Solutions
 
 **"My microphone isn't working"**
-1. Check browser permissions (click 🔒 icon in address bar)
-2. Try refreshing the page
-3. Use a different browser (Chrome recommended)
-4. Check system microphone permissions
+1. Make sure you've clicked the record button at least once (permission is requested on first use)
+2. Check browser permissions (click 🔒 icon in address bar)
+3. Try refreshing the page
+4. Use a different browser (Chrome recommended)
+5. Check system microphone permissions
 
 **"Translations are slow"**
 - Slow internet = slower translations (normal)
@@ -289,8 +319,10 @@ Sometimes typing is better than talking:
 - Try speaking slightly slower
 
 **"App keeps asking for permissions"**
-- Grant microphone permission permanently
+- The app should only ask once, on your first recording attempt
+- Grant microphone permission permanently when prompted
 - Don't use incognito/private browsing mode
+- If it keeps asking, check your browser's site settings
 - Clear browser data and start fresh
 - Check if browser is up to date
 

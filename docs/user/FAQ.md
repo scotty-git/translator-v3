@@ -27,10 +27,11 @@ Quick answers to common questions about the Real-time Translator app.
 
 ### Q: Why isn't my microphone working?
 **A:** Most common solutions:
-1. **Grant permission** - Click "Allow" when the browser asks for microphone access
-2. **Check settings** - Look for the 🔒 icon in your address bar and enable microphone
-3. **Try different browser** - Chrome usually works best
-4. **Restart browser** - Close and reopen your browser completely
+1. **Click record first** - Permission is only requested when you first try to record
+2. **Grant permission** - Click "Allow" when the browser asks for microphone access
+3. **Check settings** - Look for the 🔒 icon in your address bar and enable microphone
+4. **Try different browser** - Chrome usually works best
+5. **Restart browser** - Close and reopen your browser completely
 
 ### Q: The audio quality is poor. How can I improve it?
 **A:** Try these tips:
@@ -45,6 +46,13 @@ Quick answers to common questions about the Real-time Translator app.
 
 ### Q: Does it work on phone calls or video chats?
 **A:** This app is designed for direct conversations, not for adding translation to existing calls. For phone/video calls, you'd both need to be in the same translation session.
+
+### Q: Why does the app only ask for permission when I record?
+**A:** We respect your privacy! The app doesn't access your microphone until you actively choose to record. This means:
+- No permission prompts when you first open the app
+- Microphone only activates when you tap record
+- Permission is remembered after the first time
+- Better battery life since we're not constantly listening
 
 ---
 
@@ -109,11 +117,18 @@ More languages are planned for future updates!
 ## 📱 Mobile & Technical
 
 ### Q: Why does it keep asking for microphone permission?
-**A:** This usually happens when:
+**A:** The app should only ask once. If it keeps asking:
 - 🕵️ **Using private browsing** - try regular browser mode
 - 🔄 **Browser cache issues** - clear browser data and try again
 - ⚙️ **System settings** - check your phone's microphone settings
 - 🌐 **Different browsers** - some browsers handle permissions differently
+
+### Q: Does it work better on iPhone or Android?
+**A:** Both work great! The app uses advanced techniques to ensure:
+- ✅ **Perfect iOS Safari support** - no audio context issues
+- ✅ **Fast Android Chrome** - optimized for all Android devices
+- ✅ **Instant recording** - starts immediately on both platforms
+- ✅ **No repeated permissions** - asks only once on first use
 
 ### Q: The app is slow or laggy. What's wrong?
 **A:** Speed depends on several factors:

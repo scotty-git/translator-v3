@@ -44,8 +44,10 @@ npm run dev
 ### ✨ Key Features
 - 🎤 **Real-time Voice Translation** - Whisper STT → GPT-4o-mini → Native TTS
 - 📱 **Mobile-First PWA** - Works offline, installable, touch-optimized
+- ⚡ **Persistent Audio Stream** - Instant recording with no permission delays
 - 🔄 **Single-Device Translation** - Perfect for face-to-face conversations
 - 🌍 **3 Languages** - English, Spanish (Español), Portuguese (Português)
+- 🎯 **Smart Permission Handling** - Only asks for microphone on first use
 - ⚡ **Sub-100ms Feedback** - Real-time status, performance monitoring
 - 🎨 **Modern UI** - Dark/light themes, animations, accessibility (WCAG 2.1 AA)
 
@@ -60,8 +62,9 @@ npm run dev
 | **Styling** | UnoCSS | Utility-first CSS with performance |
 | **Storage** | LocalStorage | Client-side data persistence |
 | **AI** | OpenAI (Whisper, GPT-4o-mini, TTS) | Translation pipeline |
+| **Audio** | PersistentAudioManager | Mobile-optimized recording |
 | **Testing** | Playwright + Vitest | E2E and unit testing |
-| **Deployment** | Vercel | Auto-deploy from git |
+| **Deployment** | Vercel | Auto-deploy with serverless API |
 
 ---
 
