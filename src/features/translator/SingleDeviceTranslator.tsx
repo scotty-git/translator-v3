@@ -18,6 +18,7 @@ import { useSounds } from '@/lib/sounds/SoundManager'
 import { ConversationContextManager, type ConversationContextEntry } from '@/lib/conversation/ConversationContext'
 import { DebugConsole } from '@/components/debug/DebugConsole'
 import { messageSyncService } from '@/services/MessageSyncService'
+import { ErrorDisplay } from '@/components/ErrorDisplay'
 
 /**
  * Generate a unique message ID using UUID
@@ -1123,11 +1124,19 @@ export function SingleDeviceTranslator({
         
         {/* Recording Controls - Fixed at bottom for Mobile */}
         <div className="fixed bottom-0 left-0 right-0 z-50 p-1.5 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50">
-            {/* Error Display - Compact */}
+            {/* Enhanced Error Display */}
             {error && (
-              <div className="mb-1 p-1.5 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-700 rounded text-xs text-red-700 dark:text-red-300">
-                {error}
-              </div>
+              <ErrorDisplay 
+                error={error}
+                onDismiss={() => setError(null)}
+                onRetry={() => {
+                  setError(null)
+                  if (!isRecording) {
+                    handleStartRecording()
+                  }
+                }}
+                className="mb-2 mx-1"
+              />
             )}
 
             {/* Text Message Input - Compact */}

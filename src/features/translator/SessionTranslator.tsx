@@ -7,6 +7,7 @@ import { sessionManager } from '@/services/SessionManager'
 import { messageSyncService } from '@/services/MessageSyncService'
 import type { QueuedMessage } from '@/features/messages/MessageQueue'
 import type { SessionMessage, ConnectionStatus } from '@/types/database'
+import { ErrorToast } from '@/components/ErrorDisplay'
 
 interface SessionState {
   sessionId: string
@@ -46,6 +47,7 @@ export function SessionTranslator() {
   
   // Messages state for session
   const [messages, setMessages] = useState<QueuedMessage[]>([])
+  const [error, setError] = useState<Error | null>(null)
   
   // Redirect if no session and handle session expiry
   useEffect(() => {
