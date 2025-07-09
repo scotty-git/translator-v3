@@ -358,7 +358,7 @@ export function MessageBubble({
               onClick={handleTTSClick}
               disabled={ttsStatus === 'loading'}
               className={clsx(
-                'p-1 rounded-full transition-all duration-200 hover:bg-black/10',
+                'p-1 rounded-full transition-all duration-200 hover:bg-black/10 mr-2',
                 {
                   'opacity-50 cursor-not-allowed': ttsStatus === 'loading',
                   'text-green-400': ttsStatus === 'ready' || ttsStatus === 'playing',
@@ -378,8 +378,8 @@ export function MessageBubble({
               {getTTSButton()}
             </button>
             
-            {/* Edit Button (only for own messages) */}
-            {isOwnMessage && (
+            {/* Edit Button - Removed as functionality is not implemented */}
+            {/* {isOwnMessage && (
               <button
                 className={clsx(
                   'p-1 rounded-full transition-all duration-200 hover:bg-black/10 opacity-75 hover:opacity-100',
@@ -393,7 +393,7 @@ export function MessageBubble({
               >
                 <Edit3 className="h-3 w-3" />
               </button>
-            )}
+            )} */}
           </div>
           
           {/* 

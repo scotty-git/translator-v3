@@ -369,6 +369,43 @@ export function SingleDeviceTranslator({
     }
   }
 
+  const handleCancelRecording = async () => {
+    console.log('🚫 CANCELING RECORDING')
+    console.log('📍 handleCancelRecording called at:', new Date().toISOString())
+    console.log('🎤 isRecording state:', isRecording)
+    console.log('⚡ currentActivity state:', currentActivity)
+    
+    if (!isRecording) {
+      console.warn('⚠️ Not recording according to state - cannot cancel')
+      return
+    }
+    
+    try {
+      console.log('🛑 Canceling recording without processing...')
+      
+      // Update UI state immediately
+      setIsRecording(false)
+      setCurrentActivity('idle')
+      
+      // Reset audio level to 0
+      resetAudioLevel()
+      
+      // Stop recording using persistent stream (without processing)
+      await audioManager.stopRecording()
+      
+      // Clear any completion handler to prevent processing
+      audioManager.onComplete = undefined
+      
+      console.log('✅ Recording canceled successfully')
+      
+    } catch (err) {
+      console.error('❌ Failed to cancel recording:', err)
+      setError('Failed to cancel recording: ' + (err as Error).message)
+      setCurrentActivity('idle')
+      playError()
+    }
+  }
+
   const processTextMessage = async (messageText: string) => {
     if (!messageText.trim()) return
 
@@ -624,43 +661,8 @@ export function SingleDeviceTranslator({
     console.log('═══════════════════════════════════════════════════════')
 
     try {
-      // Create initial message in queue
-      const initialMessage: QueuedMessage = {
-        id: messageId,
-        session_id: 'single-device-session',
-        user_id: 'single-user',
-        original: '...',
-        translation: null,
-        original_lang: 'en',
-        target_lang: targetLanguage,
-        status: 'processing',
-        queued_at: new Date().toISOString(),
-        processed_at: null,
-        displayed_at: null,
-        performance_metrics: null,
-        timestamp: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        localId: messageId,
-        retryCount: 0,
-        displayOrder: messages.length + 1
-      }
-
-      await messageQueue.add(initialMessage)
-      
-      // Add message to state based on mode
-      if (onNewMessage && externalMessages) {
-        // Session mode: notify parent of new message
-        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of new message:', {
-          id: initialMessage.id,
-          status: initialMessage.status,
-          original: initialMessage.original,
-          translation: initialMessage.translation
-        })
-        onNewMessage(initialMessage)
-      } else {
-        // Solo mode: update internal state
-        setInternalMessages(prev => [...prev, initialMessage])
-      }
+      // Don't create a message bubble during processing - only show activity indicator
+      // The message will be added when processing is complete with actual content
 
       // Step 1: Whisper transcription with conversation context
       performanceLogger.start('whisper-transcription')
@@ -837,19 +839,27 @@ export function SingleDeviceTranslator({
       // Final message update
       const totalTime = Date.now() - totalStartTime
       const finalMessage: QueuedMessage = {
-        ...initialMessage,
+        id: messageId,
+        session_id: 'single-device-session',
+        user_id: 'single-user',
         original: transcriptionResult.text,
         translation: translationResult.translatedText,
         original_lang: detectedLangCode,
         target_lang: actualTargetLanguage,
         status: 'displayed',
+        queued_at: new Date().toISOString(),
         processed_at: new Date().toISOString(),
         displayed_at: new Date().toISOString(),
         performance_metrics: {
           whisperTime,
           translationTime,
           totalTime
-        }
+        },
+        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        localId: messageId,
+        retryCount: 0,
+        displayOrder: messages.length + 1
       }
 
       await messageQueue.add(finalMessage)
@@ -904,18 +914,9 @@ export function SingleDeviceTranslator({
       // Play error sound
       playError()
       
-      // Update message to failed state based on mode
-      const failedMessage = { ...messages.find(m => m.id === messageId), status: 'failed' as const }
-      if (onNewMessage && externalMessages) {
-        // Session mode: notify parent of failed message
-        console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of failed message:', messageId)
-        onNewMessage(failedMessage)
-      } else {
-        // Solo mode: update internal state
-        setInternalMessages(prev => prev.map(msg => 
-          msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
-        ))
-      }
+      // Since we don't create placeholder messages during processing,
+      // we don't need to update any message state on failure
+      // The activity indicator will be cleared in the finally block
     } finally {
       // Reset activity to idle when processing completes
       setCurrentActivity('idle')
@@ -935,8 +936,8 @@ export function SingleDeviceTranslator({
           <div className="absolute bottom-0 right-0 w-72 h-72 bg-indigo-200 dark:bg-indigo-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-pulse-soft" style={{ animationDelay: '1s' }} />
         </div>
 
-        {/* Header - Sticky at top */}
-        <header className="flex-shrink-0 glass-effect border-b border-white/20 backdrop-blur-md z-10">
+        {/* Header - Fixed at top for mobile visibility */}
+        <header className="flex-shrink-0 fixed top-0 left-0 right-0 glass-effect border-b border-white/20 backdrop-blur-md z-50">
           <div className="container mx-auto px-2 py-1">
             <div className="flex items-center justify-between">
               {/* Left side - Back button and Settings */}
@@ -1047,8 +1048,16 @@ export function SingleDeviceTranslator({
           </div>
         </header>
         
-        {/* Message Area - Takes remaining space */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Message Area - Takes remaining space with padding for fixed header */}
+        <div className="overflow-y-auto p-4 space-y-4" style={{
+          height: isSessionMode 
+            ? 'calc(100vh - 64px - 64px - 60px)' // Session mode: viewport - session header - translator header - footer
+            : 'calc(100vh - 64px - 60px)', // Solo mode: viewport - translator header - footer
+          marginTop: '64px', // Space for fixed header
+          touchAction: 'pan-y',
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch'
+        }}>
             {messages.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center space-y-4 max-w-md mx-auto">
@@ -1116,7 +1125,7 @@ export function SingleDeviceTranslator({
         </div>
         
         {/* Recording Controls - Sticky at bottom */}
-        <div className="flex-shrink-0 p-1.5 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50">
+        <div className="flex-shrink-0 p-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50 sticky bottom-0">
             {/* Enhanced Error Display */}
             {error && (
               <ErrorDisplay 
@@ -1158,46 +1167,62 @@ export function SingleDeviceTranslator({
               </div>
             )}
 
-            {/* Combined Recording Controls Row */}
-            <div className="flex items-center justify-between gap-2">
-              {/* Input Mode Toggle - Super Compact */}
-              <div className="relative bg-white dark:bg-gray-800 rounded-full p-0.5 shadow-sm border border-gray-200 dark:border-gray-700">
-                <div 
-                  className={`absolute top-0.5 bottom-0.5 w-1/2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-transform duration-200 ${
-                    showTextInput ? 'translate-x-full' : 'translate-x-0'
-                  }`}
-                />
-                <div className="relative flex">
-                  <button
-                    onClick={() => setShowTextInput(false)}
-                    className={`relative z-10 px-2 py-1 rounded-full text-[10px] font-medium transition-all duration-200 flex items-center gap-1 ${
-                      !showTextInput 
-                        ? 'text-white'
-                        : 'text-gray-600 dark:text-gray-400'
+            {/* Combined Recording Controls - Single Row Layout */}
+            {!showTextInput && (
+              <div className="flex items-center justify-between gap-2">
+                {/* Left: Input Mode Toggle - Icon Only */}
+                <div className="relative bg-white dark:bg-gray-800 rounded-full p-0.5 shadow-sm border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                  <div 
+                    className={`absolute top-0.5 bottom-0.5 w-1/2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-transform duration-200 ${
+                      showTextInput ? 'translate-x-full' : 'translate-x-0'
                     }`}
-                  >
-                    <Mic className="h-2.5 w-2.5" />
-                    Voice
-                  </button>
-                  <button
-                    onClick={() => setShowTextInput(true)}
-                    className={`relative z-10 px-2 py-1 rounded-full text-[10px] font-medium transition-all duration-200 flex items-center gap-1 ${
-                      showTextInput 
-                        ? 'text-white'
-                        : 'text-gray-600 dark:text-gray-400'
-                    }`}
-                  >
-                    <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                    Type
-                  </button>
+                  />
+                  <div className="relative flex">
+                    <button
+                      onClick={() => setShowTextInput(false)}
+                      className={`relative z-10 p-1.5 rounded-full transition-all duration-200 flex items-center justify-center ${
+                        !showTextInput 
+                          ? 'text-white'
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                      title="Voice input"
+                    >
+                      <Mic className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => setShowTextInput(true)}
+                      className={`relative z-10 p-1.5 rounded-full transition-all duration-200 flex items-center justify-center ${
+                        showTextInput 
+                          ? 'text-white'
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                      title="Text input"
+                    >
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Recording Button with Inline Visualization */}
-              {!showTextInput && (
+                {/* Center: Status Text */}
+                <p className="text-[10px] text-gray-600 dark:text-gray-400 flex-1 text-center">
+                  {isRecording ? 'Recording...' : 'Tap to record'}
+                </p>
+
+                {/* Right: Recording Button and Controls */}
                 <div className="flex items-center gap-2">
+                  {/* Cancel Button - Only shown when recording */}
+                  {isRecording && (
+                    <button
+                      onClick={handleCancelRecording}
+                      className="px-3 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full text-[10px] font-medium transition-colors shadow-sm"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  
+                  {/* Recording Button */}
                   <button
                     data-testid="recording-button"
                     onClick={async (e) => {
@@ -1216,10 +1241,10 @@ export function SingleDeviceTranslator({
                     }}
                     disabled={false}
                     className={`
-                      w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu
+                      w-12 h-12 rounded-full flex items-center justify-center transition-all duration-200 transform-gpu flex-shrink-0
                       ${isRecording 
-                        ? 'bg-red-500 hover:bg-red-600 scale-110 shadow-lg shadow-red-500/50' 
-                        : 'bg-blue-500 hover:bg-blue-600 hover:scale-105 shadow-lg shadow-blue-500/30'
+                        ? 'bg-green-500 hover:bg-green-600 scale-110 shadow-lg shadow-green-500/50' 
+                        : 'bg-green-500 hover:bg-green-600 hover:scale-105 shadow-lg shadow-green-500/30'
                       }
                       active:scale-95
                       text-white
@@ -1227,10 +1252,10 @@ export function SingleDeviceTranslator({
                   >
                     {isRecording ? (
                       <div className="animate-pulse">
-                        <Mic className="h-5 w-5" />
+                        <Mic className="h-4 w-4" />
                       </div>
                     ) : (
-                      <Mic className="h-5 w-5" />
+                      <Mic className="h-4 w-4" />
                     )}
                   </button>
                   
@@ -1240,28 +1265,58 @@ export function SingleDeviceTranslator({
                     isRecording={isRecording}
                     size="sm"
                     colors={{
-                      active: isRecording ? '#EF4444' : '#3B82F6',
+                      active: isRecording ? '#10B981' : '#10B981', // Green for both states
                       inactive: '#E5E7EB'
                     }}
                   />
                 </div>
-              )}
+              </div>
+            )}
 
-              {/* Status Text - Ultra Compact */}
-              {!showTextInput && (
-                <p className="text-[10px] text-gray-600 dark:text-gray-400 flex-1 text-right">
-                  {isRecording 
-                    ? 'Recording...'
-                    : 'Tap to record'
-                  }
-                </p>
-              )}
-            </div>
+            {/* Text Input Mode */}
+            {showTextInput && (
+              <div className="flex items-center gap-2">
+                {/* Input Mode Toggle - Icon Only */}
+                <div className="relative bg-white dark:bg-gray-800 rounded-full p-0.5 shadow-sm border border-gray-200 dark:border-gray-700 flex-shrink-0">
+                  <div 
+                    className={`absolute top-0.5 bottom-0.5 w-1/2 bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-transform duration-200 ${
+                      showTextInput ? 'translate-x-full' : 'translate-x-0'
+                    }`}
+                  />
+                  <div className="relative flex">
+                    <button
+                      onClick={() => setShowTextInput(false)}
+                      className={`relative z-10 p-1.5 rounded-full transition-all duration-200 flex items-center justify-center ${
+                        !showTextInput 
+                          ? 'text-white'
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                      title="Voice input"
+                    >
+                      <Mic className="h-3 w-3" />
+                    </button>
+                    <button
+                      onClick={() => setShowTextInput(true)}
+                      className={`relative z-10 p-1.5 rounded-full transition-all duration-200 flex items-center justify-center ${
+                        showTextInput 
+                          ? 'text-white'
+                          : 'text-gray-600 dark:text-gray-400'
+                      }`}
+                      title="Text input"
+                    >
+                      <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
         </div>
       </div>
       
-      {/* Debug Console for Mobile */}
-      <DebugConsole />
+      {/* Debug Console for Mobile - Hidden in production */}
+      {/* <DebugConsole /> */}
     </MobileContainer>
   )
 }

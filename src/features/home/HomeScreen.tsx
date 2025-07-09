@@ -204,14 +204,14 @@ export function HomeScreen() {
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="Enter 4-digit code"
-                    className="flex-1 h-10 px-4 py-2 text-center text-lg font-mono border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 max-w-[180px] h-10 px-4 py-2 text-center text-lg font-mono border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     data-testid="join-code-input"
                   />
                   <Button
                     onClick={handleJoinSession}
                     disabled={isJoiningSession || joinCode.length !== 4}
                     size="md"
-                    className="h-10 px-6"
+                    className="h-10 px-4 flex-shrink-0"
                   >
                     {isJoiningSession ? 'Joining...' : 'Join'}
                   </Button>

@@ -71,7 +71,7 @@ export function ActivityIndicator({ activity, userName = 'Partner', isOwnMessage
           <div className="transition-all duration-200 ease-in-out">
             {content.icon}
           </div>
-          <span className="text-sm text-gray-600 italic transition-all duration-200 ease-in-out">
+          <span className="text-sm text-gray-600 italic transition-all duration-200 ease-in-out whitespace-nowrap">
             {isOwnMessage ? content.text : `${userName} ${content.text}`}
           </span>
           <div className="transition-all duration-200 ease-in-out">

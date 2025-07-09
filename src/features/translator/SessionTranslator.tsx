@@ -301,9 +301,14 @@ export function SessionTranslator() {
   
   return (
     <Layout>
-      <div className="h-screen bg-app flex flex-col overflow-hidden">
+      <div className="bg-app flex flex-col overflow-hidden" style={{
+        height: '100vh',
+        touchAction: 'pan-y pinch-zoom',
+        overscrollBehavior: 'none',
+        WebkitOverflowScrolling: 'touch'
+      }}>
         {/* Session Header - Fixed at top */}
-        <div className="flex-shrink-0 z-20">
+        <div className="flex-shrink-0 z-50 fixed top-0 left-0 right-0 h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50">
           <SessionHeader 
             code={sessionState.sessionCode}
             status={connectionStatus}
@@ -312,7 +317,7 @@ export function SessionTranslator() {
         </div>
         
         {/* SingleDeviceTranslator - Takes remaining space */}
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 overflow-hidden">
           <SingleDeviceTranslator 
             onNewMessage={handleNewMessage}
             messages={(() => {

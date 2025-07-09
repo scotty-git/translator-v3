@@ -39,10 +39,10 @@ export function SessionHeader({ code, status, partnerOnline }: SessionHeaderProp
   
   return (
     <div 
-      className="bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800 px-4 py-2"
+      className="px-4 py-2 h-full w-full"
       data-testid="session-header"
     >
-      <div className="flex items-center justify-between text-sm">
+      <div className="flex items-center justify-between text-sm w-full">
         <div className="flex items-center gap-3">
           {/* Session Code */}
           <div className="flex items-center gap-1.5">

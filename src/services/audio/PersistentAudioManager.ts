@@ -210,7 +210,13 @@ export class PersistentAudioManager {
       const bufferLength = this.analyser.frequencyBinCount
       this.dataArray = new Uint8Array(bufferLength)
       
-      console.log('📊 Audio analysis setup complete')
+      console.log('📊 Audio analysis setup complete', {
+        fftSize: this.analyser.fftSize,
+        bufferLength,
+        smoothingTimeConstant: this.analyser.smoothingTimeConstant,
+        audioContextState: this.audioContext.state,
+        isIOS: this.isIOS
+      })
       
     } catch (error) {
       console.warn('⚠️ Audio analysis setup failed:', error)
@@ -222,10 +228,21 @@ export class PersistentAudioManager {
    * Start audio level monitoring (like working project)
    */
   private startAudioLevelMonitoring(): void {
-    if (!this.analyser || !this.dataArray) return
+    if (!this.analyser || !this.dataArray) {
+      console.warn('⚠️ Audio level monitoring not available:', {
+        analyser: !!this.analyser,
+        dataArray: !!this.dataArray
+      })
+      return
+    }
+    
+    console.log('📊 Starting audio level monitoring for visualization')
     
     const monitorLevel = () => {
-      if (this.state !== 'recording') return
+      if (this.state !== 'recording') {
+        console.log('📊 Audio level monitoring stopped - not recording')
+        return
+      }
       
       // Get frequency data
       this.analyser!.getByteFrequencyData(this.dataArray!)
@@ -236,10 +253,15 @@ export class PersistentAudioManager {
         sum += this.dataArray![i] * this.dataArray![i]
       }
       const rms = Math.sqrt(sum / this.dataArray!.length)
-      const normalizedLevel = Math.min(rms / 40, 1)
+      
+      // Different normalization for mobile devices
+      const normalizationFactor = this.isIOS ? 30 : 40
+      const normalizedLevel = Math.min(rms / normalizationFactor, 1)
       
       // Send to callback for visualization
-      this.onAudioData?.(normalizedLevel)
+      if (this.onAudioData) {
+        this.onAudioData(normalizedLevel)
+      }
       
       // Continue monitoring
       this.animationFrameId = requestAnimationFrame(monitorLevel)
