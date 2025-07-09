@@ -134,6 +134,13 @@ export function SessionTranslator() {
       onPartnerActivityChanged: (activity: 'idle' | 'recording' | 'processing' | 'typing') => {
         console.log('🎯 [SessionTranslator] Partner activity changed:', activity)
         setPartnerActivity(activity)
+        
+        // Clear processing activity after a delay to avoid persistence
+        if (activity === 'processing') {
+          setTimeout(() => {
+            setPartnerActivity(prev => prev === 'processing' ? 'idle' : prev)
+          }, 3000) // Clear after 3 seconds
+        }
       }
     })
     
@@ -298,16 +305,18 @@ export function SessionTranslator() {
   
   return (
     <Layout>
-      <div className="h-screen bg-app flex flex-col">
-        {/* Session Header */}
-        <SessionHeader 
-          code={sessionState.sessionCode}
-          status={connectionStatus}
-          partnerOnline={partnerOnline}
-        />
+      <div className="h-screen bg-app flex flex-col overflow-hidden">
+        {/* Session Header - Fixed at top */}
+        <div className="flex-shrink-0 z-20">
+          <SessionHeader 
+            code={sessionState.sessionCode}
+            status={connectionStatus}
+            partnerOnline={partnerOnline}
+          />
+        </div>
         
-        {/* Wrap SingleDeviceTranslator with session functionality */}
-        <div className="flex-1 relative">
+        {/* SingleDeviceTranslator - Takes remaining space */}
+        <div className="flex-1 min-h-0">
           <SingleDeviceTranslator 
             onNewMessage={handleNewMessage}
             messages={(() => {

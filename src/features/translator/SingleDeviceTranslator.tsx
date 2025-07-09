@@ -927,16 +927,16 @@ export function SingleDeviceTranslator({
   }
 
   return (
-    <MobileContainer>
-      <div className="h-screen bg-app flex flex-col relative overflow-hidden">
+    <MobileContainer className="h-full">
+      <div className="h-full bg-app flex flex-col overflow-hidden relative">
         {/* Background decoration */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className="absolute top-0 left-0 w-72 h-72 bg-blue-200 dark:bg-blue-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-pulse-soft" />
           <div className="absolute bottom-0 right-0 w-72 h-72 bg-indigo-200 dark:bg-indigo-900 rounded-full mix-blend-multiply dark:mix-blend-soft-light filter blur-xl opacity-20 animate-pulse-soft" style={{ animationDelay: '1s' }} />
         </div>
 
-        {/* Header - Fixed for Mobile */}
-        <header className="glass-effect fixed top-0 left-0 right-0 z-50 border-b border-white/20 backdrop-blur-md">
+        {/* Header - Sticky at top */}
+        <header className="flex-shrink-0 glass-effect border-b border-white/20 backdrop-blur-md z-10">
           <div className="container mx-auto px-2 py-1">
             <div className="flex items-center justify-between">
               {/* Left side - Back button and Settings */}
@@ -1046,14 +1046,9 @@ export function SingleDeviceTranslator({
             </div>
           </div>
         </header>
-
-        {/* Spacer for fixed header */}
-        <div className="h-12" />
         
-        {/* Message Area - Scrollable content between fixed header and footer */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-[120px]">
+        {/* Message Area - Takes remaining space */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center space-y-4 max-w-md mx-auto">
@@ -1118,12 +1113,10 @@ export function SingleDeviceTranslator({
             
             {/* Invisible element to auto-scroll to */}
             <div ref={messagesEndRef} />
-          </div>
-
         </div>
         
-        {/* Recording Controls - Fixed at bottom for Mobile */}
-        <div className="fixed bottom-0 left-0 right-0 z-50 p-1.5 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50">
+        {/* Recording Controls - Sticky at bottom */}
+        <div className="flex-shrink-0 p-1.5 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50">
             {/* Enhanced Error Display */}
             {error && (
               <ErrorDisplay 
