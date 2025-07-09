@@ -203,6 +203,13 @@ export interface MessageWithReactions extends Message {
   reactions?: MessageReactions
 }
 
+// User activity types
+export interface UserActivity {
+  activity: 'idle' | 'recording' | 'processing' | 'typing'
+  userId?: string
+  timestamp?: string
+}
+
 // Session-related types
 export type ConnectionStatus = 'connected' | 'connecting' | 'disconnected' | 'reconnecting'
 

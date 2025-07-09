@@ -42,6 +42,7 @@ export function SessionTranslator() {
   // Real-time connection status
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting')
   const [partnerOnline, setPartnerOnline] = useState(false)
+  const [partnerActivity, setPartnerActivity] = useState<'idle' | 'recording' | 'processing' | 'typing'>('idle')
   
   // Messages state for session
   const [messages, setMessages] = useState<QueuedMessage[]>([])
@@ -126,6 +127,11 @@ export function SessionTranslator() {
         setMessages(prev => prev.map(msg => 
           msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
         ))
+      },
+      
+      onPartnerActivityChanged: (activity: 'idle' | 'recording' | 'processing' | 'typing') => {
+        console.log('🎯 [SessionTranslator] Partner activity changed:', activity)
+        setPartnerActivity(activity)
       }
     })
     
@@ -312,6 +318,7 @@ export function SessionTranslator() {
               return messages
             })()}
             isSessionMode={true}
+            partnerActivity={partnerActivity}
           />
         </div>
       </div>

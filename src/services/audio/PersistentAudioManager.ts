@@ -385,8 +385,11 @@ export class PersistentAudioManager {
         throw new Error('Invalid audio recording')
       }
       
+      // Compress audio for reduced bandwidth usage
+      const compressedBlob = await this.compressAudio(audioBlob)
+      
       // Create File object for API
-      const audioFile = this.createAudioFile(audioBlob)
+      const audioFile = this.createAudioFile(compressedBlob)
       
       const result: AudioRecordingResult = {
         audioFile,
@@ -446,6 +449,137 @@ export class PersistentAudioManager {
     else if (mimeType.includes('ogg')) fileName = 'audio.ogg'
     
     return new File([audioBlob], fileName, { type: mimeType })
+  }
+  
+  /**
+   * Compress audio by downsampling to 16kHz mono
+   * This reduces file size by ~66% for typical 48kHz stereo audio
+   */
+  private async compressAudio(audioBlob: Blob): Promise<Blob> {
+    console.log('🗜️ Starting audio compression...')
+    console.log('   • Original size:', (audioBlob.size / 1024).toFixed(2) + 'KB')
+    
+    try {
+      // Convert blob to array buffer
+      const arrayBuffer = await audioBlob.arrayBuffer()
+      
+      // Create a temporary audio context for processing
+      const offlineCtx = new OfflineAudioContext(1, 1, 16000) // 1 channel, 1 sample, 16kHz
+      
+      // Decode the audio data
+      const audioBuffer = await offlineCtx.decodeAudioData(arrayBuffer)
+      
+      // Create a new offline context with target parameters
+      const targetSampleRate = 16000 // 16kHz for Whisper
+      const targetChannels = 1 // Mono
+      const targetLength = Math.floor(audioBuffer.duration * targetSampleRate)
+      
+      const compressCtx = new OfflineAudioContext(
+        targetChannels,
+        targetLength,
+        targetSampleRate
+      )
+      
+      // Create buffer source
+      const source = compressCtx.createBufferSource()
+      source.buffer = audioBuffer
+      
+      // Connect and start
+      source.connect(compressCtx.destination)
+      source.start(0)
+      
+      // Render the compressed audio
+      const compressedBuffer = await compressCtx.startRendering()
+      
+      // Convert to WAV format for better compatibility
+      const wavBlob = await this.audioBufferToWav(compressedBuffer)
+      
+      console.log('   • Compressed size:', (wavBlob.size / 1024).toFixed(2) + 'KB')
+      console.log('   • Compression ratio:', ((1 - wavBlob.size / audioBlob.size) * 100).toFixed(1) + '%')
+      console.log('✅ Audio compression complete')
+      
+      return wavBlob
+      
+    } catch (error) {
+      console.error('❌ Audio compression failed:', error)
+      console.log('⚠️ Falling back to original audio')
+      return audioBlob // Return original if compression fails
+    }
+  }
+  
+  /**
+   * Convert AudioBuffer to WAV blob
+   */
+  private async audioBufferToWav(audioBuffer: AudioBuffer): Promise<Blob> {
+    const length = audioBuffer.length * audioBuffer.numberOfChannels * 2 + 44
+    const buffer = new ArrayBuffer(length)
+    const view = new DataView(buffer)
+    const channels: Float32Array[] = []
+    let offset = 0
+    let pos = 0
+    
+    // Write WAV header
+    const setUint16 = (data: number) => {
+      view.setUint16(pos, data, true)
+      pos += 2
+    }
+    
+    const setUint32 = (data: number) => {
+      view.setUint32(pos, data, true)
+      pos += 4
+    }
+    
+    // Write string
+    const writeString = (str: string) => {
+      for (let i = 0; i < str.length; i++) {
+        view.setUint8(pos++, str.charCodeAt(i))
+      }
+    }
+    
+    // RIFF header
+    writeString('RIFF')
+    view.setUint32(pos, length - 8, true)
+    pos += 4
+    writeString('WAVE')
+    
+    // fmt sub-chunk
+    writeString('fmt ')
+    view.setUint32(pos, 16, true) // subchunk size
+    pos += 4
+    view.setUint16(pos, 1, true) // PCM format
+    pos += 2
+    view.setUint16(pos, audioBuffer.numberOfChannels, true)
+    pos += 2
+    view.setUint32(pos, audioBuffer.sampleRate, true)
+    pos += 4
+    view.setUint32(pos, audioBuffer.sampleRate * 2 * audioBuffer.numberOfChannels, true) // byte rate
+    pos += 4
+    view.setUint16(pos, audioBuffer.numberOfChannels * 2, true) // block align
+    pos += 2
+    view.setUint16(pos, 16, true) // bits per sample
+    pos += 2
+    
+    // data sub-chunk
+    writeString('data')
+    view.setUint32(pos, length - pos - 4, true) // subchunk size
+    pos += 4
+    
+    // Write interleaved data
+    for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
+      channels.push(audioBuffer.getChannelData(i))
+    }
+    
+    while (pos < length) {
+      for (let i = 0; i < audioBuffer.numberOfChannels; i++) {
+        let sample = Math.max(-1, Math.min(1, channels[i][offset])) // clamp
+        sample = sample < 0 ? sample * 0x8000 : sample * 0x7FFF // scale to 16-bit
+        view.setInt16(pos, sample, true)
+        pos += 2
+      }
+      offset++
+    }
+    
+    return new Blob([buffer], { type: 'audio/wav' })
   }
   
   /**

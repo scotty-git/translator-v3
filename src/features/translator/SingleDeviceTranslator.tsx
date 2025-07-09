@@ -17,6 +17,7 @@ import { UserManager } from '@/lib/user/UserManager'
 import { useSounds } from '@/lib/sounds/SoundManager'
 import { ConversationContextManager, type ConversationContextEntry } from '@/lib/conversation/ConversationContext'
 import { DebugConsole } from '@/components/debug/DebugConsole'
+import { messageSyncService } from '@/services/MessageSyncService'
 
 /**
  * Generate a unique message ID using UUID
@@ -34,12 +35,14 @@ interface SingleDeviceTranslatorProps {
   onNewMessage?: (message: QueuedMessage) => void
   messages?: QueuedMessage[]
   isSessionMode?: boolean
+  partnerActivity?: 'idle' | 'recording' | 'processing' | 'typing'
 }
 
 export function SingleDeviceTranslator({ 
   onNewMessage, 
   messages: externalMessages, 
-  isSessionMode = false 
+  isSessionMode = false,
+  partnerActivity = 'idle'
 }: SingleDeviceTranslatorProps = {}) {
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -86,12 +89,30 @@ export function SingleDeviceTranslator({
   
   // Using persistent audio manager instead of ref
   const audioManager = persistentAudioManager
+  
+  // Ref for auto-scrolling to bottom
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Debug logging for conversation context system
   useEffect(() => {
     console.log('🔧 [ConversationContext] SingleDeviceTranslator initialized with conversation context system')
     console.log('📊 [ConversationContext] Initial context state:', conversationContext.length, 'messages')
   }, [])
+  
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    if (messages.length > 0 && messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [messages])
+  
+  // Broadcast activity changes in session mode
+  useEffect(() => {
+    if (isSessionMode && currentActivity !== 'idle') {
+      console.log('📡 [SingleDeviceTranslator] Broadcasting activity:', currentActivity)
+      messageSyncService.broadcastActivity(currentActivity)
+    }
+  }, [currentActivity, isSessionMode])
 
 
   // Set up audio manager callbacks (but don't request permissions yet)
@@ -577,6 +598,9 @@ export function SingleDeviceTranslator({
     let translationTime = 0
     let totalStartTime = Date.now()
     
+    // Set activity to processing
+    setCurrentActivity('processing')
+    
     console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
     console.log('🎤 [SINGLE DEVICE] STARTING AUDIO MESSAGE PROCESSING')
     console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
@@ -892,6 +916,8 @@ export function SingleDeviceTranslator({
         ))
       }
     } finally {
+      // Reset activity to idle when processing completes
+      setCurrentActivity('idle')
       // Don't change global states - let each message process independently
       
       // Clear error after 5 seconds
@@ -1026,7 +1052,7 @@ export function SingleDeviceTranslator({
         {/* Message Area - Scrollable content between fixed header and footer */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4 pb-[120px]">
             {messages.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center space-y-4 max-w-md mx-auto">
@@ -1064,12 +1090,14 @@ export function SingleDeviceTranslator({
                       return 'single-user'
                     })()}
                     isSessionMode={isSessionMode}
+                    fontSize={fontSize}
                   />
                 ))}
               </>
             )}
 
-            {/* Activity Indicator - Only show when NOT processing a message */}
+            {/* Activity Indicators */}
+            {/* Own activity - Only show when NOT processing a message */}
             {currentActivity !== 'idle' && !isProcessing && (
               <ActivityIndicator 
                 activity={currentActivity} 
@@ -1077,6 +1105,18 @@ export function SingleDeviceTranslator({
                 isOwnMessage={true}
               />
             )}
+            
+            {/* Partner activity in session mode */}
+            {isSessionMode && partnerActivity !== 'idle' && (
+              <ActivityIndicator 
+                activity={partnerActivity} 
+                userName={t('translator.partner', 'Partner')}
+                isOwnMessage={false}
+              />
+            )}
+            
+            {/* Invisible element to auto-scroll to */}
+            <div ref={messagesEndRef} />
           </div>
 
         </div>

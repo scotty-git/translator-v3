@@ -31,6 +31,7 @@ export class MessageSyncService {
   private onPartnerPresenceChanged?: (isOnline: boolean) => void
   private onMessageDelivered?: (messageId: string) => void
   private onMessageFailed?: (messageId: string, error: string) => void
+  private onPartnerActivityChanged?: (activity: 'idle' | 'recording' | 'processing' | 'typing') => void
 
   // Current session state
   private currentSessionId: string | null = null
@@ -296,12 +297,19 @@ export class MessageSyncService {
         this.updatePartnerPresence(this.presenceChannel?.presenceState())
         this.validateSessionReady()
       })
+      .on('broadcast', { event: 'activity' }, ({ payload }) => {
+        console.log('🎯 [MessageSyncService] Activity broadcast received:', payload)
+        if (payload.userId !== userId && payload.activity) {
+          this.onPartnerActivityChanged?.(payload.activity)
+        }
+      })
       .subscribe(async (status) => {
         if (status === 'SUBSCRIBED') {
           // Track this user's presence
           await this.presenceChannel?.track({
             user_id: userId,
-            online_at: new Date().toISOString()
+            online_at: new Date().toISOString(),
+            activity: 'idle'
           })
         }
       })
@@ -779,19 +787,47 @@ export class MessageSyncService {
     onConnectionStatusChanged,
     onPartnerPresenceChanged,
     onMessageDelivered,
-    onMessageFailed
+    onMessageFailed,
+    onPartnerActivityChanged
   }: {
     onMessageReceived?: (message: SessionMessage) => void
     onConnectionStatusChanged?: (status: ConnectionStatus) => void
     onPartnerPresenceChanged?: (isOnline: boolean) => void
     onMessageDelivered?: (messageId: string) => void
     onMessageFailed?: (messageId: string, error: string) => void
+    onPartnerActivityChanged?: (activity: 'idle' | 'recording' | 'processing' | 'typing') => void
   }): void {
     this.onMessageReceived = onMessageReceived
     this.onConnectionStatusChanged = onConnectionStatusChanged
     this.onPartnerPresenceChanged = onPartnerPresenceChanged
     this.onMessageDelivered = onMessageDelivered
     this.onMessageFailed = onMessageFailed
+    this.onPartnerActivityChanged = onPartnerActivityChanged
+  }
+
+  /**
+   * Broadcast activity to other participants
+   */
+  async broadcastActivity(activity: 'idle' | 'recording' | 'processing' | 'typing'): Promise<void> {
+    if (!this.presenceChannel || !this.currentUserId) {
+      console.warn('⚠️ [MessageSyncService] Cannot broadcast activity - no active channel')
+      return
+    }
+
+    try {
+      console.log('📡 [MessageSyncService] Broadcasting activity:', activity)
+      await this.presenceChannel.send({
+        type: 'broadcast',
+        event: 'activity',
+        payload: {
+          userId: this.currentUserId,
+          activity,
+          timestamp: new Date().toISOString()
+        }
+      })
+    } catch (error) {
+      console.error('❌ [MessageSyncService] Failed to broadcast activity:', error)
+    }
   }
 
   /**

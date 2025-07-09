@@ -14,6 +14,7 @@ export interface MessageBubbleProps {
   theme?: 'blue' | 'emerald' | 'purple' | 'rose' | 'amber'
   currentUserId?: string // For session mode
   isSessionMode?: boolean
+  fontSize?: 'small' | 'medium' | 'large' | 'xl'
 }
 
 type TTSStatus = 'idle' | 'loading' | 'ready' | 'playing' | 'error'
@@ -22,7 +23,8 @@ export function MessageBubble({
   message, 
   theme = 'blue', 
   currentUserId, 
-  isSessionMode = false 
+  isSessionMode = false,
+  fontSize = 'medium'
 }: MessageBubbleProps) {
   // In solo mode, use a consistent userId for all messages
   const userId = currentUserId || 'single-user'
@@ -289,7 +291,10 @@ export function MessageBubble({
         <div className="mb-1">
           {/* Primary text (translation) with placeholder handling */}
           <p className={clsx(
-            'message-text text-base leading-relaxed',
+            'message-text leading-relaxed',
+            fontSize === 'small' ? 'text-sm' : 
+            fontSize === 'medium' ? 'text-base' : 
+            fontSize === 'large' ? 'text-lg' : 'text-xl',
             !useOwnMessageStyling && 'text-gray-900 dark:text-gray-100',
             {
               'text-gray-500 italic': message.status === 'queued' && primaryText === '...',
@@ -307,7 +312,10 @@ export function MessageBubble({
           {/* Secondary text (original) if translation exists */}
           {secondaryText && (
             <p className={clsx(
-              'message-text-secondary text-sm mt-1 opacity-70 leading-relaxed',
+              'message-text-secondary mt-1 opacity-70 leading-relaxed',
+              fontSize === 'small' ? 'text-xs' : 
+              fontSize === 'medium' ? 'text-sm' : 
+              fontSize === 'large' ? 'text-base' : 'text-lg',
               useOwnMessageStyling ? colors.text : 'text-gray-600 dark:text-gray-400'
             )}>
               {secondaryText}
