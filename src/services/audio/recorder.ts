@@ -73,55 +73,130 @@ export class AudioRecorderService {
    * Start recording audio
    */
   async startRecording(): Promise<void> {
+    console.log('🎙️ AudioRecorderService.startRecording() called')
+    console.log('📊 Current recorder state:', this.state)
+    
     return performanceLogger.measureAsync(
       PERF_OPS.AUDIO_RECORDING_START,
       async () => {
         try {
+          console.log('🍎 Checking iOS audio context readiness...')
           // Ensure iOS audio context is ready if on iOS
           const isIOSReady = await ensureIOSAudioContextReady()
+          console.log('🍎 iOS audio context ready:', isIOSReady)
+          
           if (!isIOSReady) {
+            console.log('⚠️ iOS audio context not ready, checking requirements...')
             // On iOS, check if this is due to needing user interaction
             const audioInfo = iosAudioContextManager.getIOSAudioInfo()
+            console.log('🍎 iOS audio info:', audioInfo)
+            
             if (audioInfo.isIOS && audioInfo.requiresUserInteraction) {
-              throw new Error('iOS requires user interaction to enable audio recording. Please tap to start recording.')
+              const errorMsg = 'iOS requires user interaction to enable audio recording. Please tap to start recording.'
+              console.error('❌ iOS audio context error:', errorMsg)
+              throw new Error(errorMsg)
             }
           }
 
           // Get optimized media constraints for current network quality
           const mediaConstraints = QualityDegradationService.getMediaConstraints()
           console.log(`🎚️ Using audio quality: ${QualityDegradationService.getCurrentConfig().description}`)
+          console.log('📋 Media constraints:', JSON.stringify(mediaConstraints, null, 2))
           
           // Check for microphone permissions with network-optimized settings
+          console.log('🎤 Requesting microphone access with getUserMedia...')
+          console.log('🔧 navigator.mediaDevices available:', !!navigator.mediaDevices)
+          console.log('🔧 getUserMedia available:', !!navigator.mediaDevices?.getUserMedia)
+          
           const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+          console.log('✅ getUserMedia succeeded, got stream:', !!stream)
+          console.log('📊 Stream details:', {
+            id: stream.id,
+            active: stream.active,
+            audioTracks: stream.getAudioTracks().length,
+            videoTracks: stream.getVideoTracks().length
+          })
+          
+          // Log audio track details
+          const audioTracks = stream.getAudioTracks()
+          audioTracks.forEach((track, index) => {
+            console.log(`🎵 Audio track ${index}:`, {
+              id: track.id,
+              label: track.label,
+              kind: track.kind,
+              enabled: track.enabled,
+              muted: track.muted,
+              readyState: track.readyState,
+              settings: track.getSettings(),
+              constraints: track.getConstraints()
+            })
+          })
 
+          console.log('💾 Setting up recording variables...')
           this.audioStream = stream;
           this.recordingChunks = [];
           this.startTime = Date.now();
+          console.log('✅ Recording variables set')
 
           // Create MediaRecorder
+          console.log('🎬 Creating MediaRecorder...')
+          console.log('📋 MediaRecorder config:', {
+            mimeType: this.config.mimeType,
+            audioBitsPerSecond: this.config.audioBitsPerSecond
+          })
+          
+          // Check MediaRecorder support
+          console.log('🔧 MediaRecorder available:', !!window.MediaRecorder)
+          console.log('🔧 MIME type supported:', MediaRecorder.isTypeSupported(this.config.mimeType || ''))
+          
           this.mediaRecorder = new MediaRecorder(stream, {
             mimeType: this.config.mimeType,
             audioBitsPerSecond: this.config.audioBitsPerSecond,
           });
+          console.log('✅ MediaRecorder created successfully')
+          console.log('📊 MediaRecorder state:', this.mediaRecorder.state)
+          console.log('📊 MediaRecorder mimeType:', this.mediaRecorder.mimeType)
 
           // Set up event handlers
+          console.log('🔗 Setting up MediaRecorder event handlers...')
+          
           this.mediaRecorder.ondataavailable = (event) => {
+            console.log('📦 Data available event:', {
+              dataSize: event.data.size,
+              dataType: event.data.type,
+              timestamp: new Date().toISOString()
+            })
             if (event.data.size > 0) {
               this.recordingChunks.push(event.data);
+              console.log('💾 Added chunk to recording, total chunks:', this.recordingChunks.length)
             }
           };
 
           this.mediaRecorder.onstop = () => {
+            console.log('🛑 MediaRecorder stop event triggered')
             this.handleRecordingComplete();
           };
 
           this.mediaRecorder.onerror = (event) => {
+            console.error('💥 MediaRecorder error event:', event.error)
             this.handleError(new Error('MediaRecorder error: ' + event.error));
           };
+          
+          console.log('✅ Event handlers set up')
 
           // Start recording with optimized data collection for speed
+          console.log('▶️ Starting MediaRecorder...')
+          console.log('📊 Pre-start MediaRecorder state:', this.mediaRecorder.state)
+          
           this.mediaRecorder.start(250); // Collect data every 250ms (less overhead)
+          console.log('✅ MediaRecorder.start(250) called')
+          console.log('📊 Post-start MediaRecorder state:', this.mediaRecorder.state)
+          
+          console.log('🎯 Setting recorder state to recording...')
           this.setState('recording');
+          console.log('✅ Recorder state set to recording')
+          
+          console.log('🎙️ AudioRecorderService.startRecording() completed successfully!')
 
           // Set up audio level monitoring for visualizer
           this.setupAudioLevelMonitoring(stream);
@@ -136,6 +211,13 @@ export class AudioRecorderService {
           }
 
         } catch (error) {
+          console.error('💥 AudioRecorderService.startRecording() catch block reached')
+          console.error('❌ Error details:', {
+            name: (error as Error).name,
+            message: (error as Error).message,
+            stack: (error as Error).stack,
+            toString: (error as Error).toString()
+          })
           this.handleError(error instanceof Error ? error : new Error('Unknown recording error'));
         }
       },
@@ -265,10 +347,51 @@ export class AudioRecorderService {
    * Handle errors
    */
   private handleError(error: Error): void {
-    console.error('AudioRecorder error:', error);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.error('🚨 AudioRecorder.handleError() called - DETAILED ERROR ANALYSIS')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    console.error('❌ Error object:', error);
+    console.error('📋 Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      toString: error.toString()
+    })
+    
+    console.log('🔍 Current recorder state analysis:')
+    console.log('   📊 Current state:', this.state)
+    console.log('   🎙️ MediaRecorder exists:', !!this.mediaRecorder)
+    console.log('   🎵 Audio stream exists:', !!this.audioStream)
+    console.log('   💾 Recording chunks count:', this.recordingChunks.length)
+    
+    if (this.mediaRecorder) {
+      console.log('   📊 MediaRecorder state:', this.mediaRecorder.state)
+      console.log('   🎬 MediaRecorder mimeType:', this.mediaRecorder.mimeType)
+    }
+    
+    if (this.audioStream) {
+      console.log('   📊 Audio stream active:', this.audioStream.active)
+      console.log('   🎵 Audio tracks count:', this.audioStream.getAudioTracks().length)
+      this.audioStream.getAudioTracks().forEach((track, index) => {
+        console.log(`   🎵 Track ${index} state:`, {
+          enabled: track.enabled,
+          muted: track.muted,
+          readyState: track.readyState
+        })
+      })
+    }
+    
+    console.log('🎯 Setting state to error...')
     this.setState('error');
+    
+    console.log('🧹 Cleaning up resources...')
     this.cleanup();
+    
+    console.log('📞 Calling onError callback...')
     this.onError?.(error);
+    
+    console.log('🚨 AudioRecorder.handleError() completed')
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
   }
 
   /**

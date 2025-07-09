@@ -121,11 +121,7 @@ function App() {
                   <HomeScreen />
                 </Layout>
               } />
-              <Route path="/translator" element={
-                <Layout>
-                  <SingleDeviceTranslator />
-                </Layout>
-              } />
+              <Route path="/translator" element={<SingleDeviceTranslator />} />
               <Route path="/test/phase4" element={
                 <Layout>
                   <Phase4Test />
