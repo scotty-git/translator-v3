@@ -334,8 +334,8 @@ export class MessageSyncService {
    * Set up presence subscription for online/offline tracking
    */
   private async setupPresenceSubscription(sessionId: string, userId: string): Promise<void> {
-    // Generate unique channel name with timestamp
-    const channelName = `presence:${sessionId}:${Date.now()}`
+    // Use deterministic channel name so all devices join the same channel
+    const channelName = `presence:${sessionId}`
     
     // Clean up any existing presence channels for this session
     const existingChannels = supabase.getChannels()
