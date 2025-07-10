@@ -11,9 +11,8 @@ import { messageQueue, type QueuedMessage } from '@/features/messages/MessageQue
 import { IMessageQueue } from '@/services/queues/IMessageQueue'
 import { MessageQueueService } from '@/services/queues/MessageQueueService'
 import { persistentAudioManager, type AudioRecordingResult } from '@/services/audio/PersistentAudioManager'
-import { SecureWhisperService as WhisperService } from '@/services/openai/whisper-secure'
-import { SecureTranslationService as TranslationService } from '@/services/openai/translation-secure'
 import { performanceLogger } from '@/lib/performance'
+import { createTranslationPipeline, type ITranslationPipeline, type TranslationRequest } from '@/services/pipeline'
 import { useTranslation } from '@/lib/i18n/useTranslation'
 import { UserManager } from '@/lib/user/UserManager'
 import { useSounds } from '@/lib/sounds/SoundManager'
@@ -49,6 +48,7 @@ interface SingleDeviceTranslatorProps {
     partnerOnline: boolean
   }
   messageQueueService?: IMessageQueue
+  translationPipeline?: ITranslationPipeline
 }
 
 export function SingleDeviceTranslator({ 
@@ -57,7 +57,8 @@ export function SingleDeviceTranslator({
   isSessionMode = false,
   partnerActivity = 'idle',
   sessionInfo,
-  messageQueueService
+  messageQueueService,
+  translationPipeline
 }: SingleDeviceTranslatorProps = {}) {
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -76,8 +77,9 @@ export function SingleDeviceTranslator({
     testSound 
   } = useSounds()
   
-  // Initialize message queue service (dependency injection or fallback)
+  // Initialize services (dependency injection or fallback)
   const queueService = messageQueueService || messageQueue
+  const pipeline = translationPipeline || createTranslationPipeline()
   
   // Helper functions for session status
   const getSessionStatusIcon = (status: string) => {
@@ -553,23 +555,8 @@ export function SingleDeviceTranslator({
     if (!messageText.trim()) return
 
     const messageId = generateMessageId()
-    let translationTime = 0
-    let totalStartTime = Date.now()
+    const totalStartTime = Date.now()
     
-    // [TRANSLATION LOGS DISABLED FOR DEBUGGING]
-    // console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
-    // console.log('💬 [SINGLE DEVICE] STARTING TEXT MESSAGE PROCESSING')
-    // console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
-    // console.log('📊 Session Info:')
-    // console.log('   • Message ID:', messageId)
-    // console.log('   • Text Message:', `"${messageText}"`)
-    // console.log('   • Timestamp:', new Date().toISOString())
-    // console.log('   • Translation Mode:', translationMode)
-    // console.log('   • Target Language:', targetLanguage)
-    // console.log('   • Current Context Size:', conversationContext.length, 'messages')
-
-    // Don't set global processing state - allow concurrent messages
-
     try {
       // Create initial message in queue
       const initialMessage: QueuedMessage = {
@@ -597,7 +584,6 @@ export function SingleDeviceTranslator({
       // Add message to state based on mode
       if (onNewMessage && externalMessages) {
         // Session mode: notify parent of new message
-        // Keep this log - it's related to session sync
         console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of new message:', {
           id: initialMessage.id,
           status: initialMessage.status,
@@ -610,120 +596,49 @@ export function SingleDeviceTranslator({
         setInternalMessages(prev => [...prev, initialMessage])
       }
 
-      // Detect language and determine translation direction
-      const translationStart = Date.now()
-      
-      // console.log('╔══════════════════════════════════════════════════════════╗')
-      // console.log('║              🌐 TEXT TRANSLATION PROCESSING              ║')
-      // console.log('╚══════════════════════════════════════════════════════════╝')
-      
-      // Enhanced language detection for text with more patterns
-      const hasSpanishWords = /\b(hola|cómo|qué|por|para|con|una|uno|este|esta|está|estás|buenos|días|gracias|adiós|señor|señora)\b/i.test(messageText)
-      const hasPortugueseWords = /\b(olá|como|que|por|para|com|uma|um|este|esta|está|você|obrigado|obrigada|tchau|bom|dia)\b/i.test(messageText)
-      const hasFrenchWords = /\b(bonjour|comment|salut|merci|s'il|vous|plaît|avec|pour|bien|très|c'est|je|tu|il|elle|nous)\b/i.test(messageText)
-      const hasGermanWords = /\b(hallo|guten|tag|danke|bitte|wie|geht|sehr|gut|ich|du|er|sie|wir|mit|für)\b/i.test(messageText)
-      const hasSpanishChars = /[ñáéíóúü¿¡]/i.test(messageText)
-      const hasPortugueseChars = /[çãõâêôà]/i.test(messageText)
-      const hasFrenchChars = /[àâæçèéêëîïôœùûü]/i.test(messageText)
-      const hasGermanChars = /[äöüß]/i.test(messageText)
-      
-      let detectedLangCode = 'en' // Default to English
-      if ((hasSpanishWords || hasSpanishChars) && !hasPortugueseWords && !hasPortugueseChars) {
-        detectedLangCode = 'es'
-      } else if ((hasPortugueseWords || hasPortugueseChars) && !hasSpanishWords && !hasSpanishChars) {
-        detectedLangCode = 'pt'
-      } else if ((hasFrenchWords || hasFrenchChars) && !hasSpanishWords && !hasPortugueseWords) {
-        detectedLangCode = 'fr'
-      } else if ((hasGermanWords || hasGermanChars) && !hasSpanishWords && !hasPortugueseWords && !hasFrenchWords) {
-        detectedLangCode = 'de'
-      }
-      
-      // console.log('🔍 LANGUAGE DETECTION & MAPPING:')
-      // console.log('   • Input text:', `"${messageText}"`)
-      // console.log('   • Detected language code:', detectedLangCode)
-      
-      const langMap: Record<string, 'English' | 'Spanish' | 'Portuguese' | 'French' | 'German'> = {
-        'en': 'English',
-        'es': 'Spanish', 
-        'pt': 'Portuguese',
-        'fr': 'French',
-        'de': 'German'
-      }
-      
-      const detectedLang = langMap[detectedLangCode] || 'English'
-      
-      // Translation logic: Respect user's target language selection
-      let actualTargetLanguage: 'es' | 'en' | 'pt' | 'fr' | 'de' = targetLanguage
-      
-      // console.log('🤖 APPLYING TRANSLATION RULES:')
-      // console.log('   👤 User selected target language:', targetLanguage, `(${langMap[targetLanguage]})`)
-      // console.log('   🔍 Detected input language:', detectedLangCode, `(${detectedLang})`)
-      
-      // Don't translate if input is already in target language
-      if (detectedLangCode === targetLanguage) {
-        // console.log('   📝 RULE: Input already in target language - translating to English instead')
-        actualTargetLanguage = 'en'
-        // console.log('   🎯 RESULT: Translating', detectedLang, '→ English')
-      } else {
-        actualTargetLanguage = targetLanguage
-        // console.log('   📝 RULE: Translating to user selected target language')
-        // console.log('   🎯 RESULT: Translating', detectedLang, '→', langMap[targetLanguage], `(${targetLanguage})`)
-      }
-      
-      const targetLangFull = langMap[actualTargetLanguage] || 'English'
-      
-      // Build context
+      // Create translation request
       const recentMessages = messages.slice(-3).map(msg => msg.original).filter(Boolean)
-      const isRomanticContext = UserManager.detectRomanticContext(recentMessages)
-      
-      // console.log('⏳ CALLING GPT TRANSLATION API...')
-      // console.log('   📝 Input text:', `"${messageText}"`)
-      // console.log('   🔄 FROM:', detectedLang)
-      // console.log('   🎯 TO:', targetLangFull)
-      // console.log('   🎭 Mode:', translationMode)
-      
-      const translationResult = await TranslationService.translate(
-        messageText,
-        detectedLang,
-        targetLangFull,
-        translationMode,
-        {
+      const translationRequest: TranslationRequest = {
+        input: messageText,
+        inputType: 'text',
+        targetLanguage,
+        mode: translationMode,
+        context: {
+          conversationContext,
           recentMessages,
-          isRomanticContext,
-          conversationContext
-        }
-      )
+          isRomanticContext: UserManager.detectRomanticContext(recentMessages)
+        },
+        messageId,
+        userId: 'single-user',
+        sessionId: 'single-device-session'
+      }
       
-      // console.log('🎉 GPT TRANSLATION COMPLETED!')
-      // console.log('   📝 Original text:', `"${translationResult.originalText}"`)
-      // console.log('   🌐 Translated text:', `"${translationResult.translatedText}"`)
-      
-      translationTime = Date.now() - translationStart
+      // Use translation pipeline
+      const result = await pipeline.translate(translationRequest)
       
       // Update conversation context
       const updatedContext = ConversationContextManager.addToContext(
         conversationContext,
         messageText,
-        detectedLangCode,
+        result.originalLanguageCode,
         Date.now()
       )
       setConversationContext(updatedContext)
       
       // Update message
-      const totalTime = Date.now() - totalStartTime
       const finalMessage: QueuedMessage = {
         ...initialMessage,
-        original: messageText,
-        translation: translationResult.translatedText,
-        original_lang: detectedLangCode,
-        target_lang: actualTargetLanguage,
+        original: result.original,
+        translation: result.translation,
+        original_lang: result.originalLanguageCode,
+        target_lang: result.targetLanguageCode,
         status: 'displayed',
         processed_at: new Date().toISOString(),
         displayed_at: new Date().toISOString(),
         performance_metrics: {
           whisperTime: 0, // No whisper for text
-          translationTime,
-          totalTime
+          translationTime: result.metrics.translationTime,
+          totalTime: result.metrics.totalTime
         }
       }
 
@@ -753,8 +668,6 @@ export function SingleDeviceTranslator({
       
       // Clear text input
       setTextMessage('')
-
-      // console.log('🎉 TEXT MESSAGE PROCESSING COMPLETE!')
 
     } catch (err) {
       console.error('❌ Text message processing failed:', err)
@@ -787,232 +700,58 @@ export function SingleDeviceTranslator({
 
   const processAudioMessage = async (audioBlob: Blob) => {
     const messageId = generateMessageId()
-    let whisperTime = 0
-    let translationTime = 0
-    let totalStartTime = Date.now()
     
     // Set activity to processing
     console.log('⚙️ [SingleDeviceTranslator] Activity state change: recording → processing')
     setCurrentActivity('processing')
-    
-    // [TRANSLATION LOGS DISABLED FOR DEBUGGING]
-    // console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
-    // console.log('🎤 [SINGLE DEVICE] STARTING AUDIO MESSAGE PROCESSING')
-    // console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
-    // console.log('📊 Session Info:')
-    // console.log('   • Message ID:', messageId)
-    // console.log('   • Audio Size:', audioBlob.size, 'bytes')
-    // console.log('   • Audio Type:', audioBlob.type)
-    // console.log('   • Timestamp:', new Date().toISOString())
-    // console.log('   • Translation Mode:', translationMode)
-    // console.log('   • Target Language:', targetLanguage)
-    // console.log('   • Current Context Size:', conversationContext.length, 'messages')
-    // console.log('🔧 Current conversation context state:')
-    // if (conversationContext.length === 0) {
-    //   console.log('   ⚠️  NO CONTEXT AVAILABLE - This is a fresh conversation')
-    // } else {
-    //   conversationContext.forEach((entry, index) => {
-    //     console.log(`   ${index + 1}. [${entry.language}] "${entry.text.substring(0, 60)}${entry.text.length > 60 ? '...' : ''}"`)
-    //   })
-    // }
-    // console.log('═══════════════════════════════════════════════════════')
 
     try {
-      // Don't create a message bubble during processing - only show activity indicator
-      // The message will be added when processing is complete with actual content
-
-      // Step 1: Whisper transcription with conversation context
-      performanceLogger.start('whisper-transcription')
-      const whisperStart = Date.now()
-      
-      // console.log('╔══════════════════════════════════════════════════════════╗')
-      // console.log('║                🎧 WHISPER STT PROCESSING                 ║')
-      // console.log('╚══════════════════════════════════════════════════════════╝')
-      
-      // Build Whisper context from conversation history
-      // console.log('🔧 Building Whisper context from conversation history...')
-      const whisperContext = ConversationContextManager.buildWhisperContext(conversationContext)
-      
-      // Convert Blob to File for WhisperService
-      const audioFile = new File([audioBlob], 'recording.webm', { type: audioBlob.type })
-      
-      // console.log('🎧 Calling Whisper API with:')
-      // console.log('   • Audio file size:', audioFile.size, 'bytes')
-      // console.log('   • Audio file type:', audioFile.type)
-      // console.log('   • Context prompt length:', whisperContext.length, 'characters')
-      // console.log('   • Context prompt:', whisperContext ? `"${whisperContext.substring(0, 100)}..."` : 'NONE')
-      // console.log('⏳ Sending to Whisper API...')
-      
-      const transcriptionResult = await WhisperService.transcribeAudio(
-        audioFile,
-        whisperContext || 'This is a casual conversation.'
-      )
-      
-      // console.log('🎉 Whisper API Response Received!')
-      // console.log('   • Transcribed text:', `"${transcriptionResult.text}"`)
-      // console.log('   • Detected language:', transcriptionResult.language)
-      // console.log('   • Audio duration:', transcriptionResult.duration, 'seconds')
-      
-      whisperTime = Date.now() - whisperStart
-      performanceLogger.end('whisper-transcription')
-
-      if (!transcriptionResult.text) {
-        throw new Error('No transcription received from Whisper')
-      }
-
-      // Step 2: Translation
-      performanceLogger.start('translation')
-      const translationStart = Date.now()
-      
-      // console.log('╔══════════════════════════════════════════════════════════╗')
-      // console.log('║              🌐 TRANSLATION LOGIC PROCESSING             ║')
-      // console.log('╚══════════════════════════════════════════════════════════╝')
-      
-      // Map language codes to full names for TranslationService
-      const langMap: Record<string, 'English' | 'Spanish' | 'Portuguese' | 'French' | 'German'> = {
-        'en': 'English',
-        'es': 'Spanish', 
-        'pt': 'Portuguese',
-        'fr': 'French',
-        'de': 'German'
-      }
-      
-      // console.log('🔍 LANGUAGE DETECTION & MAPPING:')
-      // console.log('   • Raw Whisper language:', transcriptionResult.language)
-      
-      const detectedLangCode = WhisperService.detectLanguage(transcriptionResult.language)
-      // console.log('   • Mapped language code:', detectedLangCode)
-      
-      const detectedLang = langMap[detectedLangCode] || 'English'
-      // console.log('   • Full language name:', detectedLang)
-      
-      // Language detected successfully
-      
-      // console.log('')
-      // console.log('🎯 TRANSLATION DIRECTION LOGIC:')
-      // console.log('   • User selected target in UI:', targetLanguage)
-      // console.log('   • User selected target name:', langMap[targetLanguage])
-      // console.log('   • Detected input language:', detectedLangCode, `(${detectedLang})`)
-      
-      // Translation logic: Respect user's target language selection
-      let actualTargetLanguage: 'es' | 'en' | 'pt' | 'fr' | 'de' = targetLanguage
-      
-      // console.log('🤖 APPLYING TRANSLATION RULES:')
-      // console.log('   👤 User selected target language:', targetLanguage, `(${langMap[targetLanguage]})`)
-      // console.log('   🔍 Detected input language:', detectedLangCode, `(${detectedLang})`)
-      
-      // Don't translate if input is already in target language
-      if (detectedLangCode === targetLanguage) {
-        // console.log('   📝 RULE: Input already in target language - translating to English instead')
-        actualTargetLanguage = 'en'
-        // console.log('   🎯 RESULT: Translating', detectedLang, '→ English')
-      } else {
-        actualTargetLanguage = targetLanguage
-        // console.log('   📝 RULE: Translating to user selected target language')
-        // console.log('   🎯 RESULT: Translating', detectedLang, '→', langMap[targetLanguage], `(${targetLanguage})`)
-      }
-      
-      const targetLangFull = langMap[actualTargetLanguage] || 'English'
-      
-      // console.log('')
-      // console.log('📊 FINAL TRANSLATION PARAMETERS:')
-      // console.log('   • FROM Language Code:', detectedLangCode)
-      // console.log('   • FROM Language Full:', detectedLang)
-      // console.log('   • TO Language Code:', actualTargetLanguage)
-      // console.log('   • TO Language Full:', targetLangFull)
-      // console.log('   • Translation Text:', `"${transcriptionResult.text}"`)
-      // console.log('   • Translation Mode:', translationMode)
-      
-      // console.log('')
-      // console.log('🔧 BUILDING CONTEXT FOR GPT TRANSLATION:')
-      
-      // Build context from conversation context (new enhanced system)
+      // Create translation request
       const recentMessages = messages.slice(-3).map(msg => msg.original).filter(Boolean)
-      // console.log('   • Recent messages (legacy):', recentMessages.length, 'messages')
-      // recentMessages.forEach((msg, i) => {
-      //   console.log(`     ${i + 1}. "${msg.substring(0, 50)}${msg.length > 50 ? '...' : ''}"`)
-      // })
-      
-      const isRomanticContext = UserManager.detectRomanticContext(recentMessages)
-      // console.log('   • Romantic context detected:', isRomanticContext)
-      // console.log('   • Conversation context entries:', conversationContext.length)
-      
-      // console.log('')
-      // console.log('⏳ CALLING GPT TRANSLATION API...')
-      // console.log('   📝 Input text:', `"${transcriptionResult.text}"`)
-      // console.log('   🔄 FROM:', detectedLang)
-      // console.log('   🎯 TO:', targetLangFull)
-      // console.log('   🎭 Mode:', translationMode)
-      // console.log('   💕 Romantic context:', isRomanticContext)
-      
-      const translationResult = await TranslationService.translate(
-        transcriptionResult.text,
-        detectedLang,
-        targetLangFull,
-        translationMode, // Use user's preferred mode
-        {
+      const translationRequest: TranslationRequest = {
+        input: audioBlob,
+        inputType: 'audio',
+        targetLanguage,
+        mode: translationMode,
+        context: {
+          conversationContext,
           recentMessages,
-          isRomanticContext,
-          conversationContext // NEW: Enhanced conversation context
-        }
-      )
+          isRomanticContext: UserManager.detectRomanticContext(recentMessages)
+        },
+        messageId,
+        userId: 'single-user',
+        sessionId: 'single-device-session'
+      }
       
-      // console.log('')
-      // console.log('🎉 GPT TRANSLATION COMPLETED!')
-      // console.log('   📝 Original text:', `"${translationResult.originalText}"`)
-      // console.log('   🌐 Translated text:', `"${translationResult.translatedText}"`)
-      // console.log('   🔤 Original language:', translationResult.originalLanguage)
-      // console.log('   🎯 Target language:', translationResult.targetLanguage)
-      // console.log('   🔧 Input tokens:', translationResult.inputTokens || 'unknown')
-      // console.log('   🔧 Output tokens:', translationResult.outputTokens || 'unknown')
-
-      translationTime = Date.now() - translationStart
-      performanceLogger.end('translation')
-
-      // console.log('🔊 Translation complete (sound disabled for own messages)')
-      // Removed: playTranslationComplete() - only play sounds for incoming partner messages
-
-      // console.log('')
-      // console.log('╔══════════════════════════════════════════════════════════╗')
-      // console.log('║           📝 UPDATING CONVERSATION CONTEXT               ║')
-      // console.log('╚══════════════════════════════════════════════════════════╝')
+      // Use translation pipeline
+      const result = await pipeline.translate(translationRequest)
       
-      // Add to conversation context for future translations
-      // console.log('🔧 Adding new message to conversation context...')
-      // console.log('   • Message text:', `"${transcriptionResult.text}"`)
-      // console.log('   • Detected language:', detectedLangCode)
-      // console.log('   • Current context size:', conversationContext.length)
-      
+      // Update conversation context
       const updatedContext = ConversationContextManager.addToContext(
         conversationContext,
-        transcriptionResult.text,
-        detectedLangCode,
+        result.original,
+        result.originalLanguageCode,
         Date.now()
       )
       setConversationContext(updatedContext)
-      
-      // console.log('✅ Context successfully updated!')
-      // console.log('   • New context size:', updatedContext.length)
-      // console.log('   • Ready for next translation request')
 
       // Final message update
-      const totalTime = Date.now() - totalStartTime
       const finalMessage: QueuedMessage = {
         id: messageId,
         session_id: 'single-device-session',
         user_id: 'single-user',
-        original: transcriptionResult.text,
-        translation: translationResult.translatedText,
-        original_lang: detectedLangCode,
-        target_lang: actualTargetLanguage,
+        original: result.original,
+        translation: result.translation,
+        original_lang: result.originalLanguageCode,
+        target_lang: result.targetLanguageCode,
         status: 'displayed',
         queued_at: new Date().toISOString(),
         processed_at: new Date().toISOString(),
         displayed_at: new Date().toISOString(),
         performance_metrics: {
-          whisperTime,
-          translationTime,
-          totalTime
+          whisperTime: result.metrics.whisperTime || 0,
+          translationTime: result.metrics.translationTime,
+          totalTime: result.metrics.totalTime
         },
         timestamp: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -1040,45 +779,16 @@ export function SingleDeviceTranslator({
         setInternalMessages(prev => [...prev, finalMessage])
       }
 
-      // Don't play sound for own messages - only for incoming partner messages
-      // console.log('🔊 Message completed - sound disabled for own messages')
-
-      // console.log('')
-      // console.log('🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉')
-      // console.log('🎉 [SINGLE DEVICE] MESSAGE PROCESSING COMPLETE SUCCESS!')
-      // console.log('🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉')
-      // console.log('📊 FINAL SUMMARY:')
-      // console.log('   • Original Text:', `"${transcriptionResult.text}"`)
-      // console.log('   • Translated Text:', `"${translationResult.translatedText}"`)
-      // console.log('   • Detected Language:', detectedLangCode, `(${detectedLang})`)
-      // console.log('   • Target Language:', actualTargetLanguage, `(${targetLangFull})`)
-      // console.log('   • Translation Mode:', translationMode)
-      // console.log('   • Context Window Size:', updatedContext.length, 'messages')
-      // console.log('   • Romantic Context:', isRomanticContext)
-      // console.log('')
-      // console.log('⏱️  PERFORMANCE METRICS:')
-      // console.log('   • Whisper Time:', whisperTime, 'ms')
-      // console.log('   • Translation Time:', translationTime, 'ms')
-      // console.log('   • Total Processing Time:', totalTime, 'ms')
-      // console.log('')
-      // console.log('🎯 NEXT MESSAGE WILL HAVE ENHANCED CONTEXT!')
-      // console.log('═══════════════════════════════════════════════════════')
-
     } catch (err) {
       console.error('❌ Single device audio processing failed:', err)
       setError(`Processing failed: ${(err as Error).message}`)
       
       // Play error sound
       playError()
-      
-      // Since we don't create placeholder messages during processing,
-      // we don't need to update any message state on failure
-      // The activity indicator will be cleared in the finally block
     } finally {
       // Reset activity to idle when processing completes
       console.log('✅ [SingleDeviceTranslator] Activity state change: processing → idle')
       setCurrentActivity('idle')
-      // Don't change global states - let each message process independently
       
       // Clear error after 5 seconds
       setTimeout(() => setError(null), 5000)
