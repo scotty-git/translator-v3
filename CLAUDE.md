@@ -121,7 +121,7 @@ This is a mobile-first voice translation app enabling real-time communication be
 - OpenAI APIs (Whisper, GPT-4o-mini, TTS)
 - Mobile-first responsive design
 
-**Current Phase: STABLE PRODUCTION BUILD (July 10, 2025)**
+**Current Phase: STABLE PRODUCTION BUILD (July 10, 2025) - Phase 1d RealtimeConnection COMPLETED**
 
 ### ✅ **CORE FEATURES COMPLETED & STABLE:**
 - ✅ **Real-time Translation** (100%): Voice recording, Whisper transcription, GPT-4o-mini translation
@@ -143,7 +143,9 @@ This is a mobile-first voice translation app enabling real-time communication be
 ### 🔧 **RECENT CRITICAL FIXES (July 10, 2025):**
 - ✅ **Console Performance**: Eliminated render-time logging causing 60fps spam
 - ✅ **Activity Indicator Sync**: Fixed presence channel isolation bug
-- ✅ **UI/UX Polish**: Improved sound management and scroll behavior
+- ✅ **RealtimeConnection Bug**: Fixed deterministic channel naming - activity indicators working perfectly!
+- ✅ **Cross-device Communication**: Removed timestamp suffixes that broke presence broadcasts
+- ✅ **Service Architecture**: Phase 1d completed - centralized Supabase channel management
 
 ### 📈 **PRODUCTION METRICS:**
 - **Build Size**: ~1.1MB gzipped
@@ -340,6 +342,7 @@ npx vercel --prod
 - ✅ Activity indicators (recording, processing, typing) with real-time sync
 - ✅ Performance logging system with detailed metrics
 - ✅ Connection recovery with exponential backoff
+- ✅ **RealtimeConnection Service** (Phase 1d): Centralized Supabase channel management
 
 **Key Components:**
 1. **MessageSyncService** (`/src/services/MessageSyncService.ts`)
@@ -359,6 +362,15 @@ npx vercel --prod
    - **Idle State**: Default state when no activity
    - **Real-time Sync**: Activity broadcasts via presence channels
    - **CRITICAL FIX July 10**: Fixed presence channel isolation bug that prevented activity sync
+
+5. **RealtimeConnection Service** (Phase 1d - July 10, 2025):
+   - **Centralized Channel Management**: All Supabase channel creation/cleanup in one service
+   - **Robust Reconnection**: Exponential backoff with proper channel recreation
+   - **Connection State Tracking**: Clear visibility into connection status
+   - **Deterministic Channel Naming**: Fixed timestamp suffix bug that broke cross-device communication
+   - **Network Resilience**: Handles disconnections and automatic reconnection
+   - **Clean Dependency Injection**: Used by MessageSyncService and PresenceService
+   - **CRITICAL FIX**: Removed `${Date.now()}` from channel names - this was breaking everything!
 
 3. **Database Configuration:**
    ```sql
@@ -389,6 +401,7 @@ npx vercel --prod
 - ✅ Subscription timing issues (wait for SUBSCRIBED status)
 - ✅ **Console performance spam** (July 10): Removed render-time logging from ActivityIndicator and AudioVisualization
 - ✅ **Activity indicator isolation** (July 10): Fixed presence channel timestamps causing devices to join separate channels
+- ✅ **Deterministic channel naming** (July 10): Fixed RealtimeConnection timestamp suffixes breaking cross-device communication
 
 ### Phase 5: Mobile Network Resilience (COMPLETED)
 - Network quality detection (4G → 2G)
@@ -440,6 +453,8 @@ sudo networksetup -setproxybypassdomains Wi-Fi "*.local" "169.254/16" "localhost
 10. **Real-time Debugging**: Always check if devices are actually on the same channel
 11. **User Skepticism**: When user says "it worked yesterday" - believe them, it's usually a timing/config issue
 12. **Channel Management**: Use `presence:${sessionId}` not `presence:${sessionId}:${timestamp}`
+13. **Supabase Debugging Protocol**: Use SQL queries to investigate realtime subscription issues
+14. **Phase 1d Lesson**: RealtimeConnection timestamp suffixes broke cross-device communication entirely
 
 ---
 
