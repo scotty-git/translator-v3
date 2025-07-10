@@ -8,6 +8,8 @@ import { MobileContainer } from '@/components/layout/MobileContainer'
 import { MessageBubble } from '@/features/messages/MessageBubble'
 import { ActivityIndicator } from '@/features/messages/ActivityIndicator'
 import { messageQueue, type QueuedMessage } from '@/features/messages/MessageQueue'
+import { IMessageQueue } from '@/services/queues/IMessageQueue'
+import { MessageQueueService } from '@/services/queues/MessageQueueService'
 import { persistentAudioManager, type AudioRecordingResult } from '@/services/audio/PersistentAudioManager'
 import { SecureWhisperService as WhisperService } from '@/services/openai/whisper-secure'
 import { SecureTranslationService as TranslationService } from '@/services/openai/translation-secure'
@@ -46,6 +48,7 @@ interface SingleDeviceTranslatorProps {
     status: 'connected' | 'connecting' | 'reconnecting' | 'disconnected'
     partnerOnline: boolean
   }
+  messageQueueService?: IMessageQueue
 }
 
 export function SingleDeviceTranslator({ 
@@ -53,7 +56,8 @@ export function SingleDeviceTranslator({
   messages: externalMessages, 
   isSessionMode = false,
   partnerActivity = 'idle',
-  sessionInfo
+  sessionInfo,
+  messageQueueService
 }: SingleDeviceTranslatorProps = {}) {
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -71,6 +75,9 @@ export function SingleDeviceTranslator({
     setNotificationSound, 
     testSound 
   } = useSounds()
+  
+  // Initialize message queue service (dependency injection or fallback)
+  const queueService = messageQueueService || messageQueue
   
   // Helper functions for session status
   const getSessionStatusIcon = (status: string) => {
@@ -585,7 +592,7 @@ export function SingleDeviceTranslator({
         displayOrder: messages.length + 1
       }
 
-      await messageQueue.add(initialMessage)
+      await queueService.add(initialMessage)
       
       // Add message to state based on mode
       if (onNewMessage && externalMessages) {
@@ -720,7 +727,7 @@ export function SingleDeviceTranslator({
         }
       }
 
-      await messageQueue.add(finalMessage)
+      await queueService.add(finalMessage)
       
       // Update message based on mode
       if (onNewMessage && externalMessages) {
@@ -1014,7 +1021,7 @@ export function SingleDeviceTranslator({
         displayOrder: messages.length + 1
       }
 
-      await messageQueue.add(finalMessage)
+      await queueService.add(finalMessage)
       
       // Update message based on mode
       if (onNewMessage && externalMessages) {

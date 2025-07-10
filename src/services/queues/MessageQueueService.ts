@@ -1,4 +1,5 @@
 import { Message, MessageStatus, MessageWithReactions } from '@/types/database'
+import { IMessageQueue } from './IMessageQueue'
 
 export interface QueuedMessage extends MessageWithReactions {
   localId: string
@@ -6,7 +7,12 @@ export interface QueuedMessage extends MessageWithReactions {
   displayOrder: number
 }
 
-export class MessageQueue {
+/**
+ * MessageQueueService - Extracted from SingleDeviceTranslator
+ * Handles message queuing, ordering, and processing logic
+ * Implements dependency injection pattern for clean testing and isolation
+ */
+export class MessageQueueService implements IMessageQueue {
   private queue: Map<string, QueuedMessage> = new Map()
   private processing = false
   private displayOrder = 0
@@ -41,6 +47,17 @@ export class MessageQueue {
       if (status === 'displayed') {
         message.displayed_at = new Date().toISOString()
       }
+      this.notifyListeners()
+    }
+  }
+
+  /**
+   * Update message with partial data
+   */
+  updateMessage(messageId: string, updates: Partial<QueuedMessage>): void {
+    const message = this.queue.get(messageId)
+    if (message) {
+      Object.assign(message, updates)
       this.notifyListeners()
     }
   }
@@ -229,8 +246,13 @@ export class MessageQueue {
       toRemove.forEach(m => this.queue.delete(m.id))
     }
   }
-}
 
-// Legacy singleton instance for backward compatibility during Phase 1a refactor
-// This will be removed in later phases as all components migrate to dependency injection
-export const messageQueue = new MessageQueue()
+  /**
+   * Clear all messages
+   */
+  clear(): void {
+    this.queue.clear()
+    this.displayOrder = 0
+    this.notifyListeners()
+  }
+}

@@ -8,6 +8,7 @@ import type { QueuedMessage } from '@/features/messages/MessageQueue'
 import type { SessionMessage, ConnectionStatus } from '@/types/database'
 import { ErrorToast } from '@/components/ErrorDisplay'
 import { useSounds } from '@/lib/sounds/SoundManager'
+import { MessageQueueService } from '@/services/queues/MessageQueueService'
 
 interface SessionState {
   sessionId: string
@@ -49,6 +50,9 @@ export function SessionTranslator() {
   // Messages state for session
   const [messages, setMessages] = useState<QueuedMessage[]>([])
   const [error, setError] = useState<Error | null>(null)
+  
+  // Create MessageQueueService instance for session mode
+  const [messageQueueService] = useState(() => new MessageQueueService())
   
   // Redirect if no session and handle session expiry
   useEffect(() => {
@@ -362,6 +366,7 @@ export function SessionTranslator() {
               status: connectionStatus,
               partnerOnline: partnerOnline
             }}
+            messageQueueService={messageQueueService}
           />
         </div>
       </div>

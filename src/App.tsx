@@ -40,6 +40,13 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary'
 import { accessibilityManager } from '@/lib/accessibility/AccessibilityManager'
 import { pwaManager } from '@/lib/pwa/PWAManager'
 import { UserManager } from '@/lib/user/UserManager'
+import { MessageQueueService } from '@/services/queues/MessageQueueService'
+
+// Solo translator with injected MessageQueueService
+function SoloTranslatorWrapper() {
+  const messageQueueService = new MessageQueueService()
+  return <SingleDeviceTranslator messageQueueService={messageQueueService} />
+}
 
 // Loading fallback component for lazy loaded routes
 function LoadingFallback() {
@@ -122,7 +129,7 @@ function App() {
                   <HomeScreen />
                 </Layout>
               } />
-              <Route path="/translator" element={<SingleDeviceTranslator />} />
+              <Route path="/translator" element={<SoloTranslatorWrapper />} />
               <Route path="/session" element={<SessionTranslator />} />
               <Route path="/test/phase4" element={
                 <Layout>
