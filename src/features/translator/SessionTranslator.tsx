@@ -330,17 +330,15 @@ export function SessionTranslator() {
       try {
         console.log('📤 [SessionTranslator] Sending message to MessageSyncService:', message.id)
         
-        // Transform QueuedMessage to format expected by queueMessage
+        // Transform QueuedMessage to format expected by queueMessage (matching actual DB schema)
         const queuedMessageData = {
           session_id: sessionState.sessionId,
           sender_id: sessionState.userId,
           original_text: message.original,
           translated_text: message.translation,
-          source_language: message.originalLang || 'auto',
-          target_language: message.targetLang || 'auto',
-          created_at: new Date().toISOString(),
-          is_audio: message.isAudio || false,
-          audio_duration: message.audioDuration || null
+          original_language: message.originalLang || 'auto',
+          timestamp: new Date().toISOString()
+          // Note: Removed non-existent columns: audio_duration, is_audio, target_language, created_at
         }
         
         const messageId = messageSyncService.queueMessage(queuedMessageData)

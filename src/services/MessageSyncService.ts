@@ -148,11 +148,9 @@ export class MessageSyncService {
       sender_id: queuedMessage.sender_id,
       original_text: queuedMessage.original_text,
       translated_text: queuedMessage.translated_text,
-      source_language: queuedMessage.source_language,
-      target_language: queuedMessage.target_language,
-      created_at: queuedMessage.created_at,
-      is_audio: queuedMessage.is_audio || false,
-      audio_duration: queuedMessage.audio_duration
+      original_language: queuedMessage.original_language,
+      timestamp: queuedMessage.timestamp
+      // Note: Removed non-existent columns: source_language, target_language, created_at, is_audio, audio_duration
     }
 
     const { error } = await supabase
