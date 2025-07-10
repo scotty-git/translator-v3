@@ -127,7 +127,7 @@ export function SingleDeviceTranslator({
   const [error, setError] = useState<string | null>(null)
   const [targetLanguage, setTargetLanguage] = useState<'es' | 'pt' | 'fr' | 'de'>(() => {
     const saved = UserManager.getPreference('targetLanguage', 'es')
-    console.log('🎯 Initial target language:', saved)
+    // console.log('🎯 Initial target language:', saved)
     return saved as 'es' | 'pt' | 'fr' | 'de'
   })
   const [translationMode, setTranslationMode] = useState<'casual' | 'fun'>(() => UserManager.getTranslationMode())
@@ -166,8 +166,8 @@ export function SingleDeviceTranslator({
 
   // Debug logging for conversation context system
   useEffect(() => {
-    console.log('🔧 [ConversationContext] SingleDeviceTranslator initialized with conversation context system')
-    console.log('📊 [ConversationContext] Initial context state:', conversationContext.length, 'messages')
+    // console.log('🔧 [ConversationContext] SingleDeviceTranslator initialized with conversation context system')
+    // console.log('📊 [ConversationContext] Initial context state:', conversationContext.length, 'messages')
   }, [])
   
   // Handle smart scrolling when messages change
@@ -191,7 +191,7 @@ export function SingleDeviceTranslator({
       // When regaining focus, scroll to first unread if there are unread messages
       if (unreadCount > 0 && firstUnreadMessageId) {
         setTimeout(() => {
-          console.log('📱 Focus regained - scrolling to first unread message:', firstUnreadMessageId)
+          // console.log('📱 Focus regained - scrolling to first unread message:', firstUnreadMessageId)
           scrollToMessage(firstUnreadMessageId, 'top')
         }, 300)
       }
@@ -231,21 +231,37 @@ export function SingleDeviceTranslator({
   
   // Broadcast activity changes in session mode
   useEffect(() => {
+    console.log('🎯 [SingleDeviceTranslator] Activity changed:', {
+      currentActivity,
+      isSessionMode,
+      shouldBroadcast: isSessionMode && currentActivity !== 'idle'
+    })
+    
     if (isSessionMode && currentActivity !== 'idle') {
       console.log('📡 [SingleDeviceTranslator] Broadcasting activity:', currentActivity)
       messageSyncService.broadcastActivity(currentActivity)
+        .then(() => {
+          console.log('✅ [SingleDeviceTranslator] Activity broadcast successful:', currentActivity)
+        })
+        .catch((error) => {
+          console.error('❌ [SingleDeviceTranslator] Activity broadcast failed:', error)
+        })
+    } else {
+      console.log('⏭️ [SingleDeviceTranslator] Skipping activity broadcast:', {
+        reason: !isSessionMode ? 'not in session mode' : 'activity is idle'
+      })
     }
   }, [currentActivity, isSessionMode])
 
 
   // Set up audio manager callbacks (but don't request permissions yet)
   useEffect(() => {
-    console.log('🎙️ Setting up audio manager callbacks...')
-    console.log('📱 Device info:', {
-      userAgent: navigator.userAgent,
-      platform: navigator.platform,
-      vendor: navigator.vendor
-    })
+    // console.log('🎙️ Setting up audio manager callbacks...')
+    // console.log('📱 Device info:', {
+    //   userAgent: navigator.userAgent,
+    //   platform: navigator.platform,
+    //   vendor: navigator.vendor
+    // })
     
     // Set up event callbacks
     audioManager.onAudioData = (level: number) => {
@@ -253,7 +269,7 @@ export function SingleDeviceTranslator({
     }
     
     audioManager.onStateChange = (state) => {
-      console.log('🎤 Audio manager state changed:', state)
+      // console.log('🎤 Audio manager state changed:', state)
     }
     
     audioManager.onError = (error) => {
@@ -261,7 +277,7 @@ export function SingleDeviceTranslator({
       setError(error.message)
     }
     
-    console.log('✅ Audio manager callbacks configured')
+    // console.log('✅ Audio manager callbacks configured')
     
     return () => {
       // Cleanup callbacks (but keep persistent stream alive)
@@ -289,7 +305,7 @@ export function SingleDeviceTranslator({
   const handleModeToggle = () => {
     const newMode = UserManager.toggleTranslationMode()
     setTranslationMode(newMode)
-    console.log(`🎯 Mode switched to: ${newMode}`)
+    // console.log(`🎯 Mode switched to: ${newMode}`)
   }
 
   // Audio level is now handled by the AudioRecorderService via Web Audio API
@@ -338,23 +354,24 @@ export function SingleDeviceTranslator({
   }, [])
 
   const handleStartRecording = async () => {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🎬 STARTING RECORDING WITH PERSISTENT STREAM')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('📍 handleStartRecording called at:', new Date().toISOString())
-    console.log('🎤 isRecording state:', isRecording)
-    console.log('⚡ currentActivity state:', currentActivity)
-    console.log('🔧 Audio manager ready:', audioManager.isStreamReady())
+    // [AUDIO LOGS DISABLED FOR DEBUGGING]
+    // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    // console.log('🎬 STARTING RECORDING WITH PERSISTENT STREAM')
+    // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    // console.log('📍 handleStartRecording called at:', new Date().toISOString())
+    // console.log('🎤 isRecording state:', isRecording)
+    // console.log('⚡ currentActivity state:', currentActivity)
+    // console.log('🔧 Audio manager ready:', audioManager.isStreamReady())
     
     // Check if already recording
     if (isRecording) {
-      console.log('⚠️ Already recording - this should not happen in handleStartRecording')
+      // console.log('⚠️ Already recording - this should not happen in handleStartRecording')
       return
     }
     
     // Check if stream is ready, if not request permissions
     if (!audioManager.isStreamReady()) {
-      console.log('⚠️ Stream not ready, requesting permissions...')
+      // console.log('⚠️ Stream not ready, requesting permissions...')
       try {
         const hasPermissions = await audioManager.ensurePermissions()
         if (!hasPermissions) {
@@ -362,7 +379,7 @@ export function SingleDeviceTranslator({
           setError('Microphone permission denied. Please grant permission and try again.')
           return
         }
-        console.log('✅ Permissions granted, stream ready')
+        // console.log('✅ Permissions granted, stream ready')
       } catch (err) {
         console.error('❌ Permission error:', err)
         setError(err instanceof Error ? err.message : 'Failed to access microphone')
@@ -372,16 +389,16 @@ export function SingleDeviceTranslator({
     
     try {
       setError(null)
-      console.log('🧹 Error state cleared')
+      // console.log('🧹 Error state cleared')
       
-      console.log('🔊 Recording start (sound disabled for UI actions)')
+      // console.log('🔊 Recording start (sound disabled for UI actions)')
       // Removed: playRecordingStart() - only play sounds for incoming messages
       
-      console.log('⏱️ Starting performance logger...')
+      // console.log('⏱️ Starting performance logger...')
       performanceLogger.start('single-device-recording')
       
-      console.log('🎤 Starting recording with persistent stream...')
-      console.log('   📊 Pre-recording state:', audioManager.getState())
+      // console.log('🎤 Starting recording with persistent stream...')
+      // console.log('   📊 Pre-recording state:', audioManager.getState())
       
       // Set up completion handler
       audioManager.onComplete = async (result: AudioRecordingResult) => {
@@ -399,22 +416,23 @@ export function SingleDeviceTranslator({
       // Start recording using persistent stream
       await audioManager.startRecording()
       
-      console.log('✅ Recording started successfully!')
-      console.log('   📊 Post-recording state:', audioManager.getState())
+      // console.log('✅ Recording started successfully!')
+      // console.log('   📊 Post-recording state:', audioManager.getState())
       
       // Update React state
       setIsRecording(true)
+      console.log('🎤 [SingleDeviceTranslator] Activity state change: idle → recording')
       setCurrentActivity('recording')
       
-      console.log('🎤 Recording state updated, visualizer should be active')
-      console.log('✅ RECORDING FLOW COMPLETED SUCCESSFULLY!')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      // console.log('🎤 Recording state updated, visualizer should be active')
+      // console.log('✅ RECORDING FLOW COMPLETED SUCCESSFULLY!')
+      // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
       
     } catch (err) {
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.error('💥 RECORDING FLOW FAILED')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-      console.error('❌ Recording failed with error:', err)
+      // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      // console.error('💥 RECORDING FLOW FAILED')
+      // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      console.error('❌ [Audio] Recording failed:', err)
       
       // Show user-friendly error message
       const errorMessage = (err as Error).message
@@ -436,43 +454,44 @@ export function SingleDeviceTranslator({
       resetAudioLevel()
       playError()
       
-      console.log('💥 RECORDING FLOW FAILED - Error handling completed')
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+      // console.log('💥 RECORDING FLOW FAILED - Error handling completed')
+      // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
     }
   }
 
   const handleStopRecording = async () => {
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('🛑 STOPPING RECORDING WITH PERSISTENT STREAM')
-    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
-    console.log('📍 handleStopRecording called at:', new Date().toISOString())
-    console.log('🎤 isRecording state:', isRecording)
-    console.log('⚡ currentActivity state:', currentActivity)
-    console.log('🔧 Audio manager state:', audioManager.getState())
+    // [AUDIO LOGS DISABLED FOR DEBUGGING]
+    // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    // console.log('🛑 STOPPING RECORDING WITH PERSISTENT STREAM')
+    // console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+    // console.log('📍 handleStopRecording called at:', new Date().toISOString())
+    // console.log('🎤 isRecording state:', isRecording)
+    // console.log('⚡ currentActivity state:', currentActivity)
+    // console.log('🔧 Audio manager state:', audioManager.getState())
     
     // Pre-validation checks
     if (!isRecording) {
-      console.warn('⚠️ Not recording according to state - cannot stop')
+      // console.warn('⚠️ Not recording according to state - cannot stop')
       return
     }
     
     if (audioManager.getState() !== 'recording') {
-      console.warn('⚠️ Audio manager not in recording state, resetting UI')
+      // console.warn('⚠️ Audio manager not in recording state, resetting UI')
       setIsRecording(false)
       setCurrentActivity('idle')
       return
     }
     
-    console.log('✅ Pre-validation checks passed, proceeding to stop recording')
+    // console.log('✅ Pre-validation checks passed, proceeding to stop recording')
 
     try {
-      console.log('🛑 Stopping recording...')
+      // console.log('🛑 Stopping recording...')
       
       // Update UI state immediately
       setIsRecording(false)
       setCurrentActivity('idle')
       
-      console.log('🔊 Recording stop (sound disabled for UI actions)')
+      // console.log('🔊 Recording stop (sound disabled for UI actions)')
       // Removed: playRecordingStop() - only play sounds for incoming messages
       
       // Reset audio level to 0
@@ -481,7 +500,7 @@ export function SingleDeviceTranslator({
       // Stop recording using persistent stream
       await audioManager.stopRecording()
       
-      console.log('✅ Recording stopped successfully')
+      // console.log('✅ Recording stopped successfully')
 
     } catch (err) {
       console.error('❌ Failed to stop recording:', err)
@@ -492,18 +511,19 @@ export function SingleDeviceTranslator({
   }
 
   const handleCancelRecording = async () => {
-    console.log('🚫 CANCELING RECORDING')
-    console.log('📍 handleCancelRecording called at:', new Date().toISOString())
-    console.log('🎤 isRecording state:', isRecording)
-    console.log('⚡ currentActivity state:', currentActivity)
+    // [AUDIO LOGS DISABLED FOR DEBUGGING]
+    // console.log('🚫 CANCELING RECORDING')
+    // console.log('📍 handleCancelRecording called at:', new Date().toISOString())
+    // console.log('🎤 isRecording state:', isRecording)
+    // console.log('⚡ currentActivity state:', currentActivity)
     
     if (!isRecording) {
-      console.warn('⚠️ Not recording according to state - cannot cancel')
+      // console.warn('⚠️ Not recording according to state - cannot cancel')
       return
     }
     
     try {
-      console.log('🛑 Canceling recording without processing...')
+      // console.log('🛑 Canceling recording without processing...')
       
       // Update UI state immediately
       setIsRecording(false)
@@ -518,7 +538,7 @@ export function SingleDeviceTranslator({
       // Clear any completion handler to prevent processing
       audioManager.onComplete = undefined
       
-      console.log('✅ Recording canceled successfully')
+      // console.log('✅ Recording canceled successfully')
       
     } catch (err) {
       console.error('❌ Failed to cancel recording:', err)
@@ -535,16 +555,17 @@ export function SingleDeviceTranslator({
     let translationTime = 0
     let totalStartTime = Date.now()
     
-    console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
-    console.log('💬 [SINGLE DEVICE] STARTING TEXT MESSAGE PROCESSING')
-    console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
-    console.log('📊 Session Info:')
-    console.log('   • Message ID:', messageId)
-    console.log('   • Text Message:', `"${messageText}"`)
-    console.log('   • Timestamp:', new Date().toISOString())
-    console.log('   • Translation Mode:', translationMode)
-    console.log('   • Target Language:', targetLanguage)
-    console.log('   • Current Context Size:', conversationContext.length, 'messages')
+    // [TRANSLATION LOGS DISABLED FOR DEBUGGING]
+    // console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+    // console.log('💬 [SINGLE DEVICE] STARTING TEXT MESSAGE PROCESSING')
+    // console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+    // console.log('📊 Session Info:')
+    // console.log('   • Message ID:', messageId)
+    // console.log('   • Text Message:', `"${messageText}"`)
+    // console.log('   • Timestamp:', new Date().toISOString())
+    // console.log('   • Translation Mode:', translationMode)
+    // console.log('   • Target Language:', targetLanguage)
+    // console.log('   • Current Context Size:', conversationContext.length, 'messages')
 
     // Don't set global processing state - allow concurrent messages
 
@@ -575,6 +596,7 @@ export function SingleDeviceTranslator({
       // Add message to state based on mode
       if (onNewMessage && externalMessages) {
         // Session mode: notify parent of new message
+        // Keep this log - it's related to session sync
         console.log('📨 [SingleDeviceTranslator] Session mode - notifying parent of new message:', {
           id: initialMessage.id,
           status: initialMessage.status,
@@ -590,9 +612,9 @@ export function SingleDeviceTranslator({
       // Detect language and determine translation direction
       const translationStart = Date.now()
       
-      console.log('╔══════════════════════════════════════════════════════════╗')
-      console.log('║              🌐 TEXT TRANSLATION PROCESSING              ║')
-      console.log('╚══════════════════════════════════════════════════════════╝')
+      // console.log('╔══════════════════════════════════════════════════════════╗')
+      // console.log('║              🌐 TEXT TRANSLATION PROCESSING              ║')
+      // console.log('╚══════════════════════════════════════════════════════════╝')
       
       // Enhanced language detection for text with more patterns
       const hasSpanishWords = /\b(hola|cómo|qué|por|para|con|una|uno|este|esta|está|estás|buenos|días|gracias|adiós|señor|señora)\b/i.test(messageText)
@@ -615,9 +637,9 @@ export function SingleDeviceTranslator({
         detectedLangCode = 'de'
       }
       
-      console.log('🔍 LANGUAGE DETECTION & MAPPING:')
-      console.log('   • Input text:', `"${messageText}"`)
-      console.log('   • Detected language code:', detectedLangCode)
+      // console.log('🔍 LANGUAGE DETECTION & MAPPING:')
+      // console.log('   • Input text:', `"${messageText}"`)
+      // console.log('   • Detected language code:', detectedLangCode)
       
       const langMap: Record<string, 'English' | 'Spanish' | 'Portuguese' | 'French' | 'German'> = {
         'en': 'English',
@@ -632,19 +654,19 @@ export function SingleDeviceTranslator({
       // Translation logic: Respect user's target language selection
       let actualTargetLanguage: 'es' | 'en' | 'pt' | 'fr' | 'de' = targetLanguage
       
-      console.log('🤖 APPLYING TRANSLATION RULES:')
-      console.log('   👤 User selected target language:', targetLanguage, `(${langMap[targetLanguage]})`)
-      console.log('   🔍 Detected input language:', detectedLangCode, `(${detectedLang})`)
+      // console.log('🤖 APPLYING TRANSLATION RULES:')
+      // console.log('   👤 User selected target language:', targetLanguage, `(${langMap[targetLanguage]})`)
+      // console.log('   🔍 Detected input language:', detectedLangCode, `(${detectedLang})`)
       
       // Don't translate if input is already in target language
       if (detectedLangCode === targetLanguage) {
-        console.log('   📝 RULE: Input already in target language - translating to English instead')
+        // console.log('   📝 RULE: Input already in target language - translating to English instead')
         actualTargetLanguage = 'en'
-        console.log('   🎯 RESULT: Translating', detectedLang, '→ English')
+        // console.log('   🎯 RESULT: Translating', detectedLang, '→ English')
       } else {
         actualTargetLanguage = targetLanguage
-        console.log('   📝 RULE: Translating to user selected target language')
-        console.log('   🎯 RESULT: Translating', detectedLang, '→', langMap[targetLanguage], `(${targetLanguage})`)
+        // console.log('   📝 RULE: Translating to user selected target language')
+        // console.log('   🎯 RESULT: Translating', detectedLang, '→', langMap[targetLanguage], `(${targetLanguage})`)
       }
       
       const targetLangFull = langMap[actualTargetLanguage] || 'English'
@@ -653,11 +675,11 @@ export function SingleDeviceTranslator({
       const recentMessages = messages.slice(-3).map(msg => msg.original).filter(Boolean)
       const isRomanticContext = UserManager.detectRomanticContext(recentMessages)
       
-      console.log('⏳ CALLING GPT TRANSLATION API...')
-      console.log('   📝 Input text:', `"${messageText}"`)
-      console.log('   🔄 FROM:', detectedLang)
-      console.log('   🎯 TO:', targetLangFull)
-      console.log('   🎭 Mode:', translationMode)
+      // console.log('⏳ CALLING GPT TRANSLATION API...')
+      // console.log('   📝 Input text:', `"${messageText}"`)
+      // console.log('   🔄 FROM:', detectedLang)
+      // console.log('   🎯 TO:', targetLangFull)
+      // console.log('   🎭 Mode:', translationMode)
       
       const translationResult = await TranslationService.translate(
         messageText,
@@ -671,9 +693,9 @@ export function SingleDeviceTranslator({
         }
       )
       
-      console.log('🎉 GPT TRANSLATION COMPLETED!')
-      console.log('   📝 Original text:', `"${translationResult.originalText}"`)
-      console.log('   🌐 Translated text:', `"${translationResult.translatedText}"`)
+      // console.log('🎉 GPT TRANSLATION COMPLETED!')
+      // console.log('   📝 Original text:', `"${translationResult.originalText}"`)
+      // console.log('   🌐 Translated text:', `"${translationResult.translatedText}"`)
       
       translationTime = Date.now() - translationStart
       
@@ -731,7 +753,7 @@ export function SingleDeviceTranslator({
       // Clear text input
       setTextMessage('')
 
-      console.log('🎉 TEXT MESSAGE PROCESSING COMPLETE!')
+      // console.log('🎉 TEXT MESSAGE PROCESSING COMPLETE!')
 
     } catch (err) {
       console.error('❌ Text message processing failed:', err)
@@ -769,28 +791,30 @@ export function SingleDeviceTranslator({
     let totalStartTime = Date.now()
     
     // Set activity to processing
+    console.log('⚙️ [SingleDeviceTranslator] Activity state change: recording → processing')
     setCurrentActivity('processing')
     
-    console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
-    console.log('🎤 [SINGLE DEVICE] STARTING AUDIO MESSAGE PROCESSING')
-    console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
-    console.log('📊 Session Info:')
-    console.log('   • Message ID:', messageId)
-    console.log('   • Audio Size:', audioBlob.size, 'bytes')
-    console.log('   • Audio Type:', audioBlob.type)
-    console.log('   • Timestamp:', new Date().toISOString())
-    console.log('   • Translation Mode:', translationMode)
-    console.log('   • Target Language:', targetLanguage)
-    console.log('   • Current Context Size:', conversationContext.length, 'messages')
-    console.log('🔧 Current conversation context state:')
-    if (conversationContext.length === 0) {
-      console.log('   ⚠️  NO CONTEXT AVAILABLE - This is a fresh conversation')
-    } else {
-      conversationContext.forEach((entry, index) => {
-        console.log(`   ${index + 1}. [${entry.language}] "${entry.text.substring(0, 60)}${entry.text.length > 60 ? '...' : ''}"`)
-      })
-    }
-    console.log('═══════════════════════════════════════════════════════')
+    // [TRANSLATION LOGS DISABLED FOR DEBUGGING]
+    // console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+    // console.log('🎤 [SINGLE DEVICE] STARTING AUDIO MESSAGE PROCESSING')
+    // console.log('🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀🚀')
+    // console.log('📊 Session Info:')
+    // console.log('   • Message ID:', messageId)
+    // console.log('   • Audio Size:', audioBlob.size, 'bytes')
+    // console.log('   • Audio Type:', audioBlob.type)
+    // console.log('   • Timestamp:', new Date().toISOString())
+    // console.log('   • Translation Mode:', translationMode)
+    // console.log('   • Target Language:', targetLanguage)
+    // console.log('   • Current Context Size:', conversationContext.length, 'messages')
+    // console.log('🔧 Current conversation context state:')
+    // if (conversationContext.length === 0) {
+    //   console.log('   ⚠️  NO CONTEXT AVAILABLE - This is a fresh conversation')
+    // } else {
+    //   conversationContext.forEach((entry, index) => {
+    //     console.log(`   ${index + 1}. [${entry.language}] "${entry.text.substring(0, 60)}${entry.text.length > 60 ? '...' : ''}"`)
+    //   })
+    // }
+    // console.log('═══════════════════════════════════════════════════════')
 
     try {
       // Don't create a message bubble during processing - only show activity indicator
@@ -800,33 +824,33 @@ export function SingleDeviceTranslator({
       performanceLogger.start('whisper-transcription')
       const whisperStart = Date.now()
       
-      console.log('╔══════════════════════════════════════════════════════════╗')
-      console.log('║                🎧 WHISPER STT PROCESSING                 ║')
-      console.log('╚══════════════════════════════════════════════════════════╝')
+      // console.log('╔══════════════════════════════════════════════════════════╗')
+      // console.log('║                🎧 WHISPER STT PROCESSING                 ║')
+      // console.log('╚══════════════════════════════════════════════════════════╝')
       
       // Build Whisper context from conversation history
-      console.log('🔧 Building Whisper context from conversation history...')
+      // console.log('🔧 Building Whisper context from conversation history...')
       const whisperContext = ConversationContextManager.buildWhisperContext(conversationContext)
       
       // Convert Blob to File for WhisperService
       const audioFile = new File([audioBlob], 'recording.webm', { type: audioBlob.type })
       
-      console.log('🎧 Calling Whisper API with:')
-      console.log('   • Audio file size:', audioFile.size, 'bytes')
-      console.log('   • Audio file type:', audioFile.type)
-      console.log('   • Context prompt length:', whisperContext.length, 'characters')
-      console.log('   • Context prompt:', whisperContext ? `"${whisperContext.substring(0, 100)}..."` : 'NONE')
-      console.log('⏳ Sending to Whisper API...')
+      // console.log('🎧 Calling Whisper API with:')
+      // console.log('   • Audio file size:', audioFile.size, 'bytes')
+      // console.log('   • Audio file type:', audioFile.type)
+      // console.log('   • Context prompt length:', whisperContext.length, 'characters')
+      // console.log('   • Context prompt:', whisperContext ? `"${whisperContext.substring(0, 100)}..."` : 'NONE')
+      // console.log('⏳ Sending to Whisper API...')
       
       const transcriptionResult = await WhisperService.transcribeAudio(
         audioFile,
         whisperContext || 'This is a casual conversation.'
       )
       
-      console.log('🎉 Whisper API Response Received!')
-      console.log('   • Transcribed text:', `"${transcriptionResult.text}"`)
-      console.log('   • Detected language:', transcriptionResult.language)
-      console.log('   • Audio duration:', transcriptionResult.duration, 'seconds')
+      // console.log('🎉 Whisper API Response Received!')
+      // console.log('   • Transcribed text:', `"${transcriptionResult.text}"`)
+      // console.log('   • Detected language:', transcriptionResult.language)
+      // console.log('   • Audio duration:', transcriptionResult.duration, 'seconds')
       
       whisperTime = Date.now() - whisperStart
       performanceLogger.end('whisper-transcription')
@@ -839,9 +863,9 @@ export function SingleDeviceTranslator({
       performanceLogger.start('translation')
       const translationStart = Date.now()
       
-      console.log('╔══════════════════════════════════════════════════════════╗')
-      console.log('║              🌐 TRANSLATION LOGIC PROCESSING             ║')
-      console.log('╚══════════════════════════════════════════════════════════╝')
+      // console.log('╔══════════════════════════════════════════════════════════╗')
+      // console.log('║              🌐 TRANSLATION LOGIC PROCESSING             ║')
+      // console.log('╚══════════════════════════════════════════════════════════╝')
       
       // Map language codes to full names for TranslationService
       const langMap: Record<string, 'English' | 'Spanish' | 'Portuguese' | 'French' | 'German'> = {
@@ -852,73 +876,73 @@ export function SingleDeviceTranslator({
         'de': 'German'
       }
       
-      console.log('🔍 LANGUAGE DETECTION & MAPPING:')
-      console.log('   • Raw Whisper language:', transcriptionResult.language)
+      // console.log('🔍 LANGUAGE DETECTION & MAPPING:')
+      // console.log('   • Raw Whisper language:', transcriptionResult.language)
       
       const detectedLangCode = WhisperService.detectLanguage(transcriptionResult.language)
-      console.log('   • Mapped language code:', detectedLangCode)
+      // console.log('   • Mapped language code:', detectedLangCode)
       
       const detectedLang = langMap[detectedLangCode] || 'English'
-      console.log('   • Full language name:', detectedLang)
+      // console.log('   • Full language name:', detectedLang)
       
       // Language detected successfully
       
-      console.log('')
-      console.log('🎯 TRANSLATION DIRECTION LOGIC:')
-      console.log('   • User selected target in UI:', targetLanguage)
-      console.log('   • User selected target name:', langMap[targetLanguage])
-      console.log('   • Detected input language:', detectedLangCode, `(${detectedLang})`)
+      // console.log('')
+      // console.log('🎯 TRANSLATION DIRECTION LOGIC:')
+      // console.log('   • User selected target in UI:', targetLanguage)
+      // console.log('   • User selected target name:', langMap[targetLanguage])
+      // console.log('   • Detected input language:', detectedLangCode, `(${detectedLang})`)
       
       // Translation logic: Respect user's target language selection
       let actualTargetLanguage: 'es' | 'en' | 'pt' | 'fr' | 'de' = targetLanguage
       
-      console.log('🤖 APPLYING TRANSLATION RULES:')
-      console.log('   👤 User selected target language:', targetLanguage, `(${langMap[targetLanguage]})`)
-      console.log('   🔍 Detected input language:', detectedLangCode, `(${detectedLang})`)
+      // console.log('🤖 APPLYING TRANSLATION RULES:')
+      // console.log('   👤 User selected target language:', targetLanguage, `(${langMap[targetLanguage]})`)
+      // console.log('   🔍 Detected input language:', detectedLangCode, `(${detectedLang})`)
       
       // Don't translate if input is already in target language
       if (detectedLangCode === targetLanguage) {
-        console.log('   📝 RULE: Input already in target language - translating to English instead')
+        // console.log('   📝 RULE: Input already in target language - translating to English instead')
         actualTargetLanguage = 'en'
-        console.log('   🎯 RESULT: Translating', detectedLang, '→ English')
+        // console.log('   🎯 RESULT: Translating', detectedLang, '→ English')
       } else {
         actualTargetLanguage = targetLanguage
-        console.log('   📝 RULE: Translating to user selected target language')
-        console.log('   🎯 RESULT: Translating', detectedLang, '→', langMap[targetLanguage], `(${targetLanguage})`)
+        // console.log('   📝 RULE: Translating to user selected target language')
+        // console.log('   🎯 RESULT: Translating', detectedLang, '→', langMap[targetLanguage], `(${targetLanguage})`)
       }
       
       const targetLangFull = langMap[actualTargetLanguage] || 'English'
       
-      console.log('')
-      console.log('📊 FINAL TRANSLATION PARAMETERS:')
-      console.log('   • FROM Language Code:', detectedLangCode)
-      console.log('   • FROM Language Full:', detectedLang)
-      console.log('   • TO Language Code:', actualTargetLanguage)
-      console.log('   • TO Language Full:', targetLangFull)
-      console.log('   • Translation Text:', `"${transcriptionResult.text}"`)
-      console.log('   • Translation Mode:', translationMode)
+      // console.log('')
+      // console.log('📊 FINAL TRANSLATION PARAMETERS:')
+      // console.log('   • FROM Language Code:', detectedLangCode)
+      // console.log('   • FROM Language Full:', detectedLang)
+      // console.log('   • TO Language Code:', actualTargetLanguage)
+      // console.log('   • TO Language Full:', targetLangFull)
+      // console.log('   • Translation Text:', `"${transcriptionResult.text}"`)
+      // console.log('   • Translation Mode:', translationMode)
       
-      console.log('')
-      console.log('🔧 BUILDING CONTEXT FOR GPT TRANSLATION:')
+      // console.log('')
+      // console.log('🔧 BUILDING CONTEXT FOR GPT TRANSLATION:')
       
       // Build context from conversation context (new enhanced system)
       const recentMessages = messages.slice(-3).map(msg => msg.original).filter(Boolean)
-      console.log('   • Recent messages (legacy):', recentMessages.length, 'messages')
-      recentMessages.forEach((msg, i) => {
-        console.log(`     ${i + 1}. "${msg.substring(0, 50)}${msg.length > 50 ? '...' : ''}"`)
-      })
+      // console.log('   • Recent messages (legacy):', recentMessages.length, 'messages')
+      // recentMessages.forEach((msg, i) => {
+      //   console.log(`     ${i + 1}. "${msg.substring(0, 50)}${msg.length > 50 ? '...' : ''}"`)
+      // })
       
       const isRomanticContext = UserManager.detectRomanticContext(recentMessages)
-      console.log('   • Romantic context detected:', isRomanticContext)
-      console.log('   • Conversation context entries:', conversationContext.length)
+      // console.log('   • Romantic context detected:', isRomanticContext)
+      // console.log('   • Conversation context entries:', conversationContext.length)
       
-      console.log('')
-      console.log('⏳ CALLING GPT TRANSLATION API...')
-      console.log('   📝 Input text:', `"${transcriptionResult.text}"`)
-      console.log('   🔄 FROM:', detectedLang)
-      console.log('   🎯 TO:', targetLangFull)
-      console.log('   🎭 Mode:', translationMode)
-      console.log('   💕 Romantic context:', isRomanticContext)
+      // console.log('')
+      // console.log('⏳ CALLING GPT TRANSLATION API...')
+      // console.log('   📝 Input text:', `"${transcriptionResult.text}"`)
+      // console.log('   🔄 FROM:', detectedLang)
+      // console.log('   🎯 TO:', targetLangFull)
+      // console.log('   🎭 Mode:', translationMode)
+      // console.log('   💕 Romantic context:', isRomanticContext)
       
       const translationResult = await TranslationService.translate(
         transcriptionResult.text,
@@ -932,31 +956,31 @@ export function SingleDeviceTranslator({
         }
       )
       
-      console.log('')
-      console.log('🎉 GPT TRANSLATION COMPLETED!')
-      console.log('   📝 Original text:', `"${translationResult.originalText}"`)
-      console.log('   🌐 Translated text:', `"${translationResult.translatedText}"`)
-      console.log('   🔤 Original language:', translationResult.originalLanguage)
-      console.log('   🎯 Target language:', translationResult.targetLanguage)
-      console.log('   🔧 Input tokens:', translationResult.inputTokens || 'unknown')
-      console.log('   🔧 Output tokens:', translationResult.outputTokens || 'unknown')
+      // console.log('')
+      // console.log('🎉 GPT TRANSLATION COMPLETED!')
+      // console.log('   📝 Original text:', `"${translationResult.originalText}"`)
+      // console.log('   🌐 Translated text:', `"${translationResult.translatedText}"`)
+      // console.log('   🔤 Original language:', translationResult.originalLanguage)
+      // console.log('   🎯 Target language:', translationResult.targetLanguage)
+      // console.log('   🔧 Input tokens:', translationResult.inputTokens || 'unknown')
+      // console.log('   🔧 Output tokens:', translationResult.outputTokens || 'unknown')
 
       translationTime = Date.now() - translationStart
       performanceLogger.end('translation')
 
-      console.log('🔊 Translation complete (sound disabled for own messages)')
+      // console.log('🔊 Translation complete (sound disabled for own messages)')
       // Removed: playTranslationComplete() - only play sounds for incoming partner messages
 
-      console.log('')
-      console.log('╔══════════════════════════════════════════════════════════╗')
-      console.log('║           📝 UPDATING CONVERSATION CONTEXT               ║')
-      console.log('╚══════════════════════════════════════════════════════════╝')
+      // console.log('')
+      // console.log('╔══════════════════════════════════════════════════════════╗')
+      // console.log('║           📝 UPDATING CONVERSATION CONTEXT               ║')
+      // console.log('╚══════════════════════════════════════════════════════════╝')
       
       // Add to conversation context for future translations
-      console.log('🔧 Adding new message to conversation context...')
-      console.log('   • Message text:', `"${transcriptionResult.text}"`)
-      console.log('   • Detected language:', detectedLangCode)
-      console.log('   • Current context size:', conversationContext.length)
+      // console.log('🔧 Adding new message to conversation context...')
+      // console.log('   • Message text:', `"${transcriptionResult.text}"`)
+      // console.log('   • Detected language:', detectedLangCode)
+      // console.log('   • Current context size:', conversationContext.length)
       
       const updatedContext = ConversationContextManager.addToContext(
         conversationContext,
@@ -966,9 +990,9 @@ export function SingleDeviceTranslator({
       )
       setConversationContext(updatedContext)
       
-      console.log('✅ Context successfully updated!')
-      console.log('   • New context size:', updatedContext.length)
-      console.log('   • Ready for next translation request')
+      // console.log('✅ Context successfully updated!')
+      // console.log('   • New context size:', updatedContext.length)
+      // console.log('   • Ready for next translation request')
 
       // Final message update
       const totalTime = Date.now() - totalStartTime
@@ -1012,34 +1036,32 @@ export function SingleDeviceTranslator({
         onNewMessage(finalMessage)
       } else {
         // Solo mode: update internal state
-        setInternalMessages(prev => prev.map(msg => 
-          msg.id === messageId ? finalMessage : msg
-        ))
+        setInternalMessages(prev => [...prev, finalMessage])
       }
 
       // Don't play sound for own messages - only for incoming partner messages
-      console.log('🔊 Message completed - sound disabled for own messages')
+      // console.log('🔊 Message completed - sound disabled for own messages')
 
-      console.log('')
-      console.log('🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉')
-      console.log('🎉 [SINGLE DEVICE] MESSAGE PROCESSING COMPLETE SUCCESS!')
-      console.log('🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉')
-      console.log('📊 FINAL SUMMARY:')
-      console.log('   • Original Text:', `"${transcriptionResult.text}"`)
-      console.log('   • Translated Text:', `"${translationResult.translatedText}"`)
-      console.log('   • Detected Language:', detectedLangCode, `(${detectedLang})`)
-      console.log('   • Target Language:', actualTargetLanguage, `(${targetLangFull})`)
-      console.log('   • Translation Mode:', translationMode)
-      console.log('   • Context Window Size:', updatedContext.length, 'messages')
-      console.log('   • Romantic Context:', isRomanticContext)
-      console.log('')
-      console.log('⏱️  PERFORMANCE METRICS:')
-      console.log('   • Whisper Time:', whisperTime, 'ms')
-      console.log('   • Translation Time:', translationTime, 'ms')
-      console.log('   • Total Processing Time:', totalTime, 'ms')
-      console.log('')
-      console.log('🎯 NEXT MESSAGE WILL HAVE ENHANCED CONTEXT!')
-      console.log('═══════════════════════════════════════════════════════')
+      // console.log('')
+      // console.log('🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉')
+      // console.log('🎉 [SINGLE DEVICE] MESSAGE PROCESSING COMPLETE SUCCESS!')
+      // console.log('🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉')
+      // console.log('📊 FINAL SUMMARY:')
+      // console.log('   • Original Text:', `"${transcriptionResult.text}"`)
+      // console.log('   • Translated Text:', `"${translationResult.translatedText}"`)
+      // console.log('   • Detected Language:', detectedLangCode, `(${detectedLang})`)
+      // console.log('   • Target Language:', actualTargetLanguage, `(${targetLangFull})`)
+      // console.log('   • Translation Mode:', translationMode)
+      // console.log('   • Context Window Size:', updatedContext.length, 'messages')
+      // console.log('   • Romantic Context:', isRomanticContext)
+      // console.log('')
+      // console.log('⏱️  PERFORMANCE METRICS:')
+      // console.log('   • Whisper Time:', whisperTime, 'ms')
+      // console.log('   • Translation Time:', translationTime, 'ms')
+      // console.log('   • Total Processing Time:', totalTime, 'ms')
+      // console.log('')
+      // console.log('🎯 NEXT MESSAGE WILL HAVE ENHANCED CONTEXT!')
+      // console.log('═══════════════════════════════════════════════════════')
 
     } catch (err) {
       console.error('❌ Single device audio processing failed:', err)
@@ -1053,6 +1075,7 @@ export function SingleDeviceTranslator({
       // The activity indicator will be cleared in the finally block
     } finally {
       // Reset activity to idle when processing completes
+      console.log('✅ [SingleDeviceTranslator] Activity state change: processing → idle')
       setCurrentActivity('idle')
       // Don't change global states - let each message process independently
       
@@ -1425,7 +1448,11 @@ export function SingleDeviceTranslator({
               })
               
               if (isSessionMode && partnerActivity !== 'idle') {
-                console.log('🎯 [SingleDeviceTranslator] Rendering partner activity indicator:', partnerActivity)
+                console.log('✅ [SingleDeviceTranslator] Rendering partner activity indicator:', {
+                  activity: partnerActivity,
+                  userName: 'Partner',
+                  isOwnMessage: false
+                })
                 return (
                   <ActivityIndicator 
                     activity={partnerActivity} 
@@ -1433,6 +1460,12 @@ export function SingleDeviceTranslator({
                     isOwnMessage={false}
                   />
                 )
+              } else {
+                console.log('❌ [SingleDeviceTranslator] NOT rendering partner activity indicator:', {
+                  reason: !isSessionMode ? 'not in session mode' : 'partner activity is idle',
+                  isSessionMode,
+                  partnerActivity
+                })
               }
               
               return null

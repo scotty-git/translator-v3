@@ -340,17 +340,17 @@ export class MessageSyncService {
       .on('presence', { event: 'sync' }, () => {
         const state = this.presenceChannel?.presenceState()
         console.log('👥 [MessageSyncService] Presence sync:', state)
-        this.updatePartnerPresence(state)
+        this.updatePartnerPresence(state).catch(console.error)
         this.validateSessionReady()
       })
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
         console.log('👋 [MessageSyncService] User joined:', key, newPresences)
-        this.updatePartnerPresence(this.presenceChannel?.presenceState())
+        this.updatePartnerPresence(this.presenceChannel?.presenceState()).catch(console.error)
         this.validateSessionReady()
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
         console.log('👋 [MessageSyncService] User left:', key, leftPresences)
-        this.updatePartnerPresence(this.presenceChannel?.presenceState())
+        this.updatePartnerPresence(this.presenceChannel?.presenceState()).catch(console.error)
         this.validateSessionReady()
       })
       .on('broadcast', { event: 'activity' }, ({ payload }) => {
@@ -633,47 +633,87 @@ export class MessageSyncService {
   }
 
   /**
-   * Update partner presence based on channel state
+   * Update partner presence based on database state (DATABASE-FIRST APPROACH)
    */
-  private updatePartnerPresence(presenceState: any): void {
+  private async updatePartnerPresence(presenceState: any): Promise<void> {
     console.log('👥 [MessageSyncService] updatePartnerPresence called:', {
       hasPresenceState: !!presenceState,
       currentUserId: this.currentUserId,
       presenceKeys: presenceState ? Object.keys(presenceState) : 'none'
     })
 
-    if (!presenceState || !this.currentUserId) {
-      console.log('❌ [MessageSyncService] Missing presence state or user ID:', {
-        presenceState: !!presenceState,
-        currentUserId: this.currentUserId
-      })
+    if (!this.currentUserId || !this.currentSessionId) {
+      console.log('❌ [MessageSyncService] Missing session or user ID for presence check')
       this.onPartnerPresenceChanged?.(false)
       return
     }
 
-    console.log('👥 [MessageSyncService] Checking presence state:', {
-      presenceState,
-      currentUserId: this.currentUserId,
-      allKeys: Object.keys(presenceState)
-    })
+    try {
+      // DATABASE-FIRST APPROACH: Check database for reliable presence detection
+      const { data: participants, error } = await supabase
+        .from('session_participants')
+        .select('user_id, is_online')
+        .eq('session_id', this.currentSessionId)
+
+      if (error) {
+        console.error('❌ [MessageSyncService] Failed to check participants for presence:', error)
+        // Fallback to presence channel if database fails
+        this.fallbackToPresenceChannel(presenceState)
+        return
+      }
+
+      console.log('🔍 [MessageSyncService] Database presence check:', {
+        sessionId: this.currentSessionId,
+        currentUserId: this.currentUserId,
+        participants: participants?.map(p => ({ user_id: p.user_id, is_online: p.is_online })),
+        participantCount: participants?.length
+      })
+
+      // Check if we have at least 2 participants and partner is online
+      if (!participants || participants.length < 2) {
+        console.log('👥 [MessageSyncService] Less than 2 participants, partner not online')
+        this.onPartnerPresenceChanged?.(false)
+        return
+      }
+
+      // Check if partner is online in database
+      const partnerOnline = participants.some(p => p.user_id !== this.currentUserId && p.is_online)
+
+      console.log('👥 [MessageSyncService] Database partner presence check:', {
+        partnerOnline,
+        participants: participants.map(p => ({ user_id: p.user_id, is_online: p.is_online }))
+      })
+
+      this.onPartnerPresenceChanged?.(partnerOnline)
+
+    } catch (error) {
+      console.error('❌ [MessageSyncService] Error checking partner presence:', error)
+      // Fallback to presence channel if database fails
+      this.fallbackToPresenceChannel(presenceState)
+    }
+  }
+
+  /**
+   * Fallback to presence channel when database check fails
+   */
+  private fallbackToPresenceChannel(presenceState: any): void {
+    console.log('🔄 [MessageSyncService] Falling back to presence channel detection')
+    
+    if (!presenceState) {
+      this.onPartnerPresenceChanged?.(false)
+      return
+    }
 
     // Check if there are any other users present besides the current user
     const otherUsers = Object.keys(presenceState).filter(key => {
       const presences = presenceState[key]
       return Array.isArray(presences) && presences.some((p: any) => {
-        console.log('👥 [MessageSyncService] Checking presence:', { key, presence: p })
         return p && p.user_id && p.user_id !== this.currentUserId
       })
     })
 
     const partnerOnline = otherUsers.length > 0
-
-    console.log('👥 [MessageSyncService] Partner presence check:', {
-      otherUsers,
-      partnerOnline,
-      currentUserId: this.currentUserId
-    })
-
+    console.log('👥 [MessageSyncService] Fallback presence check:', { partnerOnline })
     this.onPartnerPresenceChanged?.(partnerOnline)
   }
 

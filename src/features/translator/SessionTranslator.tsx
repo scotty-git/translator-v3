@@ -148,8 +148,13 @@ export function SessionTranslator() {
       },
       
       onPartnerActivityChanged: (activity: 'idle' | 'recording' | 'processing' | 'typing') => {
-        console.log('🎯 [SessionTranslator] Partner activity changed:', activity)
+        console.log('🎯 [SessionTranslator] Partner activity changed:', {
+          previousActivity: partnerActivity,
+          newActivity: activity,
+          timestamp: new Date().toISOString()
+        })
         setPartnerActivity(activity)
+        console.log('✅ [SessionTranslator] Partner activity state updated successfully')
       }
     })
     
