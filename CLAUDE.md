@@ -289,6 +289,26 @@ EOF
 - `test`: Adding tests
 - `chore`: Maintenance tasks
 
+### Vercel Deployment
+
+**IMPORTANT: After committing locally, you MUST manually deploy to Vercel:**
+
+```bash
+# After git commit, deploy to Vercel production
+npx vercel --prod
+
+# The deployment command will:
+# 1. Build the project
+# 2. Upload to Vercel
+# 3. Provide the production URL
+```
+
+**Deployment Notes:**
+- Local commits do NOT automatically trigger Vercel deployments
+- Always run `npx vercel --prod` after committing important changes
+- Check the deployment URL to verify changes are live
+- Production URL format: `https://translator-v3-[hash].vercel.app`
+
 ---
 
 ## 📋 Phase Documentation
@@ -305,12 +325,15 @@ EOF
 
 **Key Components:**
 1. **MessageSyncService** (`/src/services/MessageSyncService.ts`)
-   - Real-time subscription management
+   - Real-time subscription management with proper cleanup
    - Offline message queuing with localStorage persistence
    - UUID validation to filter old timestamp-based IDs
    - Automatic retry with exponential backoff
    - Presence tracking for online/offline status
    - Connection state management (connecting/connected/disconnected/reconnecting)
+   - **Critical**: Proper channel cleanup requires both `unsubscribe()` AND `removeChannel()`
+   - **Critical**: Use unique channel names with timestamps to prevent conflicts
+   - **Critical**: Validate session ID on all incoming messages
 
 2. **Database Configuration:**
    ```sql

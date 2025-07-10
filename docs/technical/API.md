@@ -582,19 +582,64 @@ class CachedOpenAIService {
 
 ## 🌐 Real-Time Implementation
 
-### Supabase Real-Time
+### MessageSyncService
+
+The `MessageSyncService` handles all real-time communication for sessions:
 
 ```typescript
-// Real-time subscription pattern
+// src/services/MessageSyncService.ts
+class MessageSyncService {
+  // Initialize session with proper cleanup
+  async initializeSession(sessionId: string, userId: string): Promise<void> {
+    // Clean up any existing subscriptions first
+    await this.cleanupSubscriptions()
+    
+    // Set up new subscriptions with unique channel names
+    await this.setupMessageSubscription(sessionId)
+    await this.setupPresenceSubscription(sessionId, userId)
+  }
+  
+  // Comprehensive cleanup to prevent session contamination
+  async cleanup(): Promise<void> {
+    // Unsubscribe AND remove channels (both required!)
+    if (this.messageChannel) {
+      await this.messageChannel.unsubscribe()
+      await supabase.removeChannel(this.messageChannel)
+    }
+    
+    // Clear message queue and all state
+    this.messageQueue.clear()
+    this.currentSessionId = null
+    this.currentUserId = null
+  }
+}
+```
+
+**Critical Channel Management Rules**:
+1. Always use unique channel names with timestamps
+2. Clean up existing channels before creating new ones
+3. Validate session ID on all incoming messages
+4. Call both `unsubscribe()` and `removeChannel()` for cleanup
+
+### Supabase Real-Time Pattern
+
+```typescript
+// Safe real-time subscription pattern
 const subscribeToMessages = (sessionId: string) => {
+  // Use timestamp to ensure unique channel
+  const channelName = `session:${sessionId}:${Date.now()}`
+  
   return supabase
-    .channel(`session-${sessionId}`)
+    .channel(channelName)
     .on('postgres_changes', {
       event: 'INSERT',
       schema: 'public', 
       table: 'messages',
       filter: `session_id=eq.${sessionId}`
     }, (payload) => {
+      // Validate session ID before processing
+      if (payload.new.session_id !== currentSessionId) return
+      
       // Handle new message
       const message = payload.new as Message
       addMessageToUI(message)

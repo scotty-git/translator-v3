@@ -296,6 +296,83 @@ class MessageQueue {
 
 ---
 
+## 📡 MessageSyncService Architecture
+
+### Overview
+The `MessageSyncService` is responsible for real-time message synchronization between session participants. It handles:
+- Supabase channel subscriptions
+- Message queuing and delivery
+- Presence tracking
+- Connection state management
+- Offline resilience
+
+### Channel Management Strategy
+
+**Problem**: Stale channel subscriptions can cause message contamination between sessions when users rapidly exit/rejoin.
+
+**Solution**: Comprehensive cleanup and unique channel naming:
+
+```typescript
+// Channel naming with timestamp to prevent conflicts
+const channelName = `session:${sessionId}:${Date.now()}`
+
+// Cleanup existing channels before creating new ones
+const existingChannels = supabase.getChannels()
+const sessionChannels = existingChannels.filter(ch => 
+  ch.topic.startsWith(`session:${sessionId}`)
+)
+
+for (const channel of sessionChannels) {
+  await channel.unsubscribe()
+  await supabase.removeChannel(channel)
+}
+```
+
+### Session Lifecycle Management
+
+1. **Session Entry**:
+   - Clean up any existing channels for the session
+   - Create new channels with unique timestamps
+   - Validate all incoming messages against current session ID
+
+2. **During Session**:
+   - Monitor connection status
+   - Queue messages when offline
+   - Sync presence state with database
+
+3. **Session Exit** (Critical for preventing contamination):
+   - Unsubscribe from all channels
+   - Remove channels from Supabase
+   - Clear message queue
+   - Reset all state
+   - Clear localStorage
+   - Mark user as offline in database
+
+### Key Safety Mechanisms
+
+1. **Double Session Validation**:
+   ```typescript
+   // In channel subscription
+   if (payload.new.session_id !== this.currentSessionId) return
+   
+   // In message handler
+   if (message.session_id !== this.currentSessionId) return
+   ```
+
+2. **Proper Cleanup Sequence**:
+   ```typescript
+   // Must call both for complete cleanup
+   await channel.unsubscribe()
+   await supabase.removeChannel(channel)
+   ```
+
+3. **Exit Handlers**:
+   - Component unmount cleanup
+   - Browser beforeunload handler
+   - Navigation interception with confirmation
+
+---
+
 ## 🔧 Service Integrations
 
 ### OpenAI Integration Pattern

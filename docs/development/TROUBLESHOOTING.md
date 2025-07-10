@@ -752,6 +752,129 @@ body {
 
 ---
 
+## 🔄 Session & Real-time Issues
+
+### Messages Appearing in Wrong Sessions
+
+**Problem**: Messages from previous sessions appear in new sessions, or wrong translations occur
+
+**Diagnosis**:
+```javascript
+// In browser console, check active channels
+window.supabase?.getChannels?.()
+// Look for multiple channels for same session
+```
+
+**Solutions**:
+
+**1. Force Clean Session Exit**:
+```javascript
+// In browser console
+await window.messageSyncService?.cleanup()
+localStorage.removeItem('activeSession')
+location.reload()
+```
+
+**2. Check for Stale Channels**:
+```javascript
+// List all channels
+const channels = window.supabase.getChannels()
+console.log('Active channels:', channels.map(ch => ch.topic))
+
+// Clean up stale channels manually
+for (const channel of channels) {
+  await channel.unsubscribe()
+  await window.supabase.removeChannel(channel)
+}
+```
+
+**3. Verify Session Isolation**:
+```bash
+# Check Supabase logs for message routing
+# Dashboard → Logs → Search for session_id
+```
+
+### Partner Not Showing as Online
+
+**Problem**: Partner status shows "Waiting for partner" even when both users joined
+
+**Solutions**:
+
+**1. Check Presence Subscription**:
+```javascript
+// Verify presence channel is active
+const channels = window.supabase.getChannels()
+const presenceChannel = channels.find(ch => ch.topic.includes('presence'))
+console.log('Presence state:', presenceChannel?.presenceState())
+```
+
+**2. Force Presence Update**:
+```javascript
+// Manually trigger presence sync
+await window.messageSyncService?.validateSessionReady()
+```
+
+**3. Database Check**:
+```sql
+-- Check session_participants table
+SELECT * FROM session_participants 
+WHERE session_id = 'YOUR_SESSION_ID'
+ORDER BY joined_at DESC;
+```
+
+### Real-time Messages Not Syncing
+
+**Problem**: Messages sent but not received by partner
+
+**Solutions**:
+
+**1. Check Connection Status**:
+```javascript
+// Get connection status
+console.log('Connection:', window.messageSyncService?.getConnectionStatus())
+console.log('Pending messages:', window.messageSyncService?.getPendingMessageCount())
+```
+
+**2. Verify Real-time is Enabled**:
+```sql
+-- In Supabase SQL Editor
+-- Check if real-time is enabled for messages table
+SELECT * FROM pg_publication_tables 
+WHERE pubname = 'supabase_realtime' 
+AND tablename = 'messages';
+```
+
+**3. Manual Message Sync**:
+```javascript
+// Force process message queue
+await window.messageSyncService?.processMessageQueue()
+```
+
+### Session Code Already in Use
+
+**Problem**: Can't create new session, says code already exists
+
+**Solutions**:
+
+**1. Clean Up Old Sessions**:
+```sql
+-- Run in Supabase SQL Editor
+-- Mark old sessions as inactive
+UPDATE sessions 
+SET is_active = false 
+WHERE created_at < NOW() - INTERVAL '4 hours' 
+AND is_active = true;
+```
+
+**2. Force New Code Generation**:
+```javascript
+// Clear any cached session data
+localStorage.removeItem('activeSession')
+sessionStorage.clear()
+```
+
+---
+
 ## 🔍 Debug Tools & Techniques
 
 ### Browser DevTools
