@@ -99,7 +99,7 @@ export function HomeScreen() {
   return (
     <MobileContainer 
       ref={registerPage}
-      className="min-h-screen flex flex-col py-4 bg-gray-50 dark:bg-gray-900"
+      className="h-[100dvh] flex flex-col py-4 bg-gray-50 dark:bg-gray-900 overflow-hidden"
       data-testid="home-screen"
     >
       {/* Top Navigation */}
@@ -175,27 +175,27 @@ export function HomeScreen() {
                 size="md"
                 variant="outline"
                 disabled={isCreatingSession}
-                className="flex flex-col items-center gap-2 h-auto py-4"
+                className="flex flex-row items-center justify-center gap-2 h-auto py-4 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
-                <UserPlus className="h-5 w-5" />
-                <span>{t('home.startSession', 'Start Session')}</span>
+                <UserPlus className="h-4 w-4" />
+                <span className="text-sm">{t('home.startSession', 'Start Session')}</span>
               </Button>
               
               <Button
                 onClick={() => setShowJoinInput(!showJoinInput)}
                 size="md"
                 variant="outline"
-                className="flex flex-col items-center gap-2 h-auto py-4"
+                className="flex flex-row items-center justify-center gap-2 h-auto py-4 bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-900 dark:text-gray-100"
               >
-                <Hash className="h-5 w-5" />
-                <span>{t('home.joinSession', 'Join Session')}</span>
+                <Hash className="h-4 w-4" />
+                <span className="text-sm">{t('home.joinSession', 'Join Session')}</span>
               </Button>
             </div>
 
             {/* Join Input */}
             {showJoinInput && (
               <div className="space-y-3 animate-fade-in">
-                <div className="flex gap-2">
+                <div className="flex gap-2 justify-center items-center">
                   <input
                     type="text"
                     inputMode="numeric"
@@ -204,7 +204,7 @@ export function HomeScreen() {
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, ''))}
                     placeholder="Enter 4-digit code"
-                    className="flex-1 max-w-[180px] h-10 px-4 py-2 text-center text-lg font-mono border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-[140px] h-10 px-4 py-2 text-center text-lg font-mono border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     data-testid="join-code-input"
                   />
                   <Button

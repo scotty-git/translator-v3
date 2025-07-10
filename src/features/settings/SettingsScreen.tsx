@@ -38,7 +38,6 @@ export function SettingsScreen() {
   const [autoSave, setAutoSave] = useState(UserManager.getPreference('autoSave', true))
   const [reducedMotion, setReducedMotion] = useState(UserManager.getPreference('reducedMotion', false))
   const [fontSize, setFontSize] = useState(UserManager.getFontSize())
-  const [soundNotifications, setSoundNotifications] = useState(soundsEnabled)
 
   const handleLanguageChange = (newLanguage: string) => {
     setLanguage(newLanguage)
@@ -76,10 +75,6 @@ export function SettingsScreen() {
         break
       case 'reducedMotion':
         setReducedMotion(newValue)
-        break
-      case 'soundNotifications':
-        setSoundNotifications(newValue)
-        setSoundsEnabled(newValue)
         break
     }
   }
@@ -380,46 +375,6 @@ export function SettingsScreen() {
         </div>
       </Card>
 
-      {/* Sound Notifications */}
-      <Card className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Volume2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-          <h2 className="font-semibold text-gray-900 dark:text-gray-100">Sound Notifications</h2>
-        </div>
-        
-        <div className="space-y-3">
-          {/* Enable Sound Notifications */}
-          <div className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-600 rounded-lg">
-            <div>
-              <div className="font-medium text-gray-900 dark:text-gray-100">Enable Sound Notifications</div>
-              <div className="text-sm text-gray-600 dark:text-gray-300">Play sounds for messages and interactions</div>
-            </div>
-            <button
-              onClick={() => handlePreferenceToggle('soundNotifications', soundNotifications)}
-              className={`w-12 h-6 rounded-full transition-all ${
-                soundNotifications ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
-              }`}
-            >
-              <div className={`w-5 h-5 bg-white rounded-full transition-transform ${
-                soundNotifications ? 'translate-x-6' : 'translate-x-1'
-              }`} />
-            </button>
-          </div>
-
-          {/* Test Sound Button */}
-          {soundNotifications && (
-            <Button
-              onClick={handleTestSound}
-              variant="secondary"
-              size="sm"
-              className="w-full justify-center gap-2"
-            >
-              <Volume2 className="h-4 w-4" />
-              Test Sound
-            </Button>
-          )}
-        </div>
-      </Card>
 
       {/* Data Management */}
       <Card className="space-y-4">
