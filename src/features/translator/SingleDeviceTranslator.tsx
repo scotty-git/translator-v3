@@ -231,25 +231,13 @@ export function SingleDeviceTranslator({
   
   // Broadcast activity changes in session mode
   useEffect(() => {
-    console.log('🎯 [SingleDeviceTranslator] Activity changed:', {
-      currentActivity,
-      isSessionMode,
-      shouldBroadcast: isSessionMode && currentActivity !== 'idle'
-    })
-    
+    // Only log activity changes for debugging activity indicators
     if (isSessionMode && currentActivity !== 'idle') {
-      console.log('📡 [SingleDeviceTranslator] Broadcasting activity:', currentActivity)
+      console.log('🎯 [ActivityIndicator] Broadcasting:', currentActivity)
       messageSyncService.broadcastActivity(currentActivity)
-        .then(() => {
-          console.log('✅ [SingleDeviceTranslator] Activity broadcast successful:', currentActivity)
-        })
         .catch((error) => {
-          console.error('❌ [SingleDeviceTranslator] Activity broadcast failed:', error)
+          console.error('❌ [ActivityIndicator] Broadcast failed:', error)
         })
-    } else {
-      console.log('⏭️ [SingleDeviceTranslator] Skipping activity broadcast:', {
-        reason: !isSessionMode ? 'not in session mode' : 'activity is idle'
-      })
     }
   }, [currentActivity, isSessionMode])
 
@@ -421,7 +409,7 @@ export function SingleDeviceTranslator({
       
       // Update React state
       setIsRecording(true)
-      console.log('🎤 [SingleDeviceTranslator] Activity state change: idle → recording')
+      console.log('🎤 [ActivityIndicator] Activity state change: idle → recording')
       setCurrentActivity('recording')
       
       // console.log('🎤 Recording state updated, visualizer should be active')
@@ -1441,18 +1429,10 @@ export function SingleDeviceTranslator({
             
             {/* Partner activity in session mode */}
             {(() => {
-              console.log('🎯 [SingleDeviceTranslator] Activity indicator check:', {
-                isSessionMode,
-                partnerActivity,
-                shouldShow: isSessionMode && partnerActivity !== 'idle'
-              })
+              console.log(`🎯 [ActivityIndicator] UI Check: sessionMode=${isSessionMode}, partnerActivity=${partnerActivity}`)
               
               if (isSessionMode && partnerActivity !== 'idle') {
-                console.log('✅ [SingleDeviceTranslator] Rendering partner activity indicator:', {
-                  activity: partnerActivity,
-                  userName: 'Partner',
-                  isOwnMessage: false
-                })
+                console.log(`✅ [ActivityIndicator] Rendering partner indicator: ${partnerActivity}`)
                 return (
                   <ActivityIndicator 
                     activity={partnerActivity} 
@@ -1461,11 +1441,8 @@ export function SingleDeviceTranslator({
                   />
                 )
               } else {
-                console.log('❌ [SingleDeviceTranslator] NOT rendering partner activity indicator:', {
-                  reason: !isSessionMode ? 'not in session mode' : 'partner activity is idle',
-                  isSessionMode,
-                  partnerActivity
-                })
+                const reason = !isSessionMode ? 'not in session mode' : 'partner activity is idle'
+                console.log(`❌ [ActivityIndicator] Not rendering: ${reason}`)
               }
               
               return null

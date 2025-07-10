@@ -372,13 +372,14 @@ export class MessageSyncService {
         this.validateSessionReady()
       })
       .on('broadcast', { event: 'activity' }, ({ payload }) => {
-        console.log('🎯 [MessageSyncService] Activity broadcast received:', payload)
         // Validate the activity is for our current session
         if (payload.sessionId && payload.sessionId !== this.currentSessionId) {
-          console.warn('⚠️ [MessageSyncService] Received activity for different session')
+          console.warn('⚠️ [ActivityIndicator] Received activity for different session')
           return
         }
         if (payload.userId !== userId && payload.activity) {
+          console.log(`📥 [ActivityIndicator] Received: ${payload.activity} from partner`)
+          console.log(`🎯 [ActivityIndicator] Calling onPartnerActivityChanged(${payload.activity})`)
           this.onPartnerActivityChanged?.(payload.activity)
         }
       })
@@ -1081,7 +1082,8 @@ console.log('✅ [MessageSyncService] Event handlers set successfully')
     }
 
     try {
-      console.log('📡 [MessageSyncService] Broadcasting activity:', activity)
+      // Streamlined activity broadcast logging
+      console.log(`📡 [ActivityIndicator] Sent: ${activity}`)
       await this.presenceChannel.send({
         type: 'broadcast',
         event: 'activity',
@@ -1093,7 +1095,7 @@ console.log('✅ [MessageSyncService] Event handlers set successfully')
         }
       })
     } catch (error) {
-      console.error('❌ [MessageSyncService] Failed to broadcast activity:', error)
+      console.error('❌ [ActivityIndicator] Broadcast failed:', error)
     }
   }
 
