@@ -9,8 +9,6 @@ export interface ActivityIndicatorProps {
 }
 
 export function ActivityIndicator({ activity, userName = 'Partner', isOwnMessage = false }: ActivityIndicatorProps) {
-  console.log('🎯 [ActivityIndicator] Rendering with activity:', activity, 'userName:', userName, 'isOwnMessage:', isOwnMessage)
-  
   const getActivityContent = () => {
     switch (activity) {
       case 'recording':

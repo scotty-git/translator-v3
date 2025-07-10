@@ -372,6 +372,15 @@ export class MessageSyncService {
         this.validateSessionReady()
       })
       .on('broadcast', { event: 'activity' }, ({ payload }) => {
+        console.log(`🎧 [ActivityIndicator] Raw broadcast received:`, {
+          payloadUserId: payload.userId,
+          currentUserId: userId,
+          payloadSessionId: payload.sessionId,
+          currentSessionId: this.currentSessionId,
+          activity: payload.activity,
+          isOwnMessage: payload.userId === userId
+        })
+        
         // Validate the activity is for our current session
         if (payload.sessionId && payload.sessionId !== this.currentSessionId) {
           console.warn('⚠️ [ActivityIndicator] Received activity for different session')
@@ -381,6 +390,11 @@ export class MessageSyncService {
           console.log(`📥 [ActivityIndicator] Received: ${payload.activity} from partner`)
           console.log(`🎯 [ActivityIndicator] Calling onPartnerActivityChanged(${payload.activity})`)
           this.onPartnerActivityChanged?.(payload.activity)
+        } else {
+          console.log(`⏭️ [ActivityIndicator] Skipping own activity or missing data:`, {
+            isOwnMessage: payload.userId === userId,
+            hasActivity: !!payload.activity
+          })
         }
       })
       .subscribe(async (status) => {

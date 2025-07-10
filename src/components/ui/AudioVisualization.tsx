@@ -70,10 +70,7 @@ export function AudioVisualization({
       return [MIN_HEIGHT, MIN_HEIGHT, MIN_HEIGHT, MIN_HEIGHT, MIN_HEIGHT]
     }
     
-    // Debug logging for mobile audio level
-    if (Math.random() < 0.01) { // Log 1% of the time to avoid spam
-      console.log('🎵 [AudioVisualization] Audio level:', level, 'Recording:', isRecording)
-    }
+    // Debug logging removed to prevent console spam
     
     // Simulate frequency distribution across 5 bars
     // Bar 0: Low frequencies (bass) - slower response
@@ -139,7 +136,6 @@ export function AudioVisualization({
   // Start/stop animation based on recording state
   useEffect(() => {
     if (isRecording) {
-      console.log('🎵 [AudioVisualization] Starting visualization animation')
       updateBars()
     } else {
       // Gradually fade out when not recording
