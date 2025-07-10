@@ -189,14 +189,10 @@ export function SingleDeviceTranslator({
     const handleFocus = () => {
       setHasFocus(true)
       // When regaining focus, scroll to first unread if there are unread messages
-      if (unreadCount > 0 && scrollContainerRef.current) {
+      if (unreadCount > 0 && firstUnreadMessageId) {
         setTimeout(() => {
-          const firstUnreadElement = document.getElementById(`message-${firstUnreadMessageId}`)
-          if (firstUnreadElement) {
-            firstUnreadElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          } else {
-            scrollToBottom()
-          }
+          console.log('📱 Focus regained - scrolling to first unread message:', firstUnreadMessageId)
+          scrollToMessage(firstUnreadMessageId, 'top')
         }, 300)
       }
     }
@@ -224,7 +220,7 @@ export function SingleDeviceTranslator({
       window.removeEventListener('blur', handleBlur)
       document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
-  }, [unreadCount, firstUnreadMessageId, scrollToBottom, setLastReadOnBlur, scrollContainerRef])
+  }, [unreadCount, firstUnreadMessageId, scrollToMessage, setLastReadOnBlur])
   
   // Mark messages as read when at bottom
   useEffect(() => {
@@ -378,8 +374,8 @@ export function SingleDeviceTranslator({
       setError(null)
       console.log('🧹 Error state cleared')
       
-      console.log('🔊 Playing recording start sound...')
-      playRecordingStart()
+      console.log('🔊 Recording start (sound disabled for UI actions)')
+      // Removed: playRecordingStart() - only play sounds for incoming messages
       
       console.log('⏱️ Starting performance logger...')
       performanceLogger.start('single-device-recording')
@@ -476,8 +472,8 @@ export function SingleDeviceTranslator({
       setIsRecording(false)
       setCurrentActivity('idle')
       
-      // Play recording stop sound
-      playRecordingStop()
+      console.log('🔊 Recording stop (sound disabled for UI actions)')
+      // Removed: playRecordingStop() - only play sounds for incoming messages
       
       // Reset audio level to 0
       resetAudioLevel()
@@ -948,8 +944,8 @@ export function SingleDeviceTranslator({
       translationTime = Date.now() - translationStart
       performanceLogger.end('translation')
 
-      // Play translation complete sound
-      playTranslationComplete()
+      console.log('🔊 Translation complete (sound disabled for own messages)')
+      // Removed: playTranslationComplete() - only play sounds for incoming partner messages
 
       console.log('')
       console.log('╔══════════════════════════════════════════════════════════╗')

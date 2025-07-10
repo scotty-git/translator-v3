@@ -8,6 +8,7 @@ interface UseSmartScrollOptions {
 interface UseSmartScrollReturn {
   scrollContainerRef: React.RefObject<HTMLDivElement>
   scrollToBottom: () => void
+  scrollToMessage: (messageId: string, position?: 'top' | 'center' | 'bottom') => void
   isAtBottom: boolean
   shouldAutoScroll: boolean
 }
@@ -57,6 +58,51 @@ export function useSmartScroll(options: UseSmartScrollOptions = {}): UseSmartScr
     // Reset auto-scroll when manually scrolling to bottom
     setShouldAutoScroll(true)
   }, [smoothScroll])
+
+  // Scroll to specific message function
+  const scrollToMessage = useCallback((messageId: string, position: 'top' | 'center' | 'bottom' = 'top') => {
+    const container = scrollContainerRef.current
+    if (!container) return
+
+    const messageElement = container.querySelector(`#message-${messageId}`)
+    if (!messageElement) {
+      console.warn(`Message element with ID "message-${messageId}" not found`)
+      return
+    }
+
+    // Calculate the header height offset (64px for fixed header)
+    const headerOffset = 64
+    const containerRect = container.getBoundingClientRect()
+    const messageRect = messageElement.getBoundingClientRect()
+    
+    let scrollTop: number
+    
+    switch (position) {
+      case 'top':
+        // Position message at top of viewport (accounting for header)
+        scrollTop = container.scrollTop + messageRect.top - containerRect.top - headerOffset
+        break
+      case 'center':
+        // Position message in center of viewport
+        scrollTop = container.scrollTop + messageRect.top - containerRect.top - (containerRect.height / 2) + (messageRect.height / 2)
+        break
+      case 'bottom':
+        // Position message at bottom of viewport
+        scrollTop = container.scrollTop + messageRect.bottom - containerRect.bottom
+        break
+    }
+
+    if (smoothScroll) {
+      container.scrollTo({
+        top: scrollTop,
+        behavior: 'smooth'
+      })
+    } else {
+      container.scrollTop = scrollTop
+    }
+
+    console.log(`🎯 Scrolled to message ${messageId} at position: ${position}`)
+  }, [smoothScroll])
   
   // Handle scroll events
   const handleScroll = useCallback(() => {
@@ -100,6 +146,7 @@ export function useSmartScroll(options: UseSmartScrollOptions = {}): UseSmartScr
   return {
     scrollContainerRef,
     scrollToBottom,
+    scrollToMessage,
     isAtBottom,
     shouldAutoScroll
   }

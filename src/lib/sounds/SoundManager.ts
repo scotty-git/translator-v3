@@ -1,3 +1,4 @@
+import { useState, useCallback } from 'react'
 import { UserManager } from '@/lib/user/UserManager'
 
 /**
@@ -43,6 +44,8 @@ export class SoundManager {
   private hasPermission: boolean = false
   private volumeLevel: VolumeLevel = 'loud'
   private notificationSound: NotificationSound = 'chime'
+  private messageNotifications: boolean = true
+  private interfaceSounds: boolean = false
   
   // Three different notification sound presets
   private notificationPresets: Record<NotificationSound, SoundConfig> = {
@@ -181,6 +184,8 @@ export class SoundManager {
     this.isEnabled = UserManager.getPreference('soundNotifications', false)
     this.volumeLevel = UserManager.getPreference('soundVolume', 'loud') as VolumeLevel
     this.notificationSound = UserManager.getPreference('notificationSound', 'chime') as NotificationSound
+    this.messageNotifications = UserManager.getPreference('messageNotifications', true)
+    this.interfaceSounds = UserManager.getPreference('interfaceSounds', false)
   }
 
   /**
@@ -204,6 +209,20 @@ export class SoundManager {
    */
   async playSound(type: SoundType): Promise<void> {
     if (!this.isAvailable()) return
+
+    // Check if sound type is enabled based on category
+    const isMessageSound = ['message_received', 'message_sent'].includes(type)
+    const isInterfaceSound = ['recording_start', 'recording_stop', 'button_click', 'translation_complete'].includes(type)
+    
+    if (isMessageSound && !this.messageNotifications) {
+      console.log(`🔊 Skipping ${type} - message notifications disabled`)
+      return
+    }
+    
+    if (isInterfaceSound && !this.interfaceSounds) {
+      console.log(`🔊 Skipping ${type} - interface sounds disabled`)
+      return
+    }
 
     try {
       // Ensure audio context is resumed
@@ -371,6 +390,38 @@ export class SoundManager {
   getEnabled(): boolean {
     return this.isEnabled
   }
+  
+  /**
+   * Set message notifications enabled/disabled
+   */
+  setMessageNotifications(enabled: boolean): void {
+    this.messageNotifications = enabled
+    UserManager.setPreference('messageNotifications', enabled)
+    console.log(`🔊 Message notifications ${enabled ? 'enabled' : 'disabled'}`)
+  }
+  
+  /**
+   * Get message notifications enabled state
+   */
+  getMessageNotifications(): boolean {
+    return this.messageNotifications
+  }
+  
+  /**
+   * Set interface sounds enabled/disabled
+   */
+  setInterfaceSounds(enabled: boolean): void {
+    this.interfaceSounds = enabled
+    UserManager.setPreference('interfaceSounds', enabled)
+    console.log(`🔊 Interface sounds ${enabled ? 'enabled' : 'disabled'}`)
+  }
+  
+  /**
+   * Get interface sounds enabled state
+   */
+  getInterfaceSounds(): boolean {
+    return this.interfaceSounds
+  }
 
   /**
    * Check if audio context is ready
@@ -395,24 +446,60 @@ export const soundManager = SoundManager.getInstance()
 
 /**
  * Hook for easy sound integration in React components
+ * Uses React state for proper reactivity in components
  */
 export function useSounds() {
+  const [isEnabled, setIsEnabledState] = useState(() => soundManager.getEnabled())
+  const [volumeLevel, setVolumeLevelState] = useState(() => soundManager.getVolumeLevel())
+  const [notificationSound, setNotificationSoundState] = useState(() => soundManager.getNotificationSound())
+  const [messageNotifications, setMessageNotificationsState] = useState(() => soundManager.getMessageNotifications())
+  const [interfaceSounds, setInterfaceSoundsState] = useState(() => soundManager.getInterfaceSounds())
+
+  const setEnabled = useCallback((enabled: boolean) => {
+    soundManager.setEnabled(enabled)
+    setIsEnabledState(enabled)
+  }, [])
+
+  const setVolumeLevel = useCallback((level: VolumeLevel) => {
+    soundManager.setVolumeLevel(level)
+    setVolumeLevelState(level)
+  }, [])
+
+  const setNotificationSound = useCallback((sound: NotificationSound) => {
+    soundManager.setNotificationSound(sound)
+    setNotificationSoundState(sound)
+  }, [])
+
+  const setMessageNotifications = useCallback((enabled: boolean) => {
+    soundManager.setMessageNotifications(enabled)
+    setMessageNotificationsState(enabled)
+  }, [])
+
+  const setInterfaceSounds = useCallback((enabled: boolean) => {
+    soundManager.setInterfaceSounds(enabled)
+    setInterfaceSoundsState(enabled)
+  }, [])
+
   return {
-    playMessageReceived: () => soundManager.playMessageReceived(),
-    playMessageSent: () => soundManager.playMessageSent(),
-    playTranslationComplete: () => soundManager.playTranslationComplete(),
-    playRecordingStart: () => soundManager.playRecordingStart(),
-    playRecordingStop: () => soundManager.playRecordingStop(),
-    playButtonClick: () => soundManager.playButtonClick(),
-    playError: () => soundManager.playError(),
-    playNotification: () => soundManager.playNotification(),
-    isEnabled: soundManager.getEnabled(),
-    setEnabled: (enabled: boolean) => soundManager.setEnabled(enabled),
-    volumeLevel: soundManager.getVolumeLevel(),
-    setVolumeLevel: (level: VolumeLevel) => soundManager.setVolumeLevel(level),
-    notificationSound: soundManager.getNotificationSound(),
-    setNotificationSound: (sound: NotificationSound) => soundManager.setNotificationSound(sound),
-    testSound: () => soundManager.testSound(),
-    isReady: () => soundManager.isReady()
+    playMessageReceived: useCallback(() => soundManager.playMessageReceived(), []),
+    playMessageSent: useCallback(() => soundManager.playMessageSent(), []),
+    playTranslationComplete: useCallback(() => soundManager.playTranslationComplete(), []),
+    playRecordingStart: useCallback(() => soundManager.playRecordingStart(), []),
+    playRecordingStop: useCallback(() => soundManager.playRecordingStop(), []),
+    playButtonClick: useCallback(() => soundManager.playButtonClick(), []),
+    playError: useCallback(() => soundManager.playError(), []),
+    playNotification: useCallback(() => soundManager.playNotification(), []),
+    isEnabled,
+    setEnabled,
+    volumeLevel,
+    setVolumeLevel,
+    notificationSound,
+    setNotificationSound,
+    messageNotifications,
+    setMessageNotifications,
+    interfaceSounds,
+    setInterfaceSounds,
+    testSound: useCallback(() => soundManager.testSound(), []),
+    isReady: useCallback(() => soundManager.isReady(), [])
   }
 }
