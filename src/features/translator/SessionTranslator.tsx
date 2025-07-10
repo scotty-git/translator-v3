@@ -81,8 +81,11 @@ export function SessionTranslator() {
       onMessageReceived: (message: SessionMessage) => {
         console.log('📨 [SessionTranslator] Received message from partner:', message.id)
         
-        // Immediately clear partner activity when message is received
-        setPartnerActivity('idle')
+        // Clear partner activity with a slight delay to allow activity indicators to be seen
+        setTimeout(() => {
+          console.log('🎯 [SessionTranslator] Clearing partner activity to idle after message received')
+          setPartnerActivity('idle')
+        }, 1000) // 1 second delay
         
         // Convert SessionMessage to QueuedMessage for display
         const queuedMessage: QueuedMessage = {
@@ -109,7 +112,13 @@ export function SessionTranslator() {
         setMessages(prev => [...prev, queuedMessage])
         
         // Play sound notification for incoming translated message
-        playMessageReceived()
+        console.log('🔊 [SessionTranslator] About to call playMessageReceived() for partner message:', message.id)
+        try {
+          playMessageReceived()
+          console.log('🔊 [SessionTranslator] playMessageReceived() call completed')
+        } catch (error) {
+          console.error('🔊 [SessionTranslator] Error calling playMessageReceived():', error)
+        }
       },
       
       onConnectionStatusChanged: (status: ConnectionStatus) => {

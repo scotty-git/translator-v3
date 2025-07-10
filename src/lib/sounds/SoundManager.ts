@@ -47,25 +47,25 @@ export class SoundManager {
   private messageNotifications: boolean = true
   private interfaceSounds: boolean = false
   
-  // Three different notification sound presets
+  // Three distinct, subtle notification sound presets
   private notificationPresets: Record<NotificationSound, SoundConfig> = {
     chime: {
-      frequency: 800,
-      duration: 0.15,
-      volume: 0.3,
-      type: 'sine'
+      frequency: 600,      // Lower, warmer frequency
+      duration: 0.2,       // Slightly longer
+      volume: 0.15,        // Much quieter
+      type: 'sine'         // Smooth sine wave
     },
     bell: {
-      frequency: 523.25, // C5 note
-      duration: 0.3,
-      volume: 0.3,
-      type: 'triangle'
+      frequency: 880,      // A5 note - clearly different pitch
+      duration: 0.4,       // Longer duration
+      volume: 0.12,        // Even quieter
+      type: 'triangle'     // Softer triangle wave
     },
     pop: {
-      frequency: 1047, // C6 note
-      duration: 0.08,
-      volume: 0.3,
-      type: 'square'
+      frequency: 1200,     // Higher frequency for distinctness
+      duration: 0.06,      // Very short and subtle
+      volume: 0.1,         // Quietest option
+      type: 'sine'         // Smooth sine for subtlety
     }
   }
   
@@ -181,7 +181,7 @@ export class SoundManager {
    * Load user sound preferences
    */
   private loadPreferences(): void {
-    this.isEnabled = UserManager.getPreference('soundNotifications', false)
+    this.isEnabled = UserManager.getPreference('soundNotifications', true) // Enable by default
     this.volumeLevel = UserManager.getPreference('soundVolume', 'loud') as VolumeLevel
     this.notificationSound = UserManager.getPreference('notificationSound', 'chime') as NotificationSound
     this.messageNotifications = UserManager.getPreference('messageNotifications', true)
@@ -208,19 +208,25 @@ export class SoundManager {
    * Play a sound notification
    */
   async playSound(type: SoundType): Promise<void> {
-    if (!this.isAvailable()) return
+    console.log(`🔊 [SoundManager] playSound called: ${type}`)
+    console.log(`🔊 [SoundManager] isEnabled: ${this.isEnabled}, hasPermission: ${this.hasPermission}, audioContext: ${this.audioContext !== null}`)
+    
+    if (!this.isAvailable()) {
+      console.log(`🔊 [SoundManager] Sound not available - enabled: ${this.isEnabled}, permission: ${this.hasPermission}, audioContext: ${this.audioContext !== null}`)
+      return
+    }
 
     // Check if sound type is enabled based on category
     const isMessageSound = ['message_received', 'message_sent'].includes(type)
     const isInterfaceSound = ['recording_start', 'recording_stop', 'button_click', 'translation_complete'].includes(type)
     
     if (isMessageSound && !this.messageNotifications) {
-      console.log(`🔊 Skipping ${type} - message notifications disabled`)
+      console.log(`🔊 [SoundManager] Skipping ${type} - message notifications disabled`)
       return
     }
     
     if (isInterfaceSound && !this.interfaceSounds) {
-      console.log(`🔊 Skipping ${type} - interface sounds disabled`)
+      console.log(`🔊 [SoundManager] Skipping ${type} - interface sounds disabled`)
       return
     }
 
@@ -247,9 +253,10 @@ export class SoundManager {
       }
       
       await this.generateTone(adjustedConfig)
+      console.log(`🔊 [SoundManager] Successfully played ${type} sound`)
       
     } catch (error) {
-      console.warn(`🔊 Failed to play ${type} sound:`, error)
+      console.warn(`🔊 [SoundManager] Failed to play ${type} sound:`, error)
     }
   }
 
@@ -285,6 +292,7 @@ export class SoundManager {
    * Play message arrival sound
    */
   async playMessageReceived(): Promise<void> {
+    console.log(`🔊 [SoundManager] playMessageReceived() called`)
     await this.playSound('message_received')
   }
 

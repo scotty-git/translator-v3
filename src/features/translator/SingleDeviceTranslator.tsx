@@ -1417,13 +1417,26 @@ export function SingleDeviceTranslator({
             )}
             
             {/* Partner activity in session mode */}
-            {isSessionMode && partnerActivity !== 'idle' && (
-              <ActivityIndicator 
-                activity={partnerActivity} 
-                userName="Partner"
-                isOwnMessage={false}
-              />
-            )}
+            {(() => {
+              console.log('🎯 [SingleDeviceTranslator] Activity indicator check:', {
+                isSessionMode,
+                partnerActivity,
+                shouldShow: isSessionMode && partnerActivity !== 'idle'
+              })
+              
+              if (isSessionMode && partnerActivity !== 'idle') {
+                console.log('🎯 [SingleDeviceTranslator] Rendering partner activity indicator:', partnerActivity)
+                return (
+                  <ActivityIndicator 
+                    activity={partnerActivity} 
+                    userName="Partner"
+                    isOwnMessage={false}
+                  />
+                )
+              }
+              
+              return null
+            })()}
             
             {/* Scroll to bottom button */}
             <ScrollToBottomButton 
