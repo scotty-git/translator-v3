@@ -21,6 +21,7 @@ export class MessageSyncService {
   private messageQueue: Map<string, QueuedSessionMessage> = new Map()
   private messageChannel: RealtimeChannel | null = null
   private presenceChannel: RealtimeChannel | null = null
+  private participantChannel: RealtimeChannel | null = null
   private retryTimeouts: Map<string, NodeJS.Timeout> = new Map()
   private isProcessingQueue = false
   private sequenceNumber = 0
@@ -188,6 +189,9 @@ export class MessageSyncService {
       
       // Set up presence subscription
       await this.setupPresenceSubscription(sessionId, userId)
+
+      // Set up participant subscription to detect when partners join
+      await this.setupParticipantSubscription(sessionId)
 
       // Note: User participant management is handled by SessionManager
       // No need to add user here as it causes duplicate key conflicts
@@ -374,6 +378,48 @@ export class MessageSyncService {
             activity: 'idle'
           })
         }
+      })
+  }
+
+  /**
+   * Set up participant subscription to detect when partners join
+   */
+  private async setupParticipantSubscription(sessionId: string): Promise<void> {
+    console.log('👥 [MessageSyncService] Setting up participant subscription for session:', sessionId)
+    
+    // Listen for INSERT and UPDATE events on session_participants table
+    this.participantChannel = supabase
+      .channel(`participants:${sessionId}:${Date.now()}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'session_participants',
+        filter: `session_id=eq.${sessionId}`
+      }, (payload) => {
+        console.log('👤 [MessageSyncService] New participant joined:', {
+          sessionId,
+          userId: payload.new.user_id,
+          isOnline: payload.new.is_online
+        })
+        // Validate session readiness when a new participant joins
+        this.validateSessionReady()
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'session_participants',
+        filter: `session_id=eq.${sessionId}`
+      }, (payload) => {
+        console.log('👤 [MessageSyncService] Participant updated:', {
+          sessionId,
+          userId: payload.new.user_id,
+          isOnline: payload.new.is_online
+        })
+        // Validate session readiness when participant status changes
+        this.validateSessionReady()
+      })
+      .subscribe((status) => {
+        console.log('👥 [MessageSyncService] Participant subscription status:', status)
       })
   }
 
@@ -993,6 +1039,17 @@ export class MessageSyncService {
         console.error('❌ [MessageSyncService] Error removing presence channel:', error)
       }
       this.presenceChannel = null
+    }
+
+    if (this.participantChannel) {
+      console.log('🔌 [MessageSyncService] Removing participant channel...')
+      try {
+        await this.participantChannel.unsubscribe()
+        await supabase.removeChannel(this.participantChannel)
+      } catch (error) {
+        console.error('❌ [MessageSyncService] Error removing participant channel:', error)
+      }
+      this.participantChannel = null
     }
 
     // Reset subscription ready state

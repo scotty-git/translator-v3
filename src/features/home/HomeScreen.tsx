@@ -66,14 +66,21 @@ export function HomeScreen() {
     setIsJoiningSession(true)
     
     try {
+      console.log('🔍 [HomeScreen] Starting join process for code:', joinCode)
+      
       // Join existing session
+      console.log('🔍 [HomeScreen] Calling sessionManager.joinSession...')
       const { sessionId, partnerId } = await sessionManager.joinSession(joinCode)
+      console.log('🔍 [HomeScreen] Join session result:', { sessionId, partnerId })
       
       // Generate user ID for this device
       const userId = sessionManager.generateUserId()
+      console.log('🔍 [HomeScreen] Generated user ID:', userId)
       
       // Add self as participant
+      console.log('🔍 [HomeScreen] Adding participant to session...')
       await sessionManager.addParticipant(sessionId, userId)
+      console.log('🔍 [HomeScreen] Participant added successfully')
       
       // Store session info
       const sessionInfo = {
@@ -85,14 +92,21 @@ export function HomeScreen() {
         createdAt: new Date().toISOString()
       }
       localStorage.setItem('activeSession', JSON.stringify(sessionInfo))
+      console.log('🔍 [HomeScreen] Session info stored:', sessionInfo)
       
       // Navigate to session
+      console.log('🔍 [HomeScreen] Navigating to /session...')
       navigate('/session')
+      console.log('🔍 [HomeScreen] Navigation completed')
+      
     } catch (err) {
+      console.error('❌ [HomeScreen] Join session failed:', err)
       const error = ErrorManager.handleError(err)
       setError(error.userMessage)
+      console.log('🔍 [HomeScreen] Error set:', error.userMessage)
     } finally {
       setIsJoiningSession(false)
+      console.log('🔍 [HomeScreen] Join process completed')
     }
   }
 
