@@ -3,10 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Mic, MicOff, Settings, Sun, Moon, Wifi, WifiOff, RotateCcw, Users } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
-import { AudioVisualization } from '@/components/ui/AudioVisualization'
 import { MobileContainer } from '@/components/layout/MobileContainer'
-import { MessageBubble } from '@/features/messages/MessageBubble'
-import { ActivityIndicator } from '@/features/messages/ActivityIndicator'
+import { 
+  MessageBubble, 
+  ActivityIndicator, 
+  AudioVisualization,
+  ErrorDisplay,
+  ScrollToBottomButton,
+  UnreadMessagesDivider
+} from './shared'
 import { messageQueue, type QueuedMessage } from '@/features/messages/MessageQueue'
 import { IMessageQueue } from '@/services/queues/IMessageQueue'
 import { MessageQueueService } from '@/services/queues/MessageQueueService'
@@ -20,11 +25,8 @@ import { ConversationContextManager, type ConversationContextEntry } from '@/lib
 import { DebugConsole } from '@/components/debug/DebugConsole'
 import { messageSyncService } from '@/services/MessageSyncService'
 import type { PresenceService } from '@/services/presence'
-import { ErrorDisplay } from '@/components/ErrorDisplay'
 import { useSmartScroll } from '@/hooks/useSmartScroll'
 import { useUnreadMessages } from '@/hooks/useUnreadMessages'
-import { ScrollToBottomButton } from '@/components/ui/ScrollToBottomButton'
-import { UnreadMessagesDivider } from '@/components/ui/UnreadMessagesDivider'
 
 /**
  * Generate a unique message ID using UUID
