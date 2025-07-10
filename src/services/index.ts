@@ -6,3 +6,6 @@ export * from './openai';
 
 // Audio services
 export * from './audio';
+
+// Realtime services
+export * from './realtime';

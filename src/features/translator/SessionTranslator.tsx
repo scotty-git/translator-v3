@@ -5,8 +5,10 @@ import { Layout } from '@/components/layout/Layout'
 import { sessionManager } from '@/services/SessionManager'
 import { messageSyncService } from '@/services/MessageSyncService'
 import { PresenceService } from '@/services/presence'
+import { RealtimeConnection } from '@/services/realtime'
 import type { QueuedMessage } from '@/features/messages/MessageQueue'
 import type { SessionMessage, ConnectionStatus } from '@/types/database'
+import type { ConnectionState } from '@/services/realtime'
 import { ErrorToast } from '@/components/ErrorDisplay'
 import { useSounds } from '@/lib/sounds/SoundManager'
 import { MessageQueueService } from '@/services/queues/MessageQueueService'
@@ -45,6 +47,7 @@ export function SessionTranslator() {
   
   // Real-time connection status
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('connecting')
+  const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
   const [partnerOnline, setPartnerOnline] = useState(false)
   const [partnerActivity, setPartnerActivity] = useState<'idle' | 'recording' | 'processing' | 'typing'>('idle')
   
@@ -57,6 +60,9 @@ export function SessionTranslator() {
   
   // Create PresenceService instance for session mode
   const [presenceService] = useState(() => new PresenceService())
+  
+  // Create RealtimeConnection instance for session mode
+  const [realtimeConnection] = useState(() => new RealtimeConnection())
   
   // Redirect if no session and handle session expiry
   useEffect(() => {
@@ -129,11 +135,6 @@ export function SessionTranslator() {
         }
       },
       
-      onConnectionStatusChanged: (status: ConnectionStatus) => {
-        console.log('🔌 [SessionTranslator] Connection status changed:', status)
-        setConnectionStatus(status)
-      },
-      
       onMessageDelivered: (messageId: string) => {
         console.log('✅ [SessionTranslator] Message delivered:', messageId)
         // Update message status to show delivery confirmation
@@ -178,16 +179,42 @@ export function SessionTranslator() {
         // Add this user as participant
         await sessionManager.addParticipant(sessionState.sessionId, sessionState.userId)
         
-        // Initialize PresenceService first
-        await presenceService.initialize(sessionState.sessionId, sessionState.userId)
+        // Initialize RealtimeConnection first
+        await realtimeConnection.initialize({
+          sessionId: sessionState.sessionId,
+          userId: sessionState.userId,
+          events: {
+            onConnectionStatusChanged: (status: ConnectionStatus) => {
+              console.log('🔌 [SessionTranslator] Connection status changed:', status)
+              setConnectionStatus(status)
+            },
+            onChannelError: (error: any) => {
+              console.error('❌ [SessionTranslator] Channel error:', error)
+            },
+            onReconnectAttempt: (attempt: number) => {
+              console.log('🔄 [SessionTranslator] Reconnection attempt:', attempt)
+            }
+          }
+        })
+        console.log('✅ [SessionTranslator] RealtimeConnection initialized')
+        
+        // Subscribe to connection state changes
+        realtimeConnection.subscribeToConnectionState((state: ConnectionState) => {
+          console.log('🔗 [SessionTranslator] Connection state changed:', state)
+          setConnectionState(state)
+        })
+        
+        // Initialize PresenceService with RealtimeConnection
+        await presenceService.initialize(sessionState.sessionId, sessionState.userId, realtimeConnection)
         console.log('✅ [SessionTranslator] PresenceService initialized')
         
-        // Initialize MessageSyncService with PresenceService dependency
-        await messageSyncService.initializeSession(sessionState.sessionId, sessionState.userId, presenceService)
+        // Initialize MessageSyncService with RealtimeConnection and PresenceService
+        await messageSyncService.initializeSession(sessionState.sessionId, sessionState.userId, realtimeConnection, presenceService)
         console.log('✅ [SessionTranslator] Real-time sync initialized')
       } catch (error) {
         console.error('❌ [SessionTranslator] Failed to initialize real-time sync:', error)
         setConnectionStatus('disconnected')
+        setConnectionState('disconnected')
         
         // Handle specific error cases
         if (error instanceof Error) {
@@ -215,7 +242,8 @@ export function SessionTranslator() {
       unsubscribeActivity()
       // Cleanup services
       presenceService.cleanup()
-      messageSyncService.cleanupSubscriptions()
+      messageSyncService.cleanup()
+      realtimeConnection.cleanup()
       // Clear session from localStorage to prevent stale data
       localStorage.removeItem('activeSession')
     }
@@ -229,6 +257,7 @@ export function SessionTranslator() {
         // Try to clean up synchronously (best effort)
         presenceService.cleanup()
         messageSyncService.cleanup()
+        realtimeConnection.cleanup()
         localStorage.removeItem('activeSession')
       }
     }
@@ -386,6 +415,7 @@ export function SessionTranslator() {
             sessionInfo={{
               code: sessionState.sessionCode,
               status: connectionStatus,
+              connectionState: connectionState,
               partnerOnline: partnerOnline
             }}
             messageQueueService={messageQueueService}

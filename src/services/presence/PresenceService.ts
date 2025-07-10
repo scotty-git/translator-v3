@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { ActivityState, PresenceData, IPresenceService } from './types'
+import { RealtimeConnection } from '../realtime'
 
 /**
  * PresenceService - Handles real-time presence and activity indicators
@@ -8,8 +9,9 @@ import type { ActivityState, PresenceData, IPresenceService } from './types'
  * Core Features:
  * - Activity broadcasting ('recording', 'processing', 'typing', 'idle')
  * - Partner online/offline detection
- * - Clean channel management with no timestamp conflicts
  * - Database-first approach with presence fallback
+ * 
+ * Note: Channel management moved to RealtimeConnection (Phase 1d refactor)
  */
 export class PresenceService implements IPresenceService {
   private presenceChannel: RealtimeChannel | null = null
@@ -18,6 +20,9 @@ export class PresenceService implements IPresenceService {
   // Current session state
   private currentSessionId: string | null = null
   private currentUserId: string | null = null
+  
+  // Dependencies (injected)
+  private realtimeConnection?: RealtimeConnection
   
   // Callbacks
   private onPresenceChanged?: (isOnline: boolean) => void
@@ -30,7 +35,7 @@ export class PresenceService implements IPresenceService {
   /**
    * Initialize presence service for a session
    */
-  async initialize(sessionId: string, userId: string): Promise<void> {
+  async initialize(sessionId: string, userId: string, realtimeConnection: RealtimeConnection): Promise<void> {
     console.log('👥 [PresenceService] Initializing for session:', sessionId)
     
     try {
@@ -40,8 +45,9 @@ export class PresenceService implements IPresenceService {
       // Set session state after cleanup
       this.currentSessionId = sessionId
       this.currentUserId = userId
+      this.realtimeConnection = realtimeConnection
       
-      // Set up presence subscription
+      // Set up presence subscription via RealtimeConnection
       await this.setupPresenceSubscription(sessionId, userId)
       
       // Set up participant subscription to detect when partners join
@@ -59,30 +65,23 @@ export class PresenceService implements IPresenceService {
   }
 
   /**
-   * Set up real-time presence subscription
+   * Set up real-time presence subscription via RealtimeConnection
    */
   private async setupPresenceSubscription(sessionId: string, userId: string): Promise<void> {
-    // Use deterministic channel name so all devices join the same channel
-    const channelName = `presence:${sessionId}`
-    
-    // Clean up any existing presence channels for this session
-    const existingChannels = supabase.getChannels()
-    const presenceChannels = existingChannels.filter(ch => ch.topic.startsWith(`presence:${sessionId}`))
-    
-    if (presenceChannels.length > 0) {
-      console.warn('⚠️ [PresenceService] Found existing presence channels, cleaning up:', presenceChannels.length)
-      for (const channel of presenceChannels) {
-        try {
-          await channel.unsubscribe()
-          await supabase.removeChannel(channel)
-        } catch (error) {
-          console.error('❌ [PresenceService] Error removing existing presence channel:', error)
-        }
-      }
+    if (!this.realtimeConnection) {
+      throw new Error('RealtimeConnection not available')
     }
+
+    console.log('👥 [PresenceService] Setting up presence subscription for session:', sessionId)
     
-    this.presenceChannel = supabase
-      .channel(channelName)
+    // Create presence channel via RealtimeConnection
+    this.presenceChannel = await this.realtimeConnection.createChannel({
+      name: `presence:${sessionId}`,
+      type: 'presence'
+    })
+    
+    // Set up presence event handlers
+    this.presenceChannel
       .on('presence', { event: 'sync' }, () => {
         const state = this.presenceChannel?.presenceState()
         console.log('👥 [PresenceService] Presence sync:', state)
@@ -136,14 +135,23 @@ export class PresenceService implements IPresenceService {
   }
 
   /**
-   * Set up participant subscription to detect when partners join
+   * Set up participant subscription to detect when partners join via RealtimeConnection
    */
   private async setupParticipantSubscription(sessionId: string): Promise<void> {
+    if (!this.realtimeConnection) {
+      throw new Error('RealtimeConnection not available')
+    }
+
     console.log('👥 [PresenceService] Setting up participant subscription for session:', sessionId)
     
+    // Create participant channel via RealtimeConnection
+    this.participantChannel = await this.realtimeConnection.createChannel({
+      name: `participants:${sessionId}`,
+      type: 'participant'
+    })
+    
     // Listen for INSERT and UPDATE events on session_participants table
-    this.participantChannel = supabase
-      .channel(`participants:${sessionId}:${Date.now()}`)
+    this.participantChannel
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -411,23 +419,21 @@ export class PresenceService implements IPresenceService {
   private async cleanupSubscriptions(): Promise<void> {
     console.log('🧹 [PresenceService] Cleaning up subscriptions only...')
     
-    // Properly remove Supabase channels to prevent zombies
-    if (this.presenceChannel) {
+    // Remove channels via RealtimeConnection
+    if (this.presenceChannel && this.realtimeConnection && this.currentSessionId) {
       console.log('🔌 [PresenceService] Removing presence channel...')
       try {
-        await this.presenceChannel.unsubscribe()
-        await supabase.removeChannel(this.presenceChannel)
+        await this.realtimeConnection.removeChannel(`presence:${this.currentSessionId}`)
       } catch (error) {
         console.error('❌ [PresenceService] Error removing presence channel:', error)
       }
       this.presenceChannel = null
     }
 
-    if (this.participantChannel) {
+    if (this.participantChannel && this.realtimeConnection && this.currentSessionId) {
       console.log('🔌 [PresenceService] Removing participant channel...')
       try {
-        await this.participantChannel.unsubscribe()
-        await supabase.removeChannel(this.participantChannel)
+        await this.realtimeConnection.removeChannel(`participants:${this.currentSessionId}`)
       } catch (error) {
         console.error('❌ [PresenceService] Error removing participant channel:', error)
       }
@@ -453,6 +459,7 @@ export class PresenceService implements IPresenceService {
     // Reset state completely
     this.currentSessionId = null
     this.currentUserId = null
+    this.realtimeConnection = undefined
     this.onPresenceChanged = undefined
     this.onActivityChanged = undefined
     

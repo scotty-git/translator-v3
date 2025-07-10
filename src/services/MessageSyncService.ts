@@ -1,4 +1,3 @@
-import { supabase } from '@/lib/supabase'
 import type { 
   QueuedSessionMessage, 
   SessionMessage, 
@@ -7,16 +6,18 @@ import type {
 } from '@/types/database'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { PresenceService } from './presence'
+import { RealtimeConnection } from './realtime'
+import type { RealtimeConnectionConfig } from './realtime'
 
 /**
  * MessageSyncService - Handles real-time message synchronization for sessions
  * 
  * Core Features:
- * - Real-time message sync via Supabase
+ * - Real-time message sync via RealtimeConnection
  * - Offline message queuing with retry logic
- * - Connection state management
  * - Message delivery confirmations
  * 
+ * Note: Connection management moved to RealtimeConnection (Phase 1d refactor)
  * Note: Presence tracking moved to PresenceService (Phase 1c refactor)
  */
 export class MessageSyncService {
@@ -28,51 +29,28 @@ export class MessageSyncService {
   
   // Event listeners
   private onMessageReceived?: (message: SessionMessage) => void
-  private onConnectionStatusChanged?: (status: ConnectionStatus) => void
   private onMessageDelivered?: (messageId: string) => void
   private onMessageFailed?: (messageId: string, error: string) => void
 
   // Current session state
   private currentSessionId: string | null = null
   private currentUserId: string | null = null
-  private connectionStatus: ConnectionStatus = 'disconnected'
   private subscriptionReady: boolean = false
   
-  // PresenceService dependency (injected)
+  // Dependencies (injected)
   private presenceService?: PresenceService
-  
-  // Network resilience
-  private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
-  private reconnectTimeout: NodeJS.Timeout | null = null
+  private realtimeConnection?: RealtimeConnection
 
-  /**
-   * Update connection status and notify listeners
-   */
-  private updateConnectionStatus(status: ConnectionStatus): void {
-    const previousStatus = this.connectionStatus
-    this.connectionStatus = status
-    
-    console.log(`🔗 [MessageSyncService] Connection status changed: ${previousStatus} → ${status}`)
-    this.onConnectionStatusChanged?.(status)
-  }
-
-  /**
-   * Get the exponential backoff delay for retry attempts
-   */
-  private getRetryDelay(attempt: number): number {
-    // Exponential backoff: 1s, 2s, 4s, 8s, 16s (max)
-    return Math.min(1000 * Math.pow(2, attempt), 16000)
-  }
 
   /**
    * Queue a message for sending when connection is available
    */
   queueMessage(message: Omit<QueuedSessionMessage, 'id' | 'queuedAt' | 'retryCount' | 'status'>): string {
+    const currentStatus = this.getConnectionStatus()
     console.log('📬 [MessageSyncService] Queuing message:', {
       messageText: message.original_text?.substring(0, 50) + '...',
       sessionId: message.session_id,
-      isConnected: this.connectionStatus === 'connected'
+      isConnected: currentStatus === 'connected'
     })
 
     const messageId = crypto.randomUUID()
@@ -88,7 +66,7 @@ export class MessageSyncService {
     this.messageQueue.set(messageId, queuedMessage)
 
     // Try to send immediately if connected
-    if (this.connectionStatus === 'connected') {
+    if (currentStatus === 'connected') {
       this.processMessageQueue().catch(console.error)
     } else {
       console.log('📡 [MessageSyncService] Not connected, message will be sent when connection is restored')
@@ -101,7 +79,7 @@ export class MessageSyncService {
    * Process all queued messages
    */
   private async processMessageQueue(): Promise<void> {
-    if (this.isProcessingQueue || this.connectionStatus !== 'connected') {
+    if (this.isProcessingQueue || this.getConnectionStatus() !== 'connected') {
       return
     }
 
@@ -214,63 +192,56 @@ export class MessageSyncService {
    * Initialize session with real-time message subscriptions
    * Note: PresenceService should be initialized separately
    */
-  async initializeSession(sessionId: string, userId: string, presenceService?: PresenceService): Promise<void> {
+  async initializeSession(
+    sessionId: string, 
+    userId: string, 
+    realtimeConnection: RealtimeConnection,
+    presenceService?: PresenceService
+  ): Promise<void> {
     console.log('🔗 [MessageSyncService] Initializing session:', { sessionId, userId })
     
     this.currentSessionId = sessionId
     this.currentUserId = userId
     this.presenceService = presenceService
+    this.realtimeConnection = realtimeConnection
     console.log('📝 [MessageSyncService] Set current user ID:', this.currentUserId)
-    
-    this.updateConnectionStatus('connecting')
 
     try {
       // Clean up existing subscriptions (but preserve session info)
       await this.cleanupSubscriptions()
 
-      // Set up message subscription
+      // Set up message subscription using RealtimeConnection
       await this.setupMessageSubscription(sessionId)
 
       // Process any queued messages
       await this.processMessageQueue()
 
-      this.updateConnectionStatus('connected')
       console.log('✅ [MessageSyncService] Session initialized successfully')
       
     } catch (error) {
       console.error('❌ [MessageSyncService] Failed to initialize session:', error)
-      this.updateConnectionStatus('disconnected')
       throw error
     }
   }
 
   /**
-   * Set up real-time message subscription
+   * Set up real-time message subscription via RealtimeConnection
    */
   private async setupMessageSubscription(sessionId: string): Promise<void> {
+    if (!this.realtimeConnection) {
+      throw new Error('RealtimeConnection not available')
+    }
+
     console.log('📡 [MessageSyncService] Setting up message subscription for session:', sessionId)
     
-    // Generate unique channel name with timestamp to prevent conflicts
-    const channelName = `session:${sessionId}:${Date.now()}`
+    // Create the messages channel via RealtimeConnection
+    this.messageChannel = await this.realtimeConnection.createChannel({
+      name: `messages:${sessionId}`,
+      type: 'messages'
+    })
     
-    // Check if we already have active channels and clean them up
-    const existingChannels = supabase.getChannels()
-    const sessionChannels = existingChannels.filter(ch => ch.topic.startsWith(`session:${sessionId}`))
-    
-    if (sessionChannels.length > 0) {
-      console.warn('⚠️ [MessageSyncService] Found existing channels for session, cleaning up:', sessionChannels.length)
-      for (const channel of sessionChannels) {
-        try {
-          await channel.unsubscribe()
-          await supabase.removeChannel(channel)
-        } catch (error) {
-          console.error('❌ [MessageSyncService] Error removing existing channel:', error)
-        }
-      }
-    }
-    
-    this.messageChannel = supabase
-      .channel(channelName)
+    // Set up message event handlers
+    this.messageChannel
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
@@ -330,21 +301,10 @@ export class MessageSyncService {
           
           // Process any queued messages now that we're subscribed
           await this.processMessageQueue()
-        } else if (status === 'CHANNEL_ERROR') {
-          console.error('❌ [MessageSyncService] Message subscription error')
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.error(`❌ [MessageSyncService] Message subscription ${status}`)
           this.subscriptionReady = false
-          this.updateConnectionStatus('disconnected')
-          this.scheduleReconnect()
-        } else if (status === 'TIMED_OUT') {
-          console.error('⏰ [MessageSyncService] Message subscription timed out')
-          this.subscriptionReady = false
-          this.updateConnectionStatus('disconnected')
-          this.scheduleReconnect()
-        } else if (status === 'CLOSED') {
-          console.warn('🔒 [MessageSyncService] Message subscription closed')
-          this.subscriptionReady = false
-          this.updateConnectionStatus('disconnected')
-          this.scheduleReconnect()
+          // RealtimeConnection will handle reconnection automatically
         }
       })
   }
@@ -369,67 +329,20 @@ export class MessageSyncService {
     this.onMessageReceived?.(message)
   }
 
-  /**
-   * Schedule reconnection with exponential backoff
-   */
-  private scheduleReconnect(): void {
-    if (this.reconnectTimeout || this.reconnectAttempts >= this.maxReconnectAttempts) {
-      return
-    }
-
-    const delay = this.getRetryDelay(this.reconnectAttempts)
-    this.reconnectAttempts++
-
-    console.log(`🔄 [MessageSyncService] Scheduling reconnect attempt ${this.reconnectAttempts} in ${delay}ms`)
-    this.updateConnectionStatus('reconnecting')
-
-    this.reconnectTimeout = setTimeout(async () => {
-      this.reconnectTimeout = null
-      
-      if (!this.currentSessionId || !this.currentUserId) {
-        console.warn('⚠️ [MessageSyncService] Cannot reconnect - no session info')
-        return
-      }
-
-      try {
-        console.log('🔄 [MessageSyncService] Attempting to reconnect...')
-        await this.setupMessageSubscription(this.currentSessionId)
-        this.reconnectAttempts = 0 // Reset on successful reconnect
-        console.log('✅ [MessageSyncService] Reconnected successfully')
-      } catch (error) {
-        console.error('❌ [MessageSyncService] Reconnect failed:', error)
-        this.scheduleReconnect() // Try again
-      }
-    }, delay)
-  }
-
-  /**
-   * Cancel any pending reconnection attempts
-   */
-  private cancelReconnect(): void {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout)
-      this.reconnectTimeout = null
-    }
-    this.reconnectAttempts = 0
-  }
 
   /**
    * Set event handlers for message sync
    */
   setEventHandlers({
     onMessageReceived,
-    onConnectionStatusChanged,
     onMessageDelivered,
     onMessageFailed
   }: {
     onMessageReceived?: (message: SessionMessage) => void
-    onConnectionStatusChanged?: (status: ConnectionStatus) => void
     onMessageDelivered?: (messageId: string) => void
     onMessageFailed?: (messageId: string, error: string) => void
   }): void {
     this.onMessageReceived = onMessageReceived
-    this.onConnectionStatusChanged = onConnectionStatusChanged
     this.onMessageDelivered = onMessageDelivered
     this.onMessageFailed = onMessageFailed
     
@@ -437,10 +350,10 @@ export class MessageSyncService {
   }
 
   /**
-   * Get current connection status
+   * Get current connection status from RealtimeConnection
    */
   getConnectionStatus(): ConnectionStatus {
-    return this.connectionStatus
+    return this.realtimeConnection?.getConnectionStatus() ?? 'disconnected'
   }
 
   /**
@@ -458,19 +371,15 @@ export class MessageSyncService {
   private async cleanupSubscriptions(): Promise<void> {
     console.log('🧹 [MessageSyncService] Cleaning up subscriptions only...')
     
-    // Cancel reconnection attempts
-    this.cancelReconnect()
-    
     // Clear retry timeouts
     this.retryTimeouts.forEach(timeout => clearTimeout(timeout))
     this.retryTimeouts.clear()
 
-    // Properly remove Supabase channels to prevent zombies
-    if (this.messageChannel) {
+    // Remove message channel via RealtimeConnection
+    if (this.messageChannel && this.realtimeConnection) {
       console.log('🔌 [MessageSyncService] Removing message channel...')
       try {
-        await this.messageChannel.unsubscribe()
-        await supabase.removeChannel(this.messageChannel)
+        await this.realtimeConnection.removeChannel(`messages:${this.currentSessionId}`)
       } catch (error) {
         console.error('❌ [MessageSyncService] Error removing message channel:', error)
       }
@@ -494,17 +403,14 @@ export class MessageSyncService {
     this.currentSessionId = null
     this.currentUserId = null
     this.presenceService = undefined
+    this.realtimeConnection = undefined
     
     // Clear message queue
     this.messageQueue.clear()
     this.sequenceNumber = 0
     
-    // Reset connection state
-    this.updateConnectionStatus('disconnected')
-    
     // Clear event handlers
     this.onMessageReceived = undefined
-    this.onConnectionStatusChanged = undefined
     this.onMessageDelivered = undefined
     this.onMessageFailed = undefined
     
