@@ -19,6 +19,10 @@ import { ConversationContextManager, type ConversationContextEntry } from '@/lib
 import { DebugConsole } from '@/components/debug/DebugConsole'
 import { messageSyncService } from '@/services/MessageSyncService'
 import { ErrorDisplay } from '@/components/ErrorDisplay'
+import { useSmartScroll } from '@/hooks/useSmartScroll'
+import { useUnreadMessages } from '@/hooks/useUnreadMessages'
+import { ScrollToBottomButton } from '@/components/ui/ScrollToBottomButton'
+import { UnreadMessagesDivider } from '@/components/ui/UnreadMessagesDivider'
 
 /**
  * Generate a unique message ID using UUID
@@ -141,8 +145,24 @@ export function SingleDeviceTranslator({
   // Using persistent audio manager instead of ref
   const audioManager = persistentAudioManager
   
-  // Ref for auto-scrolling to bottom
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  // Smart scroll behavior
+  const { scrollContainerRef, scrollToBottom, isAtBottom, shouldAutoScroll } = useSmartScroll({
+    threshold: 100,
+    smoothScroll: true
+  })
+  
+  // Unread messages tracking
+  const userId = isSessionMode ? (localStorage.getItem('activeSession') ? JSON.parse(localStorage.getItem('activeSession')!).userId : 'single-user') : 'single-user'
+  const {
+    unreadCount,
+    firstUnreadMessageId,
+    markAllAsRead,
+    setLastReadOnBlur,
+    checkForNewMessages
+  } = useUnreadMessages({ userId, isSessionMode })
+  
+  // Track if app has focus
+  const [hasFocus, setHasFocus] = useState(true)
 
   // Debug logging for conversation context system
   useEffect(() => {
@@ -150,12 +170,68 @@ export function SingleDeviceTranslator({
     console.log('📊 [ConversationContext] Initial context state:', conversationContext.length, 'messages')
   }, [])
   
-  // Auto-scroll to bottom when messages change
+  // Handle smart scrolling when messages change
   useEffect(() => {
-    if (messages.length > 0 && messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' })
+    // Check for new unread messages
+    checkForNewMessages(messages)
+    
+    // Auto-scroll only if user is at bottom or should auto-scroll
+    if (messages.length > 0 && shouldAutoScroll) {
+      // Small delay to ensure DOM is updated
+      setTimeout(() => {
+        scrollToBottom()
+      }, 100)
     }
-  }, [messages])
+  }, [messages, shouldAutoScroll, scrollToBottom, checkForNewMessages])
+  
+  // Handle focus/blur events for unread message tracking
+  useEffect(() => {
+    const handleFocus = () => {
+      setHasFocus(true)
+      // When regaining focus, scroll to first unread if there are unread messages
+      if (unreadCount > 0 && scrollContainerRef.current) {
+        setTimeout(() => {
+          const firstUnreadElement = document.getElementById(`message-${firstUnreadMessageId}`)
+          if (firstUnreadElement) {
+            firstUnreadElement.scrollIntoView({ behavior: 'smooth', block: 'start' })
+          } else {
+            scrollToBottom()
+          }
+        }, 300)
+      }
+    }
+    
+    const handleBlur = () => {
+      setHasFocus(false)
+      setLastReadOnBlur()
+    }
+    
+    window.addEventListener('focus', handleFocus)
+    window.addEventListener('blur', handleBlur)
+    
+    // Also handle visibility change API for mobile
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        handleBlur()
+      } else {
+        handleFocus()
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      window.removeEventListener('blur', handleBlur)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [unreadCount, firstUnreadMessageId, scrollToBottom, setLastReadOnBlur, scrollContainerRef])
+  
+  // Mark messages as read when at bottom
+  useEffect(() => {
+    if (isAtBottom && hasFocus) {
+      markAllAsRead()
+    }
+  }, [isAtBottom, hasFocus, markAllAsRead])
   
   // Broadcast activity changes in session mode
   useEffect(() => {
@@ -1267,14 +1343,17 @@ export function SingleDeviceTranslator({
         </header>
         
         {/* Message Area - Takes remaining space with padding for fixed header and footer */}
-        <div className="overflow-y-auto p-4 space-y-4" style={{
-          height: 'calc(100vh - 64px - 80px)', // Full viewport minus header (64px) and footer (80px)
-          marginTop: '64px', // Space for fixed header
-          paddingBottom: '80px', // Space for fixed footer
-          touchAction: 'pan-y',
-          overscrollBehavior: 'contain',
-          WebkitOverflowScrolling: 'touch'
-        }}>
+        <div 
+          ref={scrollContainerRef}
+          className="overflow-y-auto p-4 space-y-4" 
+          style={{
+            height: 'calc(100vh - 64px - 80px)', // Full viewport minus header (64px) and footer (80px)
+            marginTop: '64px', // Space for fixed header
+            paddingBottom: '80px', // Space for fixed footer
+            touchAction: 'pan-y',
+            overscrollBehavior: 'contain',
+            WebkitOverflowScrolling: 'touch'
+          }}>
             {messages.length === 0 ? (
               <div className="flex-1 flex items-center justify-center">
                 <div className="text-center space-y-4 max-w-md mx-auto">
@@ -1293,28 +1372,41 @@ export function SingleDeviceTranslator({
               </div>
             ) : (
               <>
-                {messages.map((message) => (
-                  <MessageBubble 
-                    key={message.id} 
-                    message={message} 
-                    theme="blue"
-                    currentUserId={(() => {
-                      // Get current user ID from session context or use default
-                      const sessionState = localStorage.getItem('activeSession')
-                      if (sessionState) {
-                        try {
-                          const parsed = JSON.parse(sessionState)
-                          return parsed.userId
-                        } catch (e) {
-                          console.error('Failed to parse session state:', e)
-                        }
-                      }
-                      return 'single-user'
-                    })()}
-                    isSessionMode={isSessionMode}
-                    fontSize={fontSize}
-                  />
-                ))}
+                {messages.map((message, index) => {
+                  const isFirstUnread = message.id === firstUnreadMessageId
+                  return (
+                    <div key={message.id}>
+                      {/* Show unread divider before first unread message */}
+                      {isFirstUnread && (
+                        <UnreadMessagesDivider 
+                          isVisible={true}
+                          messageCount={unreadCount}
+                        />
+                      )}
+                      <div id={`message-${message.id}`}>
+                        <MessageBubble 
+                          message={message} 
+                          theme="blue"
+                          currentUserId={(() => {
+                            // Get current user ID from session context or use default
+                            const sessionState = localStorage.getItem('activeSession')
+                            if (sessionState) {
+                              try {
+                                const parsed = JSON.parse(sessionState)
+                                return parsed.userId
+                              } catch (e) {
+                                console.error('Failed to parse session state:', e)
+                              }
+                            }
+                            return 'single-user'
+                          })()}
+                          isSessionMode={isSessionMode}
+                          fontSize={fontSize}
+                        />
+                      </div>
+                    </div>
+                  )
+                })}
               </>
             )}
 
@@ -1337,8 +1429,12 @@ export function SingleDeviceTranslator({
               />
             )}
             
-            {/* Invisible element to auto-scroll to */}
-            <div ref={messagesEndRef} />
+            {/* Scroll to bottom button */}
+            <ScrollToBottomButton 
+              onClick={scrollToBottom}
+              isVisible={!isAtBottom}
+              unreadCount={unreadCount}
+            />
         </div>
         
         {/* Recording Controls - Fixed at bottom */}
