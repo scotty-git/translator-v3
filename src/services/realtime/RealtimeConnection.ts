@@ -124,11 +124,12 @@ export class RealtimeConnection implements IRealtimeConnection {
     // Clean up any existing channel with the same name
     await this.removeChannel(config.name)
 
-    // Generate unique channel name to prevent conflicts
-    const uniqueChannelName = `${config.name}:${Date.now()}`
+    // Use deterministic channel name for presence/broadcast channels
+    // Adding timestamps breaks cross-device communication!
+    const channelName = config.name
     
     // Create the channel
-    const channel = supabase.channel(uniqueChannelName, config.config)
+    const channel = supabase.channel(channelName, config.config)
     
     // Store channel entry
     const channelEntry: ChannelEntry = {

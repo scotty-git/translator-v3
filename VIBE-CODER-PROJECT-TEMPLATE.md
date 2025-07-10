@@ -151,7 +151,7 @@ Each phase should be a separate markdown file: `phase-XX-descriptive-name.md`
 
 **Why it's awesome**: [The user value this creates OR the development pain this solves]
 
-**Time estimate**: [X-Y minutes/hours of Claude working autonomously]
+**Time estimate**: [X-Y minutes of Claude working autonomously]
 
 **Project type**: [Feature/Refactor/Integration/Setup/etc.]
 
@@ -264,25 +264,7 @@ npm run dev
 
 ## 🤖 Autonomous Claude Protocol
 
-### Working Style for Claude
-
 **You are working with a vibe coder who wants minimal interruptions.**
-
-#### DO:
-- Work through phases autonomously
-- Make reasonable technical decisions
-- Update documentation as you go
-- Run tests continuously
-- Commit at logical checkpoints
-- Use the TodoWrite tool to track progress
-- Take screenshots during testing for validation
-
-#### DON'T:
-- Ask permission for obvious technical decisions
-- Stop mid-phase to ask for clarification
-- Ask which files to edit (find them yourself)
-- Interrupt with status updates every few minutes
-- Ask before making commits (just do it)
 
 ### Execution Flow
 
@@ -310,95 +292,35 @@ npm run dev
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-### Error Handling
-
-If Claude encounters issues:
-1. Document the problem in the phase file
-2. Attempt reasonable solutions
-3. If blocked, report clearly what's needed
-4. Never leave the codebase in a broken state
-
 ---
 
 ## 🧪 Testing & Validation Framework
 
-### Three-Layer Testing Approach
+### Testing Approach
 
-#### 1. Unit Tests (Fast, Focused)
+#### 1. Unit Tests
 ```bash
-# Run specific tests
+# Run specific tests autonomously
 npm test -- [pattern]
-
-# With coverage
-npm run test:coverage
 ```
+**Purpose**: Claude runs these automatically to validate services/components
 
-**Purpose**: Validate individual services/components work correctly
-
-#### 2. Integration Tests (Playwright, Comprehensive)
+#### 2. Playwright Integration Tests
 ```bash
 # Always run in headless mode
 npx playwright test --project=chromium
-
-# Take screenshots for validation
-await page.screenshot({ path: 'test-results/phase-X-validation.png' })
 ```
-
 **Purpose**: Validate full user workflows still work
 
-#### 3. Manual Testing (Human, Experiential)
+**Key Points:**
+- Follow existing refactor Playwright examples
+- Always add console logs for key events with error handling
+- Red console errors with clear messages are extremely helpful for debugging
+- Clean up console logs later, but prioritize visibility during development
+
+#### 3. Manual Testing
 - Only after automated tests pass
 - Focus on "feel" and performance
-- Test edge cases and error conditions
-
-### Testing Patterns
-
-#### Performance Benchmarking
-```typescript
-test('Performance benchmark', async ({ page }) => {
-  const startTime = Date.now()
-  
-  // Execute key operations
-  
-  const endTime = Date.now()
-  const totalTime = endTime - startTime
-  
-  // Assert performance requirements
-  expect(totalTime).toBeLessThan(5000)
-  console.log(`Performance: Operation took ${totalTime}ms`)
-})
-```
-
-#### Visual Validation
-```typescript
-test('Visual validation', async ({ page }) => {
-  await page.goto('http://127.0.0.1:5173')
-  
-  // Test light mode
-  await page.screenshot({ path: 'test-results/light-mode.png' })
-  
-  // Test dark mode
-  await page.click('[data-testid="theme-toggle"]')
-  await page.screenshot({ path: 'test-results/dark-mode.png' })
-  
-  // Verify no UI issues
-  await expect(page.locator('[class*="text-"]')).toBeVisible()
-})
-```
-
-### Database Testing (If Applicable)
-
-```typescript
-// Before migration
-const beforeSchema = await getSchema()
-
-// After migration
-const afterSchema = await getSchema()
-
-// Verify expected changes
-expect(afterSchema.tables).toInclude('new_table')
-expect(afterSchema.policies).toInclude('new_policy')
-```
 
 ---
 
@@ -659,7 +581,7 @@ If you've tried the above and things are still broken:
 - **Phase 12**: Polish and deployment
 
 #### Universal Patterns:
-- Each phase took 30-90 minutes (or 2-4 hours for complex phases)
+- Each phase took 30-90 minutes
 - Automated tests caught issues early
 - Git tags enabled fearless experimentation
 - Database changes required extra safety protocols
@@ -778,39 +700,12 @@ useEffect(() => {
 
 ### Time Estimation Guidelines
 
-#### New Feature Development
-- **Simple features**: 2-4 hours per phase
-- **Complex features**: 4-8 hours per phase
-- **API integrations**: Add 1-2 hours for research/testing
-- **Real-time features**: Add 2-3 hours for sync logic
+**Keep it simple** - time estimates are rough guidance, not precision requirements:
 
-#### Refactoring Work
-- **Simple service extraction**: 30-45 minutes per service
-- **Complex architecture changes**: 60-90 minutes per major change
-- **Component restructuring**: 45-60 minutes per component
-
-#### Database Work
-- **Schema design**: 1-2 hours per phase
-- **Migrations**: 45-60 minutes per migration
-- **Data migrations**: 2-4 hours depending on complexity
-- **Always add 30+ minutes for safety protocols**
-
-#### New Project Setup
-- **Project structure**: 1-2 hours
-- **Authentication setup**: 2-4 hours
-- **Database design**: 2-6 hours depending on complexity
-- **Core business logic**: 4-8 hours per major component
-
-#### Testing & Polish
-- Add 15-30 minutes for unit tests per phase
-- Add 30-45 minutes for integration testing
-- Add 15 minutes for documentation
-- Add 30 minutes for performance validation (if applicable)
-
-#### Buffer Time
-- Add 25% buffer for unexpected issues
-- Add 50% buffer for phases involving new technologies
-- Add 100% buffer for phases with high uncertainty
+- **Simple changes**: 30-45 minutes per phase
+- **Complex changes**: 60-90 minutes per phase  
+- **Database work**: Always add extra time for safety protocols
+- **New features**: Varies widely, estimate conservatively
 
 ---
 
