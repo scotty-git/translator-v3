@@ -231,8 +231,8 @@ export function SingleDeviceTranslator({
   
   // Broadcast activity changes in session mode
   useEffect(() => {
-    // Only log activity changes for debugging activity indicators
-    if (isSessionMode && currentActivity !== 'idle') {
+    // Broadcast ALL activity changes including idle state transitions
+    if (isSessionMode) {
       console.log('🎯 [ActivityIndicator] Broadcasting:', currentActivity)
       messageSyncService.broadcastActivity(currentActivity)
         .catch((error) => {
@@ -241,6 +241,12 @@ export function SingleDeviceTranslator({
     }
   }, [currentActivity, isSessionMode])
 
+  // Log partner activity changes for debugging
+  useEffect(() => {
+    if (isSessionMode) {
+      console.log(`🎯 [ActivityIndicator] Partner activity changed: ${partnerActivity}`)
+    }
+  }, [partnerActivity, isSessionMode])
 
   // Set up audio manager callbacks (but don't request permissions yet)
   useEffect(() => {
@@ -1428,25 +1434,13 @@ export function SingleDeviceTranslator({
             )}
             
             {/* Partner activity in session mode */}
-            {(() => {
-              console.log(`🎯 [ActivityIndicator] UI Check: sessionMode=${isSessionMode}, partnerActivity=${partnerActivity}`)
-              
-              if (isSessionMode && partnerActivity !== 'idle') {
-                console.log(`✅ [ActivityIndicator] Rendering partner indicator: ${partnerActivity}`)
-                return (
-                  <ActivityIndicator 
-                    activity={partnerActivity} 
-                    userName="Partner"
-                    isOwnMessage={false}
-                  />
-                )
-              } else {
-                const reason = !isSessionMode ? 'not in session mode' : 'partner activity is idle'
-                console.log(`❌ [ActivityIndicator] Not rendering: ${reason}`)
-              }
-              
-              return null
-            })()}
+            {isSessionMode && partnerActivity !== 'idle' && (
+              <ActivityIndicator 
+                activity={partnerActivity} 
+                userName="Partner"
+                isOwnMessage={false}
+              />
+            )}
             
             {/* Scroll to bottom button */}
             <ScrollToBottomButton 
