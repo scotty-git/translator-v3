@@ -4,6 +4,7 @@ import SingleDeviceTranslator from './SingleDeviceTranslator'
 import { Layout } from '@/components/layout/Layout'
 import { sessionManager } from '@/services/SessionManager'
 import { messageSyncService } from '@/services/MessageSyncService'
+import { PresenceService } from '@/services/presence'
 import type { QueuedMessage } from '@/features/messages/MessageQueue'
 import type { SessionMessage, ConnectionStatus } from '@/types/database'
 import { ErrorToast } from '@/components/ErrorDisplay'
@@ -54,6 +55,9 @@ export function SessionTranslator() {
   // Create MessageQueueService instance for session mode
   const [messageQueueService] = useState(() => new MessageQueueService())
   
+  // Create PresenceService instance for session mode
+  const [presenceService] = useState(() => new PresenceService())
+  
   // Redirect if no session and handle session expiry
   useEffect(() => {
     if (!sessionState) {
@@ -80,7 +84,7 @@ export function SessionTranslator() {
     
     console.log('📱 [SessionTranslator] Initializing real-time sync:', sessionState.sessionCode)
     
-    // Set up MessageSyncService event handlers
+    // Set up MessageSyncService event handlers (presence-related handlers moved to PresenceService)
     messageSyncService.setEventHandlers({
       onMessageReceived: (message: SessionMessage) => {
         console.log('📨 [SessionTranslator] Received message from partner:', message.id)
@@ -130,11 +134,6 @@ export function SessionTranslator() {
         setConnectionStatus(status)
       },
       
-      onPartnerPresenceChanged: (isOnline: boolean) => {
-        console.log('👥 [SessionTranslator] Partner presence changed:', isOnline)
-        setPartnerOnline(isOnline)
-      },
-      
       onMessageDelivered: (messageId: string) => {
         console.log('✅ [SessionTranslator] Message delivered:', messageId)
         // Update message status to show delivery confirmation
@@ -149,13 +148,19 @@ export function SessionTranslator() {
         setMessages(prev => prev.map(msg => 
           msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
         ))
-      },
-      
-      onPartnerActivityChanged: (activity: 'idle' | 'recording' | 'processing' | 'typing') => {
-        console.log(`🎯 [ActivityIndicator] SessionTranslator received: ${partnerActivity} → ${activity}`)
-        setPartnerActivity(activity)
-        console.log(`✅ [ActivityIndicator] State updated, will pass to SingleDeviceTranslator`)
       }
+    })
+    
+    // Set up PresenceService subscriptions
+    const unsubscribePresence = presenceService.subscribeToPresence((isOnline: boolean) => {
+      console.log('👥 [SessionTranslator] Partner presence changed:', isOnline)
+      setPartnerOnline(isOnline)
+    })
+    
+    const unsubscribeActivity = presenceService.subscribeToActivity((activity: 'idle' | 'recording' | 'processing' | 'typing') => {
+      console.log(`🎯 [ActivityIndicator] SessionTranslator received: ${partnerActivity} → ${activity}`)
+      setPartnerActivity(activity)
+      console.log(`✅ [ActivityIndicator] State updated, will pass to SingleDeviceTranslator`)
     })
     
     // Initialize the session
@@ -173,15 +178,13 @@ export function SessionTranslator() {
         // Add this user as participant
         await sessionManager.addParticipant(sessionState.sessionId, sessionState.userId)
         
-        // Initialize MessageSyncService  
-        await messageSyncService.initializeSession(sessionState.sessionId, sessionState.userId)
-        console.log('✅ [SessionTranslator] Real-time sync initialized')
+        // Initialize PresenceService first
+        await presenceService.initialize(sessionState.sessionId, sessionState.userId)
+        console.log('✅ [SessionTranslator] PresenceService initialized')
         
-        // Force a session readiness check after initialization
-        setTimeout(() => {
-          console.log('🔄 [SessionTranslator] Running delayed session readiness check...')
-          messageSyncService.validateSessionReady?.()
-        }, 2000)
+        // Initialize MessageSyncService with PresenceService dependency
+        await messageSyncService.initializeSession(sessionState.sessionId, sessionState.userId, presenceService)
+        console.log('✅ [SessionTranslator] Real-time sync initialized')
       } catch (error) {
         console.error('❌ [SessionTranslator] Failed to initialize real-time sync:', error)
         setConnectionStatus('disconnected')
@@ -207,7 +210,11 @@ export function SessionTranslator() {
     
     return () => {
       console.log('🧹 [SessionTranslator] Component unmounting, cleaning up session...')
-      // Only cleanup subscriptions to preserve event handlers for reconnection scenarios
+      // Cleanup presence subscriptions
+      unsubscribePresence()
+      unsubscribeActivity()
+      // Cleanup services
+      presenceService.cleanup()
       messageSyncService.cleanupSubscriptions()
       // Clear session from localStorage to prevent stale data
       localStorage.removeItem('activeSession')
@@ -220,6 +227,7 @@ export function SessionTranslator() {
       if (sessionState) {
         console.log('🚪 [SessionTranslator] Browser closing, cleaning up session...')
         // Try to clean up synchronously (best effort)
+        presenceService.cleanup()
         messageSyncService.cleanup()
         localStorage.removeItem('activeSession')
       }
@@ -367,6 +375,7 @@ export function SessionTranslator() {
               partnerOnline: partnerOnline
             }}
             messageQueueService={messageQueueService}
+            presenceService={presenceService}
           />
         </div>
       </div>

@@ -19,6 +19,7 @@ import { useSounds } from '@/lib/sounds/SoundManager'
 import { ConversationContextManager, type ConversationContextEntry } from '@/lib/conversation/ConversationContext'
 import { DebugConsole } from '@/components/debug/DebugConsole'
 import { messageSyncService } from '@/services/MessageSyncService'
+import type { PresenceService } from '@/services/presence'
 import { ErrorDisplay } from '@/components/ErrorDisplay'
 import { useSmartScroll } from '@/hooks/useSmartScroll'
 import { useUnreadMessages } from '@/hooks/useUnreadMessages'
@@ -49,6 +50,7 @@ interface SingleDeviceTranslatorProps {
   }
   messageQueueService?: IMessageQueue
   translationPipeline?: ITranslationPipeline
+  presenceService?: PresenceService
 }
 
 export function SingleDeviceTranslator({ 
@@ -58,7 +60,8 @@ export function SingleDeviceTranslator({
   partnerActivity = 'idle',
   sessionInfo,
   messageQueueService,
-  translationPipeline
+  translationPipeline,
+  presenceService
 }: SingleDeviceTranslatorProps = {}) {
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -241,14 +244,14 @@ export function SingleDeviceTranslator({
   // Broadcast activity changes in session mode
   useEffect(() => {
     // Broadcast ALL activity changes including idle state transitions
-    if (isSessionMode) {
+    if (isSessionMode && presenceService) {
       console.log('🎯 [ActivityIndicator] Broadcasting:', currentActivity)
-      messageSyncService.broadcastActivity(currentActivity)
+      presenceService.updateActivity(currentActivity)
         .catch((error) => {
           console.error('❌ [ActivityIndicator] Broadcast failed:', error)
         })
     }
-  }, [currentActivity, isSessionMode])
+  }, [currentActivity, isSessionMode, presenceService])
 
   // Log partner activity changes for debugging
   useEffect(() => {
