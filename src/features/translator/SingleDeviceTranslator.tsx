@@ -980,7 +980,29 @@ export function SingleDeviceTranslator({
               {/* Left side - Back button and Settings */}
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => navigate('/')}
+                  onClick={async () => {
+                    if (isSessionMode) {
+                      // In session mode, ensure proper cleanup before navigation
+                      console.log('🚪 [SingleDeviceTranslator] Exiting session mode, cleaning up...')
+                      
+                      // Show confirmation dialog
+                      const confirmExit = window.confirm('Are you sure you want to exit the session? This will disconnect you from your partner.')
+                      
+                      if (confirmExit) {
+                        // Clean up MessageSyncService
+                        await messageSyncService.cleanup()
+                        
+                        // Clear session from localStorage
+                        localStorage.removeItem('activeSession')
+                        
+                        // Navigate to home
+                        navigate('/')
+                      }
+                    } else {
+                      // Solo mode - navigate directly
+                      navigate('/')
+                    }
+                  }}
                   className="p-1.5 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-100 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                 >
                   <ArrowLeft className="h-4 w-4" />

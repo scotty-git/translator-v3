@@ -187,8 +187,29 @@ export function SessionTranslator() {
     localStorage.setItem('activeSession', JSON.stringify(sessionState))
     
     return () => {
+      console.log('🧹 [SessionTranslator] Component unmounting, cleaning up session...')
       // Clean up on unmount
       messageSyncService.cleanup()
+      // Clear session from localStorage to prevent stale data
+      localStorage.removeItem('activeSession')
+    }
+  }, [sessionState])
+  
+  // Handle browser/tab close
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (sessionState) {
+        console.log('🚪 [SessionTranslator] Browser closing, cleaning up session...')
+        // Try to clean up synchronously (best effort)
+        messageSyncService.cleanup()
+        localStorage.removeItem('activeSession')
+      }
+    }
+    
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
     }
   }, [sessionState])
   

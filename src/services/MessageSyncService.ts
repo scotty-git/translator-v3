@@ -214,14 +214,42 @@ export class MessageSyncService {
   private async setupMessageSubscription(sessionId: string): Promise<void> {
     console.log('📡 [MessageSyncService] Setting up message subscription for session:', sessionId)
     
+    // Generate unique channel name with timestamp to prevent conflicts
+    const channelName = `session:${sessionId}:${Date.now()}`
+    
+    // Check if we already have active channels and clean them up
+    const existingChannels = supabase.getChannels()
+    const sessionChannels = existingChannels.filter(ch => ch.topic.startsWith(`session:${sessionId}`))
+    
+    if (sessionChannels.length > 0) {
+      console.warn('⚠️ [MessageSyncService] Found existing channels for session, cleaning up:', sessionChannels.length)
+      for (const channel of sessionChannels) {
+        try {
+          await channel.unsubscribe()
+          await supabase.removeChannel(channel)
+        } catch (error) {
+          console.error('❌ [MessageSyncService] Error removing existing channel:', error)
+        }
+      }
+    }
+    
     this.messageChannel = supabase
-      .channel(`session:${sessionId}`)
+      .channel(channelName)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `session_id=eq.${sessionId}`
       }, (payload) => {
+        // Validate that the message is for our current session
+        if (payload.new.session_id !== this.currentSessionId) {
+          console.warn('⚠️ [MessageSyncService] Received message for different session:', {
+            messageSessionId: payload.new.session_id,
+            currentSessionId: this.currentSessionId
+          })
+          return
+        }
+        
         console.log('📨 [MessageSyncService] Postgres INSERT event received:', {
           messageId: payload.new.id,
           sessionId: payload.new.session_id,
@@ -238,6 +266,15 @@ export class MessageSyncService {
         table: 'messages',
         filter: `session_id=eq.${sessionId}`
       }, (payload) => {
+        // Validate that the message is for our current session
+        if (payload.new.session_id !== this.currentSessionId) {
+          console.warn('⚠️ [MessageSyncService] Received update for different session:', {
+            messageSessionId: payload.new.session_id,
+            currentSessionId: this.currentSessionId
+          })
+          return
+        }
+        
         console.log('📨 [MessageSyncService] Postgres UPDATE event received:', {
           messageId: payload.new.id,
           sessionId: payload.new.session_id,
@@ -250,7 +287,7 @@ export class MessageSyncService {
         console.log('📡 [MessageSyncService] Message subscription status changed:', {
           status,
           sessionId,
-          channelName: `session:${sessionId}`,
+          channelName,
           currentUserId: this.currentUserId,
           timestamp: new Date().toISOString()
         })
@@ -279,8 +316,27 @@ export class MessageSyncService {
    * Set up presence subscription for online/offline tracking
    */
   private async setupPresenceSubscription(sessionId: string, userId: string): Promise<void> {
+    // Generate unique channel name with timestamp
+    const channelName = `presence:${sessionId}:${Date.now()}`
+    
+    // Clean up any existing presence channels for this session
+    const existingChannels = supabase.getChannels()
+    const presenceChannels = existingChannels.filter(ch => ch.topic.startsWith(`presence:${sessionId}`))
+    
+    if (presenceChannels.length > 0) {
+      console.warn('⚠️ [MessageSyncService] Found existing presence channels, cleaning up:', presenceChannels.length)
+      for (const channel of presenceChannels) {
+        try {
+          await channel.unsubscribe()
+          await supabase.removeChannel(channel)
+        } catch (error) {
+          console.error('❌ [MessageSyncService] Error removing existing presence channel:', error)
+        }
+      }
+    }
+    
     this.presenceChannel = supabase
-      .channel(`presence:${sessionId}`)
+      .channel(channelName)
       .on('presence', { event: 'sync' }, () => {
         const state = this.presenceChannel?.presenceState()
         console.log('👥 [MessageSyncService] Presence sync:', state)
@@ -299,6 +355,11 @@ export class MessageSyncService {
       })
       .on('broadcast', { event: 'activity' }, ({ payload }) => {
         console.log('🎯 [MessageSyncService] Activity broadcast received:', payload)
+        // Validate the activity is for our current session
+        if (payload.sessionId && payload.sessionId !== this.currentSessionId) {
+          console.warn('⚠️ [MessageSyncService] Received activity for different session')
+          return
+        }
         if (payload.userId !== userId && payload.activity) {
           this.onPartnerActivityChanged?.(payload.activity)
         }
@@ -308,6 +369,7 @@ export class MessageSyncService {
           // Track this user's presence
           await this.presenceChannel?.track({
             user_id: userId,
+            session_id: sessionId,
             online_at: new Date().toISOString(),
             activity: 'idle'
           })
@@ -533,10 +595,20 @@ export class MessageSyncService {
       sessionId: message.session_id,
       senderId: message.sender_id,
       currentUserId: this.currentUserId,
+      currentSessionId: this.currentSessionId,
       originalText: message.original_text,
       translatedText: message.translated_text,
       timestamp: message.timestamp
     })
+    
+    // Validate session ID matches current session
+    if (message.session_id !== this.currentSessionId) {
+      console.warn('⚠️ [MessageSyncService] Message for different session, ignoring:', {
+        messageSessionId: message.session_id,
+        currentSessionId: this.currentSessionId
+      })
+      return
+    }
     
     // Don't process our own messages
     if (message.sender_id === this.currentUserId) {
@@ -821,6 +893,7 @@ export class MessageSyncService {
         event: 'activity',
         payload: {
           userId: this.currentUserId,
+          sessionId: this.currentSessionId,
           activity,
           timestamp: new Date().toISOString()
         }
@@ -859,16 +932,31 @@ export class MessageSyncService {
     this.retryTimeouts.forEach(timeout => clearTimeout(timeout))
     this.retryTimeouts.clear()
 
-    // Unsubscribe from channels
+    // Properly remove Supabase channels to prevent zombies
     if (this.messageChannel) {
-      await supabase.removeChannel(this.messageChannel)
+      console.log('🔌 [MessageSyncService] Removing message channel...')
+      try {
+        await this.messageChannel.unsubscribe()
+        await supabase.removeChannel(this.messageChannel)
+      } catch (error) {
+        console.error('❌ [MessageSyncService] Error removing message channel:', error)
+      }
       this.messageChannel = null
     }
 
     if (this.presenceChannel) {
-      await supabase.removeChannel(this.presenceChannel)
+      console.log('🔌 [MessageSyncService] Removing presence channel...')
+      try {
+        await this.presenceChannel.unsubscribe()
+        await supabase.removeChannel(this.presenceChannel)
+      } catch (error) {
+        console.error('❌ [MessageSyncService] Error removing presence channel:', error)
+      }
       this.presenceChannel = null
     }
+
+    // Reset subscription ready state
+    this.subscriptionReady = false
 
     // Note: Don't reset session state here as we're reinitializing
   }
@@ -878,6 +966,8 @@ export class MessageSyncService {
    */
   async cleanup(): Promise<void> {
     console.log('🧹 [MessageSyncService] Full cleanup...')
+    console.log('   • Current session:', this.currentSessionId)
+    console.log('   • Current user:', this.currentUserId)
     
     // Clean up subscriptions first
     await this.cleanupSubscriptions()
@@ -885,6 +975,7 @@ export class MessageSyncService {
     // Update participant status to offline
     if (this.currentSessionId && this.currentUserId) {
       try {
+        console.log('👤 [MessageSyncService] Marking user as offline...')
         await supabase
           .from('session_participants')
           .update({
@@ -898,13 +989,26 @@ export class MessageSyncService {
       }
     }
 
-    // Reset state
+    // Clear message queue to prevent cross-session contamination
+    this.messageQueue.clear()
+    this.saveQueueToStorage()
+
+    // Reset all state
     this.currentSessionId = null
     this.currentUserId = null
     this.reconnectAttempts = 0
     this.subscriptionReady = false
 
+    // Clear all event handlers to prevent memory leaks
+    this.onMessageReceived = undefined
+    this.onConnectionStatusChanged = undefined
+    this.onPartnerPresenceChanged = undefined
+    this.onMessageDelivered = undefined
+    this.onMessageFailed = undefined
+    this.onPartnerActivityChanged = undefined
+
     this.updateConnectionStatus('disconnected')
+    console.log('✅ [MessageSyncService] Cleanup complete')
   }
 
   /**
