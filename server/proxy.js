@@ -13,7 +13,7 @@ const upload = multer({ dest: 'uploads/' });
 
 // CORS setup for development
 app.use(cors({
-  origin: 'http://127.0.0.1:5173',
+  origin: ['http://127.0.0.1:5173', 'http://127.0.0.1:5176', 'http://localhost:5173', 'http://localhost:5176'],
   credentials: true
 }));
 
@@ -159,7 +159,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'OpenAI proxy server running' });
 });
 
-const PORT = 3001;
+const PORT = 3002;
 app.listen(PORT, () => {
   console.log(`🚀 OpenAI proxy server running on http://localhost:${PORT}`);
   console.log('   Available endpoints:');

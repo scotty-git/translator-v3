@@ -20,7 +20,7 @@ export default defineConfig({
     open: 'http://127.0.0.1:5173', // Use 127.0.0.1 for VPN compatibility
     proxy: {
       '/api/openai': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3002',
         changeOrigin: true,
         secure: false
       }
