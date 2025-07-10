@@ -26,6 +26,9 @@ export type SoundType =
   | 'error'
   | 'notification'
 
+export type VolumeLevel = 'quiet' | 'loud'
+export type NotificationSound = 'chime' | 'bell' | 'pop'
+
 interface SoundConfig {
   frequency: number
   duration: number
@@ -38,6 +41,30 @@ export class SoundManager {
   private audioContext: AudioContext | null = null
   private isEnabled: boolean = true
   private hasPermission: boolean = false
+  private volumeLevel: VolumeLevel = 'loud'
+  private notificationSound: NotificationSound = 'chime'
+  
+  // Three different notification sound presets
+  private notificationPresets: Record<NotificationSound, SoundConfig> = {
+    chime: {
+      frequency: 800,
+      duration: 0.15,
+      volume: 0.3,
+      type: 'sine'
+    },
+    bell: {
+      frequency: 523.25, // C5 note
+      duration: 0.3,
+      volume: 0.3,
+      type: 'triangle'
+    },
+    pop: {
+      frequency: 1047, // C6 note
+      duration: 0.08,
+      volume: 0.3,
+      type: 'square'
+    }
+  }
   
   // Sound configurations based on common notification patterns
   private soundConfigs: Record<SoundType, SoundConfig> = {
@@ -152,6 +179,8 @@ export class SoundManager {
    */
   private loadPreferences(): void {
     this.isEnabled = UserManager.getPreference('soundNotifications', false)
+    this.volumeLevel = UserManager.getPreference('soundVolume', 'loud') as VolumeLevel
+    this.notificationSound = UserManager.getPreference('notificationSound', 'chime') as NotificationSound
   }
 
   /**
@@ -185,8 +214,20 @@ export class SoundManager {
         return
       }
 
-      const config = this.soundConfigs[type]
-      await this.generateTone(config)
+      // For message_received, use the selected notification preset
+      let config = this.soundConfigs[type]
+      if (type === 'message_received') {
+        config = { ...this.notificationPresets[this.notificationSound] }
+      }
+      
+      // Apply volume adjustment
+      const volumeMultiplier = this.volumeLevel === 'quiet' ? 0.7 : 1.3 // -30% or +30%
+      const adjustedConfig = {
+        ...config,
+        volume: config.volume * volumeMultiplier
+      }
+      
+      await this.generateTone(adjustedConfig)
       
     } catch (error) {
       console.warn(`🔊 Failed to play ${type} sound:`, error)
@@ -293,6 +334,38 @@ export class SoundManager {
   }
 
   /**
+   * Set volume level
+   */
+  setVolumeLevel(level: VolumeLevel): void {
+    this.volumeLevel = level
+    UserManager.setPreference('soundVolume', level)
+    console.log(`🔊 Sound volume set to ${level}`)
+  }
+  
+  /**
+   * Set notification sound
+   */
+  setNotificationSound(sound: NotificationSound): void {
+    this.notificationSound = sound
+    UserManager.setPreference('notificationSound', sound)
+    console.log(`🔊 Notification sound set to ${sound}`)
+  }
+  
+  /**
+   * Get current volume level
+   */
+  getVolumeLevel(): VolumeLevel {
+    return this.volumeLevel
+  }
+  
+  /**
+   * Get current notification sound
+   */
+  getNotificationSound(): NotificationSound {
+    return this.notificationSound
+  }
+  
+  /**
    * Get current enabled state
    */
   getEnabled(): boolean {
@@ -335,6 +408,10 @@ export function useSounds() {
     playNotification: () => soundManager.playNotification(),
     isEnabled: soundManager.getEnabled(),
     setEnabled: (enabled: boolean) => soundManager.setEnabled(enabled),
+    volumeLevel: soundManager.getVolumeLevel(),
+    setVolumeLevel: (level: VolumeLevel) => soundManager.setVolumeLevel(level),
+    notificationSound: soundManager.getNotificationSound(),
+    setNotificationSound: (sound: NotificationSound) => soundManager.setNotificationSound(sound),
     testSound: () => soundManager.testSound(),
     isReady: () => soundManager.isReady()
   }

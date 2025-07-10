@@ -53,7 +53,20 @@ export function SingleDeviceTranslator({
 }: SingleDeviceTranslatorProps = {}) {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { playRecordingStart, playRecordingStop, playTranslationComplete, playError, playMessageSent, isEnabled: soundsEnabled, setEnabled: setSoundsEnabled, testSound } = useSounds()
+  const { 
+    playRecordingStart, 
+    playRecordingStop, 
+    playTranslationComplete, 
+    playError, 
+    playMessageSent, 
+    isEnabled: soundsEnabled, 
+    setEnabled: setSoundsEnabled, 
+    volumeLevel, 
+    setVolumeLevel, 
+    notificationSound, 
+    setNotificationSound, 
+    testSound 
+  } = useSounds()
   
   // Helper functions for session status
   const getSessionStatusIcon = (status: string) => {
@@ -1092,6 +1105,78 @@ export function SingleDeviceTranslator({
                             </button>
                           </div>
                         </div>
+                        
+                        {/* Volume Level - Only show when sounds are enabled */}
+                        {soundsEnabled && (
+                          <div className="mt-2 px-2">
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                              Volume
+                            </label>
+                            <div className="grid grid-cols-2 gap-1">
+                              <button
+                                onClick={() => setVolumeLevel('quiet')}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                  volumeLevel === 'quiet'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                              >
+                                Quiet
+                              </button>
+                              <button
+                                onClick={() => setVolumeLevel('loud')}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                  volumeLevel === 'loud'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                              >
+                                Loud
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Notification Sound - Only show when sounds are enabled */}
+                        {soundsEnabled && (
+                          <div className="mt-2 px-2">
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                              Notification Sound
+                            </label>
+                            <div className="grid grid-cols-3 gap-1">
+                              <button
+                                onClick={() => setNotificationSound('chime')}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                  notificationSound === 'chime'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                              >
+                                Chime
+                              </button>
+                              <button
+                                onClick={() => setNotificationSound('bell')}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                  notificationSound === 'bell'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                              >
+                                Bell
+                              </button>
+                              <button
+                                onClick={() => setNotificationSound('pop')}
+                                className={`px-2 py-1 text-xs rounded transition-colors ${
+                                  notificationSound === 'pop'
+                                    ? 'bg-blue-500 text-white'
+                                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                                }`}
+                              >
+                                Pop
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
