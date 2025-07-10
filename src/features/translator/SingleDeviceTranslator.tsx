@@ -146,7 +146,7 @@ export function SingleDeviceTranslator({
   const audioManager = persistentAudioManager
   
   // Smart scroll behavior
-  const { scrollContainerRef, scrollToBottom, isAtBottom, shouldAutoScroll } = useSmartScroll({
+  const { scrollContainerRef, scrollToBottom, scrollToMessage, isAtBottom, shouldAutoScroll } = useSmartScroll({
     threshold: 100,
     smoothScroll: true
   })
