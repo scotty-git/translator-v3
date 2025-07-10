@@ -96,28 +96,39 @@ export class PresenceService implements IPresenceService {
         this.updatePartnerPresence(this.presenceChannel?.presenceState()).catch(console.error)
       })
       .on('broadcast', { event: 'activity' }, ({ payload }) => {
+        // Enhanced logging with proper user ID references
         console.log(`🎧 [ActivityIndicator] Raw broadcast received:`, {
           payloadUserId: payload.userId,
-          currentUserId: userId,
+          currentUserId: this.currentUserId,
           payloadSessionId: payload.sessionId,
           currentSessionId: this.currentSessionId,
           activity: payload.activity,
-          isOwnMessage: payload.userId === userId
+          isOwnMessage: payload.userId === this.currentUserId
         })
+        
+        // Validate that we have a proper current user ID
+        if (!this.currentUserId) {
+          console.warn('⚠️ [ActivityIndicator] No current user ID set, skipping broadcast')
+          return
+        }
         
         // Validate the activity is for our current session
         if (payload.sessionId && payload.sessionId !== this.currentSessionId) {
           console.warn('⚠️ [ActivityIndicator] Received activity for different session')
           return
         }
-        if (payload.userId !== userId && payload.activity) {
-          console.log(`📥 [ActivityIndicator] Received: ${payload.activity} from partner`)
+        
+        // Process partner activity (using this.currentUserId instead of closure userId)
+        if (payload.userId !== this.currentUserId && payload.activity) {
+          console.log(`📥 [ActivityIndicator] Received: ${payload.activity} from partner ${payload.userId}`)
           console.log(`🎯 [ActivityIndicator] Calling onActivityChanged(${payload.activity})`)
           this.onActivityChanged?.(payload.activity)
         } else {
           console.log(`⏭️ [ActivityIndicator] Skipping own activity or missing data:`, {
-            isOwnMessage: payload.userId === userId,
-            hasActivity: !!payload.activity
+            isOwnMessage: payload.userId === this.currentUserId,
+            hasActivity: !!payload.activity,
+            payloadUserId: payload.userId,
+            currentUserId: this.currentUserId
           })
         }
       })
