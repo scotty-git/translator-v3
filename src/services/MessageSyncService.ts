@@ -8,6 +8,7 @@ import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { PresenceService } from './presence'
 import { RealtimeConnection } from './realtime'
 import type { RealtimeConnectionConfig } from './realtime'
+import { supabase } from '@/lib/supabase'
 
 /**
  * MessageSyncService - Handles real-time message synchronization for sessions
@@ -186,6 +187,13 @@ export class MessageSyncService {
     } else {
       console.error(`💀 [MessageSyncService] Message ${queuedMessage.id} failed permanently after ${queuedMessage.retryCount} attempts`)
     }
+  }
+
+  /**
+   * Get exponential backoff delay for retry attempts
+   */
+  private getRetryDelay(attempt: number): number {
+    return Math.min(1000 * Math.pow(2, attempt), 10000) // Cap at 10 seconds
   }
 
   /**
