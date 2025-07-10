@@ -40,6 +40,10 @@ export class MessageSyncService {
   private connectionStatus: ConnectionStatus = 'disconnected'
   private subscriptionReady: boolean = false
   
+  // Track participant state for immediate presence updates
+  private sessionParticipants = new Set<string>()
+  private lastPartnerPresenceState = false
+  
   // Network resilience
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
@@ -178,6 +182,13 @@ export class MessageSyncService {
     this.currentSessionId = sessionId
     this.currentUserId = userId
     console.log('📝 [MessageSyncService] Set current user ID:', this.currentUserId)
+    
+    // Initialize participant tracking
+    this.sessionParticipants.clear()
+    this.sessionParticipants.add(userId)
+    this.lastPartnerPresenceState = false
+    console.log('🔄 [MessageSyncService] Initialized participant tracking with current user:', userId)
+    
     this.updateConnectionStatus('connecting')
 
     try {
@@ -201,6 +212,9 @@ export class MessageSyncService {
 
       this.updateConnectionStatus('connected')
       console.log('✅ [MessageSyncService] Session initialized successfully')
+      
+      // Load existing participants from database to initialize tracking
+      await this.loadExistingParticipants()
       
       // Check if we need to validate partner presence
       await this.validateSessionReady()
@@ -401,7 +415,16 @@ export class MessageSyncService {
           userId: payload.new.user_id,
           isOnline: payload.new.is_online
         })
-        // Validate session readiness when a new participant joins
+        
+        // Add participant to our tracking set if online
+        if (payload.new.is_online) {
+          this.sessionParticipants.add(payload.new.user_id)
+        }
+        
+        // Immediately update partner presence
+        this.updatePartnerPresenceImmediate()
+        
+        // Also validate session readiness
         this.validateSessionReady()
       })
       .on('postgres_changes', {
@@ -415,7 +438,20 @@ export class MessageSyncService {
           userId: payload.new.user_id,
           isOnline: payload.new.is_online
         })
-        // Validate session readiness when participant status changes
+        
+        // Update participant tracking based on online status
+        if (payload.new.is_online) {
+          this.sessionParticipants.add(payload.new.user_id)
+          console.log('✅ [MessageSyncService] Added participant to tracking set:', payload.new.user_id)
+        } else {
+          this.sessionParticipants.delete(payload.new.user_id)
+          console.log('❌ [MessageSyncService] Removed participant from tracking set:', payload.new.user_id)
+        }
+        
+        // Immediately update partner presence
+        this.updatePartnerPresenceImmediate()
+        
+        // Also validate session readiness
         this.validateSessionReady()
       })
       .subscribe((status) => {
@@ -675,6 +711,75 @@ export class MessageSyncService {
       this.onMessageDelivered?.(message.id)
       this.messageQueue.delete(message.id)
       this.saveQueueToStorage()
+    }
+  }
+
+  /**
+   * Load existing participants from database to initialize tracking
+   */
+  private async loadExistingParticipants(): Promise<void> {
+    if (!this.currentSessionId) {
+      return
+    }
+
+    try {
+      const { data: participants, error } = await supabase
+        .from('session_participants')
+        .select('user_id, is_online')
+        .eq('session_id', this.currentSessionId)
+
+      if (error) {
+        console.error('❌ [MessageSyncService] Failed to load existing participants:', error)
+        return
+      }
+
+      // Update participant tracking with existing online participants
+      participants?.forEach(participant => {
+        if (participant.is_online) {
+          this.sessionParticipants.add(participant.user_id)
+        }
+      })
+
+      console.log('📥 [MessageSyncService] Loaded existing participants:', {
+        participants: participants?.map(p => ({ user_id: p.user_id, is_online: p.is_online })),
+        trackingSet: Array.from(this.sessionParticipants)
+      })
+
+      // Update partner presence immediately
+      this.updatePartnerPresenceImmediate()
+      
+    } catch (error) {
+      console.error('❌ [MessageSyncService] Error loading existing participants:', error)
+    }
+  }
+
+  /**
+   * Update partner presence immediately based on realtime participant events
+   */
+  private updatePartnerPresenceImmediate(): void {
+    if (!this.currentUserId || !this.currentSessionId) {
+      return
+    }
+
+    // Check if we have a partner (someone other than current user)
+    const hasPartner = Array.from(this.sessionParticipants).some(userId => userId !== this.currentUserId)
+    
+    console.log('🚀 [MessageSyncService] Immediate presence update:', {
+      sessionParticipants: Array.from(this.sessionParticipants),
+      currentUserId: this.currentUserId,
+      hasPartner,
+      participantCount: this.sessionParticipants.size
+    })
+    
+    // Only trigger callback if presence state actually changed
+    if (hasPartner !== this.lastPartnerPresenceState) {
+      console.log('👥 [MessageSyncService] Partner presence changed (immediate):', {
+        from: this.lastPartnerPresenceState,
+        to: hasPartner
+      })
+      
+      this.lastPartnerPresenceState = hasPartner
+      this.onPartnerPresenceChanged?.(hasPartner)
     }
   }
 
@@ -955,12 +1060,15 @@ export class MessageSyncService {
     onMessageFailed?: (messageId: string, error: string) => void
     onPartnerActivityChanged?: (activity: 'idle' | 'recording' | 'processing' | 'typing') => void
   }): void {
+    
     this.onMessageReceived = onMessageReceived
     this.onConnectionStatusChanged = onConnectionStatusChanged
     this.onPartnerPresenceChanged = onPartnerPresenceChanged
     this.onMessageDelivered = onMessageDelivered
     this.onMessageFailed = onMessageFailed
     this.onPartnerActivityChanged = onPartnerActivityChanged
+    
+console.log('✅ [MessageSyncService] Event handlers set successfully')
   }
 
   /**
@@ -1095,6 +1203,10 @@ export class MessageSyncService {
     this.currentUserId = null
     this.reconnectAttempts = 0
     this.subscriptionReady = false
+    
+    // Clear participant tracking
+    this.sessionParticipants.clear()
+    this.lastPartnerPresenceState = false
 
     // Clear all event handlers to prevent memory leaks
     this.onMessageReceived = undefined
@@ -1119,7 +1231,8 @@ export class MessageSyncService {
     console.log('🔄 [MessageSyncService] Forcing reconnection...')
     this.updateConnectionStatus('reconnecting')
 
-    await this.cleanup()
+    // Only cleanup subscriptions, preserve event handlers during reconnection
+    await this.cleanupSubscriptions()
     await this.initializeSession(this.currentSessionId, this.currentUserId)
   }
 }

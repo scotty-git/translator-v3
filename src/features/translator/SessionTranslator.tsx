@@ -70,7 +70,7 @@ export function SessionTranslator() {
     }
   }, [sessionState, navigate])
   
-  // Initialize real-time sync service
+  // Initialize real-time sync service (only run once when sessionState is available)
   useEffect(() => {
     if (!sessionState) return
     
@@ -207,12 +207,12 @@ export function SessionTranslator() {
     
     return () => {
       console.log('🧹 [SessionTranslator] Component unmounting, cleaning up session...')
-      // Clean up on unmount
-      messageSyncService.cleanup()
+      // Only cleanup subscriptions to preserve event handlers for reconnection scenarios
+      messageSyncService.cleanupSubscriptions()
       // Clear session from localStorage to prevent stale data
       localStorage.removeItem('activeSession')
     }
-  }, [sessionState])
+  }, [sessionState?.sessionId])
   
   // Handle browser/tab close
   useEffect(() => {
