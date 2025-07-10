@@ -9,7 +9,7 @@ import { LanguageSelector } from '@/components/ui/LanguageSelector'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 import { usePageTransitions } from '@/hooks/useAnimations'
 import { Settings } from 'lucide-react'
-import { sessionManager } from '@/services/SessionManager'
+import { sessionStateManager } from '@/services/session'
 import { ErrorManager } from '@/lib/errors/ErrorManager'
 
 export function HomeScreen() {
@@ -27,24 +27,8 @@ export function HomeScreen() {
     setIsCreatingSession(true)
     
     try {
-      // Create new session
-      const { sessionId, code } = await sessionManager.createSession()
-      
-      // Generate user ID for this device
-      const userId = sessionManager.generateUserId()
-      
-      // Add self as participant
-      await sessionManager.addParticipant(sessionId, userId)
-      
-      // Store session info
-      const sessionInfo = {
-        sessionId,
-        sessionCode: code,
-        userId,
-        role: 'host' as const,
-        createdAt: new Date().toISOString()
-      }
-      localStorage.setItem('activeSession', JSON.stringify(sessionInfo))
+      // Create session via SessionStateManager
+      const sessionState = await sessionStateManager.createSession()
       
       // Navigate to session
       navigate('/session')
@@ -57,56 +41,25 @@ export function HomeScreen() {
   }
 
   const handleJoinSession = async () => {
-    if (!joinCode || joinCode.length !== 4) {
-      setError('Please enter a 4-digit code')
-      return
-    }
-    
     setError(null)
     setIsJoiningSession(true)
     
     try {
       console.log('🔍 [HomeScreen] Starting join process for code:', joinCode)
       
-      // Join existing session
-      console.log('🔍 [HomeScreen] Calling sessionManager.joinSession...')
-      const { sessionId, partnerId } = await sessionManager.joinSession(joinCode)
-      console.log('🔍 [HomeScreen] Join session result:', { sessionId, partnerId })
-      
-      // Generate user ID for this device
-      const userId = sessionManager.generateUserId()
-      console.log('🔍 [HomeScreen] Generated user ID:', userId)
-      
-      // Add self as participant
-      console.log('🔍 [HomeScreen] Adding participant to session...')
-      await sessionManager.addParticipant(sessionId, userId)
-      console.log('🔍 [HomeScreen] Participant added successfully')
-      
-      // Store session info
-      const sessionInfo = {
-        sessionId,
-        sessionCode: joinCode,
-        userId,
-        partnerId,
-        role: 'guest' as const,
-        createdAt: new Date().toISOString()
-      }
-      localStorage.setItem('activeSession', JSON.stringify(sessionInfo))
-      console.log('🔍 [HomeScreen] Session info stored:', sessionInfo)
+      // Join session via SessionStateManager
+      const sessionState = await sessionStateManager.joinSession(joinCode)
+      console.log('🔍 [HomeScreen] Session joined successfully:', sessionState.sessionCode)
       
       // Navigate to session
-      console.log('🔍 [HomeScreen] Navigating to /session...')
       navigate('/session')
-      console.log('🔍 [HomeScreen] Navigation completed')
       
     } catch (err) {
       console.error('❌ [HomeScreen] Join session failed:', err)
       const error = ErrorManager.handleError(err)
       setError(error.userMessage)
-      console.log('🔍 [HomeScreen] Error set:', error.userMessage)
     } finally {
       setIsJoiningSession(false)
-      console.log('🔍 [HomeScreen] Join process completed')
     }
   }
 

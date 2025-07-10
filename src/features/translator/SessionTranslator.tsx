@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import SingleDeviceTranslator from './SingleDeviceTranslator'
 import { Layout } from '@/components/layout/Layout'
-import { sessionManager } from '@/services/SessionManager'
+import { sessionStateManager, type SessionState } from '@/services/session'
 import { messageSyncService } from '@/services/MessageSyncService'
 import { PresenceService } from '@/services/presence'
 import { RealtimeConnection } from '@/services/realtime'
@@ -13,36 +13,23 @@ import { ErrorToast } from '@/components/ErrorDisplay'
 import { useSounds } from '@/lib/sounds/SoundManager'
 import { MessageQueueService } from '@/services/queues/MessageQueueService'
 
-interface SessionState {
-  sessionId: string
-  sessionCode: string
-  userId: string
-  role: 'host' | 'guest'
-}
-
 export function SessionTranslator() {
   const navigate = useNavigate()
   const location = useLocation()
   const { playMessageReceived } = useSounds()
   
-  // Get session from navigation state or localStorage
+  // Get session from SessionStateManager
   const [sessionState, setSessionState] = useState<SessionState | null>(() => {
     // First try location state
     if (location.state?.sessionId && location.state?.sessionCode) {
-      return location.state as SessionState
+      const locationSession = location.state as SessionState
+      sessionStateManager.setCurrentSession(locationSession)
+      return locationSession
     }
     
-    // Then try localStorage
-    const saved = localStorage.getItem('activeSession')
-    if (saved) {
-      try {
-        return JSON.parse(saved)
-      } catch (e) {
-        console.error('Failed to parse saved session:', e)
-      }
-    }
-    
-    return null
+    // Then try restored session
+    const restoredSession = sessionStateManager.restoreSession()
+    return restoredSession
   })
   
   // Real-time connection status
@@ -73,14 +60,10 @@ export function SessionTranslator() {
       return
     }
     
-    // Check if session is expired (more than 12 hours old)
-    const sessionDate = new Date(sessionState.createdAt || Date.now())
-    const now = new Date()
-    const hoursElapsed = (now.getTime() - sessionDate.getTime()) / (1000 * 60 * 60)
-    
-    if (hoursElapsed > 12) {
+    // Check if session is expired using SessionStateManager
+    if (sessionStateManager.isSessionExpired(sessionState)) {
       console.warn('Session expired, redirecting to home')
-      localStorage.removeItem('activeSession')
+      sessionStateManager.clearSession()
       navigate('/')
     }
   }, [sessionState, navigate])
@@ -169,16 +152,16 @@ export function SessionTranslator() {
     const initializeSession = async () => {
       try {
         // First validate the session still exists and is active
-        const isValidSession = await sessionManager.validateSession(sessionState.sessionCode)
+        const isValidSession = await sessionStateManager.validateSession(sessionState.sessionCode)
         if (!isValidSession) {
           console.error('❌ [SessionTranslator] Session is no longer valid')
-          localStorage.removeItem('activeSession')
+          sessionStateManager.clearSession()
           navigate('/')
           return
         }
         
         // Add this user as participant
-        await sessionManager.addParticipant(sessionState.sessionId, sessionState.userId)
+        await sessionStateManager.addParticipant(sessionState.sessionId, sessionState.userId)
         
         // Initialize RealtimeConnection first
         await realtimeConnection.initialize({
@@ -223,7 +206,7 @@ export function SessionTranslator() {
         if (error instanceof Error) {
           if (error.message.includes('expired')) {
             console.error('Session expired, redirecting to home')
-            localStorage.removeItem('activeSession')
+            sessionStateManager.clearSession()
             navigate('/')
           } else if (error.message.includes('full')) {
             console.error('Session is full, redirecting to home')
@@ -235,9 +218,6 @@ export function SessionTranslator() {
     
     initializeSession()
     
-    // Save session state for persistence
-    localStorage.setItem('activeSession', JSON.stringify(sessionState))
-    
     return () => {
       console.log('🧹 [SessionTranslator] Component unmounting, cleaning up session...')
       // Cleanup presence subscriptions
@@ -247,8 +227,8 @@ export function SessionTranslator() {
       presenceService.cleanup()
       messageSyncService.cleanup()
       realtimeConnection.cleanup()
-      // Clear session from localStorage to prevent stale data
-      localStorage.removeItem('activeSession')
+      // Clear session state in SessionStateManager (keeps persistence for recovery)
+      sessionStateManager.cleanup()
       // Reset presence service ready state
       setPresenceServiceReady(false)
     }
@@ -263,7 +243,7 @@ export function SessionTranslator() {
         presenceService.cleanup()
         messageSyncService.cleanup()
         realtimeConnection.cleanup()
-        localStorage.removeItem('activeSession')
+        sessionStateManager.clearSession()
       }
     }
     
