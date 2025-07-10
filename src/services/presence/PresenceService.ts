@@ -33,12 +33,13 @@ export class PresenceService implements IPresenceService {
   async initialize(sessionId: string, userId: string): Promise<void> {
     console.log('👥 [PresenceService] Initializing for session:', sessionId)
     
-    this.currentSessionId = sessionId
-    this.currentUserId = userId
-    
     try {
-      // Clean up any existing subscriptions first
-      await this.cleanup()
+      // Clean up any existing subscriptions first (without clearing session state)
+      await this.cleanupSubscriptions()
+      
+      // Set session state after cleanup
+      this.currentSessionId = sessionId
+      this.currentUserId = userId
       
       // Set up presence subscription
       await this.setupPresenceSubscription(sessionId, userId)
@@ -405,10 +406,10 @@ export class PresenceService implements IPresenceService {
   }
 
   /**
-   * Clean up all subscriptions and channels
+   * Clean up only subscriptions and channels (without clearing session state)
    */
-  async cleanup(): Promise<void> {
-    console.log('🧹 [PresenceService] Cleaning up subscriptions...')
+  private async cleanupSubscriptions(): Promise<void> {
+    console.log('🧹 [PresenceService] Cleaning up subscriptions only...')
     
     // Properly remove Supabase channels to prevent zombies
     if (this.presenceChannel) {
@@ -433,14 +434,28 @@ export class PresenceService implements IPresenceService {
       this.participantChannel = null
     }
 
-    // Reset state
-    this.currentSessionId = null
-    this.currentUserId = null
+    // Reset participant tracking but preserve session IDs
     this.sessionParticipants.clear()
     this.lastPartnerPresenceState = false
+    
+    console.log('✅ [PresenceService] Subscriptions cleanup completed')
+  }
+
+  /**
+   * Clean up all subscriptions and channels
+   */
+  async cleanup(): Promise<void> {
+    console.log('🧹 [PresenceService] Full cleanup...')
+    
+    // Clean up subscriptions first
+    await this.cleanupSubscriptions()
+    
+    // Reset state completely
+    this.currentSessionId = null
+    this.currentUserId = null
     this.onPresenceChanged = undefined
     this.onActivityChanged = undefined
     
-    console.log('✅ [PresenceService] Cleanup completed')
+    console.log('✅ [PresenceService] Full cleanup completed')
   }
 }

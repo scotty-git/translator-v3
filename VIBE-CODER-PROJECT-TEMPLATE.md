@@ -778,20 +778,39 @@ useEffect(() => {
 
 ### Time Estimation Guidelines
 
-#### Simple Service Extraction
-- 30-45 minutes per service
-- Add 15 minutes for tests
-- Add 10 minutes for documentation
+#### New Feature Development
+- **Simple features**: 2-4 hours per phase
+- **Complex features**: 4-8 hours per phase
+- **API integrations**: Add 1-2 hours for research/testing
+- **Real-time features**: Add 2-3 hours for sync logic
 
-#### Complex Architecture Changes
-- 60-90 minutes per major change
-- Add 30 minutes for integration testing
-- Add 15 minutes for performance validation
+#### Refactoring Work
+- **Simple service extraction**: 30-45 minutes per service
+- **Complex architecture changes**: 60-90 minutes per major change
+- **Component restructuring**: 45-60 minutes per component
 
-#### Database Migrations
-- 45-60 minutes per migration
-- Add 30 minutes for safety protocols
-- Add 15 minutes for rollback testing
+#### Database Work
+- **Schema design**: 1-2 hours per phase
+- **Migrations**: 45-60 minutes per migration
+- **Data migrations**: 2-4 hours depending on complexity
+- **Always add 30+ minutes for safety protocols**
+
+#### New Project Setup
+- **Project structure**: 1-2 hours
+- **Authentication setup**: 2-4 hours
+- **Database design**: 2-6 hours depending on complexity
+- **Core business logic**: 4-8 hours per major component
+
+#### Testing & Polish
+- Add 15-30 minutes for unit tests per phase
+- Add 30-45 minutes for integration testing
+- Add 15 minutes for documentation
+- Add 30 minutes for performance validation (if applicable)
+
+#### Buffer Time
+- Add 25% buffer for unexpected issues
+- Add 50% buffer for phases involving new technologies
+- Add 100% buffer for phases with high uncertainty
 
 ---
 
@@ -825,6 +844,6 @@ Document what you learned:
 
 ---
 
-**Remember**: The goal isn't just to refactor code—it's to create a more enjoyable, debuggable, and maintainable codebase that makes future development a joy rather than a chore.
+**Remember**: The goal isn't just to ship code—it's to build solutions that solve real problems while creating a development experience that energizes rather than drains you. Whether you're building something new or improving something existing, the journey should feel exciting.
 
-*Template created by a vibe coder, for vibe coders. 🚀*
+*Template created by a vibe coder, for vibe coders tackling any complex project. 🚀*
