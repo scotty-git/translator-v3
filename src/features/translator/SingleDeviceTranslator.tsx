@@ -1017,8 +1017,8 @@ export function SingleDeviceTranslator({
         ))
       }
 
-      // Play message sent sound
-      playMessageSent()
+      // Don't play sound for own messages - only for incoming partner messages
+      console.log('🔊 Message completed - sound disabled for own messages')
 
       console.log('')
       console.log('🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉🎉')
