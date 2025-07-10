@@ -513,3 +513,6 @@ export class MessageSyncService {
     console.log('✅ [MessageSyncService] Complete cleanup finished')
   }
 }
+
+// Export singleton instance
+export const messageSyncService = new MessageSyncService()
