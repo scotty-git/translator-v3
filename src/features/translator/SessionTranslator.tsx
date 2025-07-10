@@ -50,6 +50,7 @@ export function SessionTranslator() {
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
   const [partnerOnline, setPartnerOnline] = useState(false)
   const [partnerActivity, setPartnerActivity] = useState<'idle' | 'recording' | 'processing' | 'typing'>('idle')
+  const [presenceServiceReady, setPresenceServiceReady] = useState(false)
   
   // Messages state for session
   const [messages, setMessages] = useState<QueuedMessage[]>([])
@@ -207,6 +208,7 @@ export function SessionTranslator() {
         // Initialize PresenceService with RealtimeConnection
         await presenceService.initialize(sessionState.sessionId, sessionState.userId, realtimeConnection)
         console.log('✅ [SessionTranslator] PresenceService initialized')
+        setPresenceServiceReady(true)
         
         // Initialize MessageSyncService with RealtimeConnection and PresenceService
         await messageSyncService.initializeSession(sessionState.sessionId, sessionState.userId, realtimeConnection, presenceService)
@@ -215,6 +217,7 @@ export function SessionTranslator() {
         console.error('❌ [SessionTranslator] Failed to initialize real-time sync:', error)
         setConnectionStatus('disconnected')
         setConnectionState('disconnected')
+        setPresenceServiceReady(false)
         
         // Handle specific error cases
         if (error instanceof Error) {
@@ -246,6 +249,8 @@ export function SessionTranslator() {
       realtimeConnection.cleanup()
       // Clear session from localStorage to prevent stale data
       localStorage.removeItem('activeSession')
+      // Reset presence service ready state
+      setPresenceServiceReady(false)
     }
   }, [sessionState?.sessionId])
   
@@ -419,7 +424,7 @@ export function SessionTranslator() {
               partnerOnline: partnerOnline
             }}
             messageQueueService={messageQueueService}
-            presenceService={presenceService}
+            presenceService={presenceServiceReady ? presenceService : undefined}
           />
         </div>
       </div>
