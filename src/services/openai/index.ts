@@ -18,7 +18,7 @@ export interface TTSResult {
   duration: number;
 }
 
-export type Language = 'English' | 'Spanish' | 'Portuguese' | 'auto-detect';
+export type Language = 'English' | 'Spanish' | 'Portuguese' | 'French' | 'German' | 'auto-detect';
 export type TranslationMode = 'casual' | 'fun';
 
 // Language mapping for Whisper API (for future use)

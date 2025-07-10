@@ -19,10 +19,14 @@ const WHISPER_TO_LANGUAGE_MAP: Record<string, Language> = {
   'portuguese': 'Portuguese',
   'pt-br': 'Portuguese', // Brazilian Portuguese
   'pt-pt': 'Portuguese', // European Portuguese
+  'fr': 'French',
+  'french': 'French',
+  'de': 'German',
+  'german': 'German',
 }
 
 // Supported target languages (always non-English)
-const TARGET_LANGUAGES: Language[] = ['Spanish', 'Portuguese']
+const TARGET_LANGUAGES: Language[] = ['Spanish', 'Portuguese', 'French', 'German']
 
 // Pattern-based language detection patterns from translatorinfo.md
 const LANGUAGE_PATTERNS = {
@@ -35,6 +39,16 @@ const LANGUAGE_PATTERNS = {
     commonWords: ['sim', 'não', 'obrigado', 'obrigada', 'olá', 'tchau', 'como', 'que', 'está', 'estão', 'estou', 'é', 'são', 'tem', 'têm', 'tenho'],
     uniqueChars: /[çãõâêô]/,
     strongIndicators: ['como está', 'tudo bem', 'bom dia', 'boa tarde', 'por favor']
+  },
+  french: {
+    commonWords: ['oui', 'non', 'merci', 'bonjour', 'bonsoir', 'salut', 'au revoir', 'comment', 'bien', 'très', 'je', 'tu', 'il', 'elle', 'nous', 'vous', 'ils', 'avec', 'pour'],
+    uniqueChars: /[àâæçèéêëîïôœùûü]/,
+    strongIndicators: ['comment allez-vous', 'ça va', 'bonjour', 'bonsoir', 's\'il vous plaît', 'merci beaucoup']
+  },
+  german: {
+    commonWords: ['ja', 'nein', 'danke', 'hallo', 'guten', 'tag', 'auf', 'wiedersehen', 'wie', 'gut', 'sehr', 'ich', 'du', 'er', 'sie', 'wir', 'ihr', 'mit', 'für'],
+    uniqueChars: /[äöüß]/,
+    strongIndicators: ['wie geht es', 'guten tag', 'guten morgen', 'auf wiedersehen', 'bitte schön', 'danke schön']
   },
   english: {
     commonWords: ['the', 'and', 'or', 'but', 'this', 'that', 'have', 'has', 'will', 'would', 'yes', 'no', 'hello', 'hi', 'thanks', 'please'],
@@ -53,7 +67,7 @@ export class LanguageDetectionService {
     const mapped = WHISPER_TO_LANGUAGE_MAP[normalizedLang]
     
     if (!mapped) {
-      console.warn(`❌ Unsupported language detected: "${whisperLanguage}". Only English, Spanish, and Portuguese are supported.`)
+      console.warn(`❌ Unsupported language detected: "${whisperLanguage}". Only English, Spanish, Portuguese, French, and German are supported.`)
       return null
     }
     
@@ -151,7 +165,7 @@ export class LanguageDetectionService {
    * Get all supported languages for the UI
    */
   static getSupportedLanguages(): Language[] {
-    return ['English', 'Spanish', 'Portuguese']
+    return ['English', 'Spanish', 'Portuguese', 'French', 'German']
   }
 
   /**
@@ -176,6 +190,8 @@ export class LanguageDetectionService {
       case 'English': return 'English'
       case 'Spanish': return 'Español'
       case 'Portuguese': return 'Português'
+      case 'French': return 'Français'
+      case 'German': return 'Deutsch'
       case 'auto-detect': return 'Auto-detect'
       default: return language
     }
@@ -189,6 +205,8 @@ export class LanguageDetectionService {
       case 'English': return '🇺🇸'
       case 'Spanish': return '🇪🇸'
       case 'Portuguese': return '🇧🇷'
+      case 'French': return '🇫🇷'
+      case 'German': return '🇩🇪'
       case 'auto-detect': return '🤖'
       default: return '🌐'
     }
@@ -226,6 +244,8 @@ export class LanguageDetectionService {
     const scores = {
       spanish: 0,
       portuguese: 0,
+      french: 0,
+      german: 0,
       english: 0
     }
 
@@ -235,6 +255,12 @@ export class LanguageDetectionService {
     }
     for (const indicator of LANGUAGE_PATTERNS.portuguese.strongIndicators) {
       if (lowerText.includes(indicator)) scores.portuguese += 5
+    }
+    for (const indicator of LANGUAGE_PATTERNS.french.strongIndicators) {
+      if (lowerText.includes(indicator)) scores.french += 5
+    }
+    for (const indicator of LANGUAGE_PATTERNS.german.strongIndicators) {
+      if (lowerText.includes(indicator)) scores.german += 5
     }
     for (const indicator of LANGUAGE_PATTERNS.english.strongIndicators) {
       if (lowerText.includes(indicator)) scores.english += 5
@@ -247,12 +273,20 @@ export class LanguageDetectionService {
     if (LANGUAGE_PATTERNS.portuguese.uniqueChars.test(text)) {
       scores.portuguese += 3
     }
+    if (LANGUAGE_PATTERNS.french.uniqueChars.test(text)) {
+      scores.french += 3
+    }
+    if (LANGUAGE_PATTERNS.german.uniqueChars.test(text)) {
+      scores.german += 3
+    }
 
     // Check for common words
     const words = lowerText.split(/\s+/)
     for (const word of words) {
       if (LANGUAGE_PATTERNS.spanish.commonWords.includes(word)) scores.spanish += 1
       if (LANGUAGE_PATTERNS.portuguese.commonWords.includes(word)) scores.portuguese += 1
+      if (LANGUAGE_PATTERNS.french.commonWords.includes(word)) scores.french += 1
+      if (LANGUAGE_PATTERNS.german.commonWords.includes(word)) scores.german += 1
       if (LANGUAGE_PATTERNS.english.commonWords.includes(word)) scores.english += 1
       
       // Check English suffixes
@@ -262,7 +296,7 @@ export class LanguageDetectionService {
     }
 
     // Determine the language with highest score
-    const maxScore = Math.max(scores.spanish, scores.portuguese, scores.english)
+    const maxScore = Math.max(scores.spanish, scores.portuguese, scores.french, scores.german, scores.english)
     
     // Require a minimum score to be confident
     if (maxScore < 2) {
@@ -272,6 +306,8 @@ export class LanguageDetectionService {
 
     if (scores.spanish === maxScore) return 'Spanish'
     if (scores.portuguese === maxScore) return 'Portuguese'
+    if (scores.french === maxScore) return 'French'
+    if (scores.german === maxScore) return 'German'
     if (scores.english === maxScore) return 'English'
 
     return null

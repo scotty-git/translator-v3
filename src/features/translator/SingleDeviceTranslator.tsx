@@ -121,10 +121,10 @@ export function SingleDeviceTranslator({
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentActivity, setCurrentActivity] = useState<'idle' | 'recording' | 'processing' | 'typing'>('idle')
   const [error, setError] = useState<string | null>(null)
-  const [targetLanguage, setTargetLanguage] = useState<'es' | 'pt'>(() => {
+  const [targetLanguage, setTargetLanguage] = useState<'es' | 'pt' | 'fr' | 'de'>(() => {
     const saved = UserManager.getPreference('targetLanguage', 'es')
     console.log('🎯 Initial target language:', saved)
-    return saved as 'es' | 'pt'
+    return saved as 'es' | 'pt' | 'fr' | 'de'
   })
   const [translationMode, setTranslationMode] = useState<'casual' | 'fun'>(() => UserManager.getTranslationMode())
   const [audioLevel, setAudioLevel] = useState(0)
@@ -525,30 +525,40 @@ export function SingleDeviceTranslator({
       // Enhanced language detection for text with more patterns
       const hasSpanishWords = /\b(hola|cómo|qué|por|para|con|una|uno|este|esta|está|estás|buenos|días|gracias|adiós|señor|señora)\b/i.test(messageText)
       const hasPortugueseWords = /\b(olá|como|que|por|para|com|uma|um|este|esta|está|você|obrigado|obrigada|tchau|bom|dia)\b/i.test(messageText)
+      const hasFrenchWords = /\b(bonjour|comment|salut|merci|s'il|vous|plaît|avec|pour|bien|très|c'est|je|tu|il|elle|nous)\b/i.test(messageText)
+      const hasGermanWords = /\b(hallo|guten|tag|danke|bitte|wie|geht|sehr|gut|ich|du|er|sie|wir|mit|für)\b/i.test(messageText)
       const hasSpanishChars = /[ñáéíóúü¿¡]/i.test(messageText)
       const hasPortugueseChars = /[çãõâêôà]/i.test(messageText)
+      const hasFrenchChars = /[àâæçèéêëîïôœùûü]/i.test(messageText)
+      const hasGermanChars = /[äöüß]/i.test(messageText)
       
       let detectedLangCode = 'en' // Default to English
       if ((hasSpanishWords || hasSpanishChars) && !hasPortugueseWords && !hasPortugueseChars) {
         detectedLangCode = 'es'
       } else if ((hasPortugueseWords || hasPortugueseChars) && !hasSpanishWords && !hasSpanishChars) {
         detectedLangCode = 'pt'
+      } else if ((hasFrenchWords || hasFrenchChars) && !hasSpanishWords && !hasPortugueseWords) {
+        detectedLangCode = 'fr'
+      } else if ((hasGermanWords || hasGermanChars) && !hasSpanishWords && !hasPortugueseWords && !hasFrenchWords) {
+        detectedLangCode = 'de'
       }
       
       console.log('🔍 LANGUAGE DETECTION & MAPPING:')
       console.log('   • Input text:', `"${messageText}"`)
       console.log('   • Detected language code:', detectedLangCode)
       
-      const langMap: Record<string, 'English' | 'Spanish' | 'Portuguese'> = {
+      const langMap: Record<string, 'English' | 'Spanish' | 'Portuguese' | 'French' | 'German'> = {
         'en': 'English',
         'es': 'Spanish', 
-        'pt': 'Portuguese'
+        'pt': 'Portuguese',
+        'fr': 'French',
+        'de': 'German'
       }
       
       const detectedLang = langMap[detectedLangCode] || 'English'
       
       // Translation logic: Respect user's target language selection
-      let actualTargetLanguage: 'es' | 'en' | 'pt' = targetLanguage
+      let actualTargetLanguage: 'es' | 'en' | 'pt' | 'fr' | 'de' = targetLanguage
       
       console.log('🤖 APPLYING TRANSLATION RULES:')
       console.log('   👤 User selected target language:', targetLanguage, `(${langMap[targetLanguage]})`)
@@ -762,10 +772,12 @@ export function SingleDeviceTranslator({
       console.log('╚══════════════════════════════════════════════════════════╝')
       
       // Map language codes to full names for TranslationService
-      const langMap: Record<string, 'English' | 'Spanish' | 'Portuguese'> = {
+      const langMap: Record<string, 'English' | 'Spanish' | 'Portuguese' | 'French' | 'German'> = {
         'en': 'English',
         'es': 'Spanish', 
-        'pt': 'Portuguese'
+        'pt': 'Portuguese',
+        'fr': 'French',
+        'de': 'German'
       }
       
       console.log('🔍 LANGUAGE DETECTION & MAPPING:')
@@ -786,7 +798,7 @@ export function SingleDeviceTranslator({
       console.log('   • Detected input language:', detectedLangCode, `(${detectedLang})`)
       
       // Translation logic: Respect user's target language selection
-      let actualTargetLanguage: 'es' | 'en' | 'pt' = targetLanguage
+      let actualTargetLanguage: 'es' | 'en' | 'pt' | 'fr' | 'de' = targetLanguage
       
       console.log('🤖 APPLYING TRANSLATION RULES:')
       console.log('   👤 User selected target language:', targetLanguage, `(${langMap[targetLanguage]})`)
@@ -1236,7 +1248,7 @@ export function SingleDeviceTranslator({
                 <select
                   value={targetLanguage}
                   onChange={(e) => {
-                    const newLang = e.target.value as 'es' | 'pt'
+                    const newLang = e.target.value as 'es' | 'pt' | 'fr' | 'de'
                     console.log('🎯 Target language changed to:', newLang)
                     setTargetLanguage(newLang)
                     UserManager.setPreference('targetLanguage', newLang)
@@ -1246,6 +1258,8 @@ export function SingleDeviceTranslator({
                 >
                   <option value="es">ES</option>
                   <option value="pt">PT</option>
+                  <option value="fr">FR</option>
+                  <option value="de">DE</option>
                 </select>
               </div>
             </div>

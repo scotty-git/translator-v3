@@ -70,9 +70,9 @@ export class SecureTTSService {
     // OpenAI TTS voices work well for multiple languages
     // These are general recommendations based on voice characteristics
     if (gender === 'female') {
-      return language === 'Spanish' || language === 'Portuguese' ? 'nova' : 'shimmer';
+      return language === 'Spanish' || language === 'Portuguese' || language === 'French' || language === 'German' ? 'nova' : 'shimmer';
     } else if (gender === 'male') {
-      return language === 'Spanish' || language === 'Portuguese' ? 'onyx' : 'echo';
+      return language === 'Spanish' || language === 'Portuguese' || language === 'French' || language === 'German' ? 'onyx' : 'echo';
     } else {
       return 'alloy'; // Neutral, works well for all languages
     }

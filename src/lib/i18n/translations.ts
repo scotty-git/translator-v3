@@ -38,6 +38,8 @@ export const translations = {
         english: 'English',
         spanish: 'Spanish',
         portuguese: 'Portuguese',
+        french: 'French',
+        german: 'German',
       },
       themes: {
         light: 'Light',
@@ -90,6 +92,8 @@ export const translations = {
       en: 'English',
       es: 'Spanish',
       pt: 'Portuguese',
+      fr: 'French',
+      de: 'German',
     },
     
     // Errors
@@ -160,6 +164,8 @@ export const translations = {
       en: 'inglés',
       es: 'español',
       pt: 'portugués',
+      fr: 'francés',
+      de: 'alemán',
     },
     
     // Errors
@@ -187,6 +193,8 @@ export const translations = {
         english: 'Inglés',
         spanish: 'Español',
         portuguese: 'Portugués',
+        french: 'Francés',
+        german: 'Alemán',
       },
       themes: {
         light: 'Claro',
@@ -276,6 +284,8 @@ export const translations = {
       en: 'inglês',
       es: 'espanhol',
       pt: 'português',
+      fr: 'francês',
+      de: 'alemão',
     },
     
     // Errors
@@ -303,6 +313,8 @@ export const translations = {
         english: 'Inglês',
         spanish: 'Espanhol',
         portuguese: 'Português',
+        french: 'Francês',
+        german: 'Alemão',
       },
       themes: {
         light: 'Claro',
@@ -344,6 +356,244 @@ export const translations = {
       disconnected: 'Desconectado',
       partnerOnline: 'Parceiro Online',
       partnerOffline: 'Aguardando parceiro...',
+    },
+  },
+  
+  fr: {
+    // Common
+    common: {
+      loading: 'Chargement...',
+      error: 'Erreur',
+      retry: 'Réessayer',
+      cancel: 'Annuler',
+      confirm: 'Confirmer',
+      back: 'Retour',
+      close: 'Fermer',
+      save: 'Enregistrer',
+      delete: 'Supprimer',
+      share: 'Partager',
+    },
+    
+    // Home screen
+    home: {
+      title: 'Traducteur en Temps Réel',
+      subtitle: 'Brisez les barrières linguistiques instantanément',
+      singleDevice: 'Commencer à Traduire',
+      singleDeviceDescription: 'Parfait pour les conversations en face à face. Détecte automatiquement les langues.',
+      startSession: 'Démarrer une Session',
+      joinSession: 'Rejoindre une Session',
+      sessionDescription: 'Connectez deux appareils pour la traduction à distance. Partagez le code à 4 chiffres pour vous connecter.',
+    },
+    
+    // Settings screen
+    settings: {
+      title: 'Paramètres',
+      language: 'Langue',
+      appearance: 'Apparence',
+      experience: 'Expérience',
+      notifications: 'Notifications',
+      dataManagement: 'Gestion des Données',
+      about: 'À propos',
+      languages: {
+        english: 'Anglais',
+        spanish: 'Espagnol',
+        portuguese: 'Portugais',
+        french: 'Français',
+        german: 'Allemand',
+      },
+      themes: {
+        light: 'Clair',
+        dark: 'Sombre',
+        system: 'Système',
+      },
+      audio: {
+        title: 'Audio',
+        quality: 'Qualité Audio',
+        high: 'Haute Qualité',
+        highDesc: 'Meilleure qualité, plus d\'utilisation de données',
+        medium: 'Qualité Moyenne',
+        mediumDesc: 'Qualité et utilisation de données équilibrées',
+        low: 'Basse Qualité',
+        lowDesc: 'Qualité réduite, moins d\'utilisation de données',
+      },
+      hapticFeedback: 'Retour Haptique',
+      hapticFeedbackDesc: 'Vibration pour les interactions',
+      reducedMotion: 'Réduire le Mouvement',
+      reducedMotionDesc: 'Minimiser les animations et transitions',
+      autoSave: 'Sauvegarde Automatique',
+      autoSaveDesc: 'Sauvegarder automatiquement l\'historique des conversations',
+      enableNotifications: 'Activer les Notifications',
+      notificationsDesc: 'Recevoir des alertes pour les nouveaux messages',
+      exportData: 'Exporter les Paramètres',
+      clearData: 'Effacer Toutes les Données',
+      clearDataConfirm: 'Cela supprimera tous vos paramètres et l\'historique des conversations. Continuer?',
+      appName: 'Nom de l\'Application',
+      version: 'Version',
+      buildDate: 'Date de Construction',
+      footer: 'Fait avec ❤️ pour une communication parfaite',
+    },
+    
+    // Translator
+    translator: {
+      singleDevice: 'Mode Appareil Unique',
+      autoDetect: 'Détection automatique des langues',
+      targetLang: 'Cible',
+      you: 'Vous',
+      welcomeTitle: 'Prêt à Traduire',
+      welcomeMessage: 'Cliquez sur le bouton ci-dessous pour commencer l\'enregistrement et traduire automatiquement entre les langues.',
+      processing: 'Traitement de votre message...',
+      recording: 'Enregistrement... Cliquez à nouveau pour envoyer',
+      instructions: 'Cliquez pour commencer l\'enregistrement, cliquez à nouveau pour envoyer',
+    },
+
+    // Languages
+    languages: {
+      en: 'anglais',
+      es: 'espagnol',
+      pt: 'portugais',
+      fr: 'français',
+      de: 'allemand',
+    },
+    
+    // Errors
+    errors: {
+      generic: 'Quelque chose s\'est mal passé. Veuillez réessayer.',
+      networkOffline: 'Vous êtes hors ligne. Veuillez vérifier votre connexion.',
+      microphonePermission: 'L\'accès au microphone est nécessaire pour la traduction.',
+      microphoneNotSupported: 'Votre navigateur ne prend pas en charge l\'enregistrement audio.',
+      translationFailed: 'La traduction a échoué. Veuillez réessayer.',
+      tooManyRequests: 'Trop de demandes. Veuillez patienter un moment.',
+      audioTooShort: 'Aucune parole détectée. Veuillez parler clairement.',
+      audioTooLong: 'L\'enregistrement est trop long. Veuillez le garder sous 5 minutes.',
+    },
+    
+    // Session
+    session: {
+      code: 'Session:',
+      connected: 'Connecté',
+      connecting: 'Connexion...',
+      disconnected: 'Déconnecté',
+      partnerOnline: 'Partenaire en ligne',
+      partnerOffline: 'En attente du partenaire...',
+    },
+  },
+  
+  de: {
+    // Common
+    common: {
+      loading: 'Laden...',
+      error: 'Fehler',
+      retry: 'Erneut versuchen',
+      cancel: 'Abbrechen',
+      confirm: 'Bestätigen',
+      back: 'Zurück',
+      close: 'Schließen',
+      save: 'Speichern',
+      delete: 'Löschen',
+      share: 'Teilen',
+    },
+    
+    // Home screen
+    home: {
+      title: 'Echtzeit-Übersetzer',
+      subtitle: 'Sprachbarrieren sofort überwinden',
+      singleDevice: 'Übersetzung starten',
+      singleDeviceDescription: 'Perfekt für persönliche Gespräche. Erkennt Sprachen automatisch.',
+      startSession: 'Sitzung starten',
+      joinSession: 'Sitzung beitreten',
+      sessionDescription: 'Verbinden Sie zwei Geräte für Fernübersetzung. Teilen Sie den 4-stelligen Code zum Verbinden.',
+    },
+    
+    // Settings screen
+    settings: {
+      title: 'Einstellungen',
+      language: 'Sprache',
+      appearance: 'Erscheinungsbild',
+      experience: 'Erfahrung',
+      notifications: 'Benachrichtigungen',
+      dataManagement: 'Datenverwaltung',
+      about: 'Über',
+      languages: {
+        english: 'Englisch',
+        spanish: 'Spanisch',
+        portuguese: 'Portugiesisch',
+        french: 'Französisch',
+        german: 'Deutsch',
+      },
+      themes: {
+        light: 'Hell',
+        dark: 'Dunkel',
+        system: 'System',
+      },
+      audio: {
+        title: 'Audio',
+        quality: 'Audioqualität',
+        high: 'Hohe Qualität',
+        highDesc: 'Beste Qualität, mehr Datenverbrauch',
+        medium: 'Mittlere Qualität',
+        mediumDesc: 'Ausgewogene Qualität und Datenverbrauch',
+        low: 'Niedrige Qualität',
+        lowDesc: 'Reduzierte Qualität, weniger Datenverbrauch',
+      },
+      hapticFeedback: 'Haptisches Feedback',
+      hapticFeedbackDesc: 'Vibration bei Interaktionen',
+      reducedMotion: 'Bewegung reduzieren',
+      reducedMotionDesc: 'Animationen und Übergänge minimieren',
+      autoSave: 'Automatisch speichern',
+      autoSaveDesc: 'Gesprächsverlauf automatisch speichern',
+      enableNotifications: 'Benachrichtigungen aktivieren',
+      notificationsDesc: 'Benachrichtigungen für neue Nachrichten erhalten',
+      exportData: 'Einstellungen exportieren',
+      clearData: 'Alle Daten löschen',
+      clearDataConfirm: 'Dies wird alle Ihre Einstellungen und den Gesprächsverlauf löschen. Fortfahren?',
+      appName: 'App-Name',
+      version: 'Version',
+      buildDate: 'Build-Datum',
+      footer: 'Mit ❤️ für perfekte Kommunikation gemacht',
+    },
+    
+    // Translator
+    translator: {
+      singleDevice: 'Einzelgerätemodus',
+      autoDetect: 'Automatische Spracherkennung',
+      targetLang: 'Ziel',
+      you: 'Sie',
+      welcomeTitle: 'Bereit zum Übersetzen',
+      welcomeMessage: 'Klicken Sie auf die Schaltfläche unten, um die Aufnahme zu starten und automatisch zwischen Sprachen zu übersetzen.',
+      processing: 'Verarbeite Ihre Nachricht...',
+      recording: 'Aufnahme... Klicken Sie erneut zum Senden',
+      instructions: 'Klicken Sie zum Starten der Aufnahme, klicken Sie erneut zum Senden',
+    },
+
+    // Languages
+    languages: {
+      en: 'englisch',
+      es: 'spanisch',
+      pt: 'portugiesisch',
+      fr: 'französisch',
+      de: 'deutsch',
+    },
+    
+    // Errors
+    errors: {
+      generic: 'Etwas ist schief gelaufen. Bitte versuchen Sie es erneut.',
+      networkOffline: 'Sie sind offline. Bitte überprüfen Sie Ihre Verbindung.',
+      microphonePermission: 'Mikrofonzugriff ist für die Übersetzung erforderlich.',
+      microphoneNotSupported: 'Ihr Browser unterstützt keine Audioaufnahme.',
+      translationFailed: 'Übersetzung fehlgeschlagen. Bitte versuchen Sie es erneut.',
+      tooManyRequests: 'Zu viele Anfragen. Bitte warten Sie einen Moment.',
+      audioTooShort: 'Keine Sprache erkannt. Bitte sprechen Sie deutlich.',
+      audioTooLong: 'Die Aufnahme ist zu lang. Bitte halten Sie sie unter 5 Minuten.',
+    },
+    
+    // Session
+    session: {
+      code: 'Sitzung:',
+      connected: 'Verbunden',
+      connecting: 'Verbinde...',
+      disconnected: 'Getrennt',
+      partnerOnline: 'Partner online',
+      partnerOffline: 'Warte auf Partner...',
     },
   },
 }
