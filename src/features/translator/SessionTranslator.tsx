@@ -7,6 +7,7 @@ import { messageSyncService } from '@/services/MessageSyncService'
 import type { QueuedMessage } from '@/features/messages/MessageQueue'
 import type { SessionMessage, ConnectionStatus } from '@/types/database'
 import { ErrorToast } from '@/components/ErrorDisplay'
+import { useSounds } from '@/lib/sounds/SoundManager'
 
 interface SessionState {
   sessionId: string
@@ -18,6 +19,7 @@ interface SessionState {
 export function SessionTranslator() {
   const navigate = useNavigate()
   const location = useLocation()
+  const { playMessageReceived } = useSounds()
   
   // Get session from navigation state or localStorage
   const [sessionState, setSessionState] = useState<SessionState | null>(() => {
@@ -105,6 +107,9 @@ export function SessionTranslator() {
         
         // Add to messages as partner message (will show on left side)
         setMessages(prev => [...prev, queuedMessage])
+        
+        // Play sound notification for incoming translated message
+        playMessageReceived()
       },
       
       onConnectionStatusChanged: (status: ConnectionStatus) => {

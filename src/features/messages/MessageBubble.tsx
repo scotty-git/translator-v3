@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { clsx } from 'clsx'
-import { Check, Clock, AlertCircle, Play, Pause, Loader2, Volume2, Edit3, CheckCheck } from 'lucide-react'
+import { Check, Clock, AlertCircle, Play, Pause, Loader2, Volume2, Edit3, CheckCheck, ChevronDown, ChevronUp } from 'lucide-react'
 import type { QueuedMessage } from './MessageQueue'
 import { messageQueue } from './MessageQueue'
 import { SecureTTSService as TTSService } from '../../services/openai/tts-secure'
@@ -33,6 +33,7 @@ export function MessageBubble({
   const [error, setError] = useState<string | null>(null)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [emojiPickerPosition, setEmojiPickerPosition] = useState({ x: 0, y: 0 })
+  const [showOriginal, setShowOriginal] = useState(false)
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const messageRef = useRef<HTMLDivElement | null>(null)
   
@@ -290,27 +291,53 @@ export function MessageBubble({
           {/* Message content - reduced bottom margin */}
         <div className="mb-1">
           {/* Primary text (translation) with placeholder handling */}
-          <p className={clsx(
-            'message-text leading-relaxed',
-            fontSize === 'small' ? 'text-sm' : 
-            fontSize === 'medium' ? 'text-base' : 
-            fontSize === 'large' ? 'text-lg' : 'text-xl',
-            !useOwnMessageStyling && 'text-gray-900 dark:text-gray-100'
-          )}>
-            {primaryText}
-          </p>
-          
-          {/* Secondary text (original) if translation exists */}
-          {secondaryText && (
+          <div className="flex items-start gap-1">
             <p className={clsx(
-              'message-text-secondary mt-1 opacity-70 leading-relaxed',
-              fontSize === 'small' ? 'text-xs' : 
-              fontSize === 'medium' ? 'text-sm' : 
-              fontSize === 'large' ? 'text-base' : 'text-lg',
-              useOwnMessageStyling ? colors.text : 'text-gray-600 dark:text-gray-400'
+              'message-text leading-relaxed flex-1',
+              fontSize === 'small' ? 'text-sm' : 
+              fontSize === 'medium' ? 'text-base' : 
+              fontSize === 'large' ? 'text-lg' : 'text-xl',
+              !useOwnMessageStyling && 'text-gray-900 dark:text-gray-100'
             )}>
-              {secondaryText}
+              {primaryText}
             </p>
+            
+            {/* Chevron toggle for original text (only if translation exists) */}
+            {secondaryText && (
+              <button
+                onClick={() => setShowOriginal(!showOriginal)}
+                className={clsx(
+                  'p-0.5 rounded hover:bg-black/10 transition-all duration-200',
+                  'opacity-50 hover:opacity-100',
+                  useOwnMessageStyling ? 'text-white/70 hover:text-white' : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'
+                )}
+                title={showOriginal ? 'Hide original' : 'Show original'}
+              >
+                {showOriginal ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </button>
+            )}
+          </div>
+          
+          {/* Secondary text (original) - collapsible with smooth transition */}
+          {secondaryText && (
+            <div className={clsx(
+              'overflow-hidden transition-all duration-200',
+              showOriginal ? 'max-h-40 opacity-100 mt-1' : 'max-h-0 opacity-0'
+            )}>
+              <p className={clsx(
+                'message-text-secondary opacity-70 leading-relaxed',
+                fontSize === 'small' ? 'text-xs' : 
+                fontSize === 'medium' ? 'text-sm' : 
+                fontSize === 'large' ? 'text-base' : 'text-lg',
+                useOwnMessageStyling ? colors.text : 'text-gray-600 dark:text-gray-400'
+              )}>
+                {secondaryText}
+              </p>
+            </div>
           )}
         </div>
         

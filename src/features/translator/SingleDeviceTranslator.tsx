@@ -53,7 +53,7 @@ export function SingleDeviceTranslator({
 }: SingleDeviceTranslatorProps = {}) {
   const navigate = useNavigate()
   const { t } = useTranslation()
-  const { playRecordingStart, playRecordingStop, playTranslationComplete, playError, playMessageSent } = useSounds()
+  const { playRecordingStart, playRecordingStop, playTranslationComplete, playError, playMessageSent, isEnabled: soundsEnabled, setEnabled: setSoundsEnabled, testSound } = useSounds()
   
   // Helper functions for session status
   const getSessionStatusIcon = (status: string) => {
@@ -1062,6 +1062,36 @@ export function SingleDeviceTranslator({
                           </span>
                           {isDarkMode ? <Sun className="h-4 w-4 text-yellow-500" /> : <Moon className="h-4 w-4 text-gray-600" />}
                         </button>
+                      </div>
+                      
+                      {/* Message Sounds Toggle */}
+                      <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                        <div className="flex items-center justify-between px-2 py-1.5">
+                          <span className="text-xs text-gray-700 dark:text-gray-300">
+                            Message Sounds
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => setSoundsEnabled(!soundsEnabled)}
+                              className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                                soundsEnabled ? 'bg-blue-600' : 'bg-gray-300 dark:bg-gray-600'
+                              }`}
+                            >
+                              <span
+                                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                                  soundsEnabled ? 'translate-x-5' : 'translate-x-1'
+                                }`}
+                              />
+                            </button>
+                            <button
+                              onClick={() => testSound()}
+                              className="px-2 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                              title="Test sound"
+                            >
+                              Test
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
