@@ -326,10 +326,26 @@ export function SessionTranslator() {
     
     // Send message to other participants via MessageSyncService
     // Only send when message is fully translated (status: 'displayed')
-    if (message.status === 'displayed' && message.translation) {
+    if (message.status === 'displayed' && message.translation && sessionState) {
       try {
         console.log('📤 [SessionTranslator] Sending message to MessageSyncService:', message.id)
-        await messageSyncService.sendMessage(message)
+        
+        // Transform QueuedMessage to format expected by queueMessage
+        const queuedMessageData = {
+          session_id: sessionState.sessionId,
+          sender_id: sessionState.userId,
+          original_text: message.original,
+          translated_text: message.translation,
+          source_language: message.originalLang || 'auto',
+          target_language: message.targetLang || 'auto',
+          created_at: new Date().toISOString(),
+          is_audio: message.isAudio || false,
+          audio_duration: message.audioDuration || null
+        }
+        
+        const messageId = messageSyncService.queueMessage(queuedMessageData)
+        console.log('✅ [SessionTranslator] Message queued successfully:', messageId)
+        
       } catch (error) {
         console.error('❌ [SessionTranslator] Failed to send message:', {
           messageId: message.id,
