@@ -940,7 +940,7 @@ export function SoloTranslator({
             marginTop: '64px', // Space for fixed header
             paddingLeft: '16px', // 4 * 4px = 16px
             paddingRight: '16px', // 4 * 4px = 16px  
-            paddingTop: '6px', // Reduced from 16px (p-4) by 65% = 16px * 0.35 = 5.6px ≈ 6px
+            paddingTop: '16px', // Match space-y-4 spacing for visual consistency
             paddingBottom: '80px', // Space for fixed footer
             scrollPaddingTop: '22px', // Prevent content from scrolling under fixed header
             touchAction: 'pan-y',

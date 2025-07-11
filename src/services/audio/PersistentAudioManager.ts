@@ -427,6 +427,7 @@ export class PersistentAudioManager {
       
     } catch (error) {
       console.error('❌ Audio processing failed:', error)
+      this.setState('idle') // Reset state to allow future recordings after error
       this.handleError(error as Error)
     }
   }
