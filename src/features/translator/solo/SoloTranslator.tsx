@@ -934,12 +934,15 @@ export function SoloTranslator({
         {/* Message Area - Takes remaining space with padding for fixed header and footer */}
         <div 
           ref={scrollContainerRef}
-          className="overflow-y-auto p-4 space-y-4" 
+          className="overflow-y-auto space-y-4" 
           style={{
             height: 'calc(100vh - 64px - 80px)', // Full viewport minus header (64px) and footer (80px)
             marginTop: '64px', // Space for fixed header
+            paddingLeft: '16px', // 4 * 4px = 16px
+            paddingRight: '16px', // 4 * 4px = 16px  
+            paddingTop: '6px', // Reduced from 16px (p-4) by 65% = 16px * 0.35 = 5.6px ≈ 6px
             paddingBottom: '80px', // Space for fixed footer
-            scrollPaddingTop: '22px', // Prevent content from scrolling under fixed header (reduced by 65%)
+            scrollPaddingTop: '22px', // Prevent content from scrolling under fixed header
             touchAction: 'pan-y',
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch'
