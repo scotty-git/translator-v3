@@ -944,7 +944,7 @@ export function SoloTranslator({
             marginTop: '0', // No margin needed - header is fixed positioned
             paddingLeft: '16px', // 4 * 4px = 16px
             paddingRight: '16px', // 4 * 4px = 16px  
-            paddingTop: '4px', // Small padding to match inter-message spacing
+            paddingTop: '68px', // 64px header height + 4px spacing to prevent messages going under header
             paddingBottom: '80px', // Space for fixed footer
             scrollPaddingTop: '22px', // Prevent content from scrolling under fixed header
             touchAction: 'pan-y',
