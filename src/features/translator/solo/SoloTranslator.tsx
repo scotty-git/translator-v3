@@ -941,7 +941,7 @@ export function SoloTranslator({
           className="overflow-y-auto space-y-4" 
           style={{
             height: 'calc(100vh - 64px - 80px)', // Full viewport minus header (64px) and footer (80px)
-            marginTop: '64px', // Space for fixed header
+            marginTop: '0', // No margin needed - header is fixed positioned
             paddingLeft: '16px', // 4 * 4px = 16px
             paddingRight: '16px', // 4 * 4px = 16px  
             paddingTop: '4px', // Small padding to match inter-message spacing
