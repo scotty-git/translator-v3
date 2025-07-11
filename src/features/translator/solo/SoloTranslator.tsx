@@ -203,11 +203,22 @@ export function SoloTranslator({
   }
   
   const updateMessage = (messageId: string, updater: (msg: QueuedMessage) => QueuedMessage) => {
+    console.log('🔄 [updateMessage] Called with:', { messageId, isSessionMode })
+    
     if (isSessionMode) {
       const currentMessages = externalMessages || []
       const message = currentMessages.find(m => m.id === messageId)
       if (message) {
-        onNewMessage?.(updater(message))
+        const updatedMessage = updater(message)
+        console.log('🔄 [updateMessage] Updating message in session mode:', {
+          messageId,
+          oldStatus: message.status,
+          newStatus: updatedMessage.status,
+          hasTranslation: !!updatedMessage.translation
+        })
+        // Always call onNewMessage for updates in session mode
+        // This ensures SessionTranslator sees status changes (especially 'displayed')
+        onNewMessage?.(updatedMessage)
       }
     } else {
       setInternalMessages(prev => prev.map(msg => 
@@ -587,7 +598,8 @@ export function SoloTranslator({
         original: finalMessage.original,
         translation: finalMessage.translation,
         session_id: finalMessage.session_id,
-        user_id: finalMessage.user_id
+        user_id: finalMessage.user_id,
+        isSessionMode
       })
       
       updateMessage(messageId, () => finalMessage)
