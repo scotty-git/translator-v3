@@ -1019,8 +1019,8 @@ export function SoloTranslator({
                         <MessageBubble 
                           message={message} 
                           theme="blue"
-                          currentUserId="single-user"
-                          isSessionMode={false}
+                          currentUserId={isSessionMode && sessionInfo ? sessionInfo.userId : "single-user"}
+                          isSessionMode={isSessionMode}
                           fontSize={fontSize}
                         />
                       </div>
