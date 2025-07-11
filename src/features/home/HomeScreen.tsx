@@ -128,7 +128,7 @@ export function HomeScreen() {
               🗣️ {t('home.singleDevice', 'Start Translating')}
             </Button>
             
-            <div className="text-xs text-gray-500 text-center px-4">
+            <div className="text-xs text-gray-700 dark:text-gray-300 text-center px-4">
               {t('home.singleDeviceDescription', 'Perfect for face-to-face conversations. Auto-detects languages.')}
             </div>
           </Card>
@@ -136,7 +136,7 @@ export function HomeScreen() {
           {/* Or Divider */}
           <div className="flex items-center space-x-2">
             <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
-            <span className="text-sm text-gray-500 dark:text-gray-400">OR</span>
+            <span className="text-sm text-gray-600 dark:text-gray-300">OR</span>
             <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700"></div>
           </div>
 
@@ -148,7 +148,7 @@ export function HomeScreen() {
                 size="md"
                 variant="outline"
                 disabled={isCreatingSession}
-                className="flex flex-row items-center justify-center gap-2 h-12 px-4 bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
+                className="flex flex-row items-center justify-center gap-2 h-12 px-4 min-w-[120px] bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
               >
                 <UserPlus className="h-4 w-4" />
                 <span className="text-sm font-medium">{t('home.startSession', 'Start Session')}</span>
@@ -158,7 +158,7 @@ export function HomeScreen() {
                 onClick={() => setShowJoinInput(!showJoinInput)}
                 size="md"
                 variant="outline"
-                className="flex flex-row items-center justify-center gap-2 h-12 px-4 bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
+                className="flex flex-row items-center justify-center gap-2 h-12 px-4 min-w-[120px] bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
               >
                 <Hash className="h-4 w-4" />
                 <span className="text-sm font-medium">{t('home.joinSession', 'Join Session')}</span>
@@ -168,8 +168,12 @@ export function HomeScreen() {
             {/* Join Input */}
             {showJoinInput && (
               <div className="space-y-3 animate-fade-in">
+                <label htmlFor="join-code-input" className="block text-sm font-medium text-gray-900 dark:text-gray-100 text-center">
+                  Enter 4-digit session code
+                </label>
                 <div className="grid grid-cols-[1fr_auto] gap-3">
                   <input
+                    id="join-code-input"
                     type="text"
                     inputMode="numeric"
                     pattern="[0-9]*"
@@ -177,15 +181,17 @@ export function HomeScreen() {
                     value={joinCode}
                     onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, ''))}
                     onKeyDown={handleInputKeyDown}
-                    placeholder="Enter 4-digit code"
-                    className="h-12 px-4 py-2 text-center text-lg font-mono border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="1234"
+                    aria-label="Enter 4-digit session code"
+                    className="h-12 px-4 py-2 text-center text-lg font-mono border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                     data-testid="join-code-input"
                   />
                   <Button
                     onClick={handleJoinSession}
                     disabled={isJoiningSession || joinCode.length !== 4}
                     size="md"
-                    className="h-12 px-6 whitespace-nowrap font-medium"
+                    className="h-12 px-6 whitespace-nowrap font-medium min-w-[100px]"
+                    aria-label={isJoiningSession ? 'Joining session...' : 'Join session with code'}
                   >
                     {isJoiningSession ? 'Joining...' : 'Join'}
                   </Button>
@@ -200,7 +206,7 @@ export function HomeScreen() {
               </div>
             )}
 
-            <div className="text-xs text-gray-500 text-center px-4">
+            <div className="text-xs text-gray-700 dark:text-gray-300 text-center px-4">
               {t('home.sessionDescription', 'Connect two devices for remote translation. Share the 4-digit code to connect.')}
             </div>
           </Card>
