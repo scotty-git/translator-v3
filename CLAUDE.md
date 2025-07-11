@@ -482,8 +482,31 @@ CREATE POLICY "Users can insert their own messages"
 ├── ✅ Console performance spam (July 10): Removed render-time logging from ActivityIndicator and AudioVisualization
 ├── ✅ Activity indicator isolation (July 10): Fixed presence channel timestamps causing devices to join separate channels
 ├── ✅ Deterministic channel naming (July 10): Fixed RealtimeConnection timestamp suffixes breaking cross-device communication
-└── ✅ Message history race condition (July 11): Fixed critical bug where User B couldn't see User A's messages when joining an existing session
+├── ✅ Message history race condition (July 11): Fixed critical bug where User B couldn't see User A's messages when joining an existing session
+├── ✅ Text message sync bug (July 11): Fixed text messages not syncing by aligning flow with voice message pattern
+└── ✅ Message alignment bug (July 11): Fixed all messages appearing on left side by adding missing userId field to message objects
 ```
+
+**7. 📋 Message Field Compatibility Pattern (Critical)**
+```
+🔧 REQUIRED MESSAGE OBJECT STRUCTURE
+├── Database fields (Supabase storage):
+│   ├── user_id: string (sender identification for database)
+│   ├── session_id: string (session identification)
+│   └── sender_id: string (alias for user_id in some contexts)
+├── UI Compatibility fields (MessageBubble component):
+│   ├── userId: string (REQUIRED for message alignment logic)
+│   ├── sessionId: string (optional for UI components)
+│   └── id: string (message identification)
+└── ⚠️ CRITICAL: MessageBubble checks BOTH user_id AND userId fields
+    const isOwnMessage = message.user_id === userId || message.userId === userId
+```
+
+**📝 Implementation Requirements:**
+- **Always include both `user_id` AND `userId` in message objects**
+- **Voice messages work because they set both fields correctly**
+- **Text messages were broken because they only set `user_id`**
+- **Missing `userId` causes ALL messages to appear on left side**
 
 ### 📱 Phase 5: Mobile Network Resilience (COMPLETED)
 ```
@@ -555,7 +578,12 @@ sudo networksetup -setproxybypassdomains Wi-Fi "*.local" "169.254/16" "localhost
 ├── 12. Channel Management: Use `presence:${sessionId}` not `presence:${sessionId}:${timestamp}`
 ├── 13. Supabase Debugging Protocol: Use SQL queries to investigate realtime subscription issues
 ├── 14. Phase 1d Lesson: RealtimeConnection timestamp suffixes broke cross-device communication entirely
-└── 15. Message History Loading (July 11): Always load existing messages when joining a session to prevent missing conversation context
+├── 15. Message History Loading (July 11): Always load existing messages when joining a session to prevent missing conversation context
+├── 16. Text vs Voice Message Patterns: Text messages must follow voice message pattern (create final message once, not create+update)
+├── 17. MessageBubble Field Compatibility: Component checks both `user_id` AND `userId` fields for alignment logic
+├── 18. Message Alignment Bug Pattern: Missing `userId` field causes all messages to appear on left side
+├── 19. Field Consistency Rule: Always include both `user_id` (database) and `userId` (UI compatibility) in message objects
+└── 20. Message Flow Debugging: Compare working voice flow vs broken text flow to identify divergence patterns
 ```
 
 ---
