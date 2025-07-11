@@ -172,27 +172,29 @@ test.describe('Session Text Messaging', () => {
     console.log(`🔍 HOST: Found ${hostMessageElements} message elements`);
     console.log(`🔍 GUEST: Found ${guestMessageElements} message elements`);
     
-    // Check if we can see "hello" text
-    const hostHelloVisible = await hostPage.locator('text=hello').isVisible();
-    const guestHelloVisible = await guestPage.locator('text=hello').isVisible();
+    // Check if we can see "hello" text (should be 2 instances now - one from each user)
+    const hostHelloCount = await hostPage.locator('text=hello').count();
+    const guestHelloCount = await guestPage.locator('text=hello').count();
     
-    console.log(`🔍 HOST: Can see "hello": ${hostHelloVisible}`);
-    console.log(`🔍 GUEST: Can see "hello": ${guestHelloVisible}`);
+    console.log(`🔍 HOST: Found ${hostHelloCount} instances of "hello"`);
+    console.log(`🔍 GUEST: Found ${guestHelloCount} instances of "hello"`);
     
-    // Get browser console logs to debug
-    console.log('📋 Getting browser console logs...');
-    
-    // Expected: Each user should see 2 messages (their own + partner's)
-    if (hostMessageElements < 2 || guestMessageElements < 2) {
-      console.log('🚨 BUG CONFIRMED: Text messages are not syncing between users!');
-      console.log(`Expected: 2 messages each, Got: Host=${hostMessageElements}, Guest=${guestMessageElements}`);
+    // Verify that both users can see both messages
+    if (hostHelloCount >= 2 && guestHelloCount >= 2) {
+      console.log('✅ SUCCESS: Text messages are syncing correctly between users!');
+      console.log(`Both users can see both messages: Host=${hostHelloCount}, Guest=${guestHelloCount}`);
     } else {
-      console.log('✅ Messages are syncing correctly between users!');
+      console.log('🚨 BUG STILL EXISTS: Text messages are not syncing properly!');
+      console.log(`Expected: 2+ messages each, Got: Host=${hostHelloCount}, Guest=${guestHelloCount}`);
     }
 
     // Step 9: Take final screenshots showing the conversation
     await hostPage.screenshot({ path: 'test-results/12-final-conversation-host.png' });
     await guestPage.screenshot({ path: 'test-results/13-final-conversation-guest.png' });
+    
+    // Assert that the fix worked - both users should see both messages
+    expect(hostHelloCount).toBeGreaterThanOrEqual(2);
+    expect(guestHelloCount).toBeGreaterThanOrEqual(2);
     
     console.log('🎉 Test completed successfully!');
     console.log('📸 Screenshots saved to test-results/ directory');

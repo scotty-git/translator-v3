@@ -554,6 +554,7 @@ export function SoloTranslator({
         id: messageId,
         session_id: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session',
         user_id: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
+        userId: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user', // Add for MessageBubble compatibility
         original: result.original,
         translation: result.translation,
         original_lang: result.originalLanguageCode,
@@ -605,6 +606,7 @@ export function SoloTranslator({
         id: messageId,
         session_id: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session',
         user_id: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
+        userId: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user', // Add for MessageBubble compatibility
         original: messageText,
         translation: null,
         original_lang: 'auto',
@@ -676,6 +678,7 @@ export function SoloTranslator({
         id: messageId,
         session_id: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session',
         user_id: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
+        userId: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user', // Add for MessageBubble compatibility
         original: result.original,
         translation: result.translation,
         original_lang: result.originalLanguageCode,

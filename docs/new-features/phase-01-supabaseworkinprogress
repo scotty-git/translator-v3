@@ -1,0 +1,411 @@
+⏺ Based on the Phase 1 documentation, here are the specific SQL queries we need to run to ensure we have complete knowledge of the current database state:
+
+  📊 SQL Queries to Run in Supabase
+
+  Please run these queries in your Supabase SQL editor and share the results:
+
+  1. Complete Messages Table Schema
+
+  SELECT
+      column_name,
+      data_type,
+      is_nullable,
+      column_default
+  FROM information_schema.columns
+  WHERE table_schema = 'public'
+  AND table_name = 'messages'
+  ORDER BY ordinal_position;
+
+  2. Check for Existing Reactions Table
+
+  SELECT EXISTS (
+      SELECT FROM information_schema.tables
+      WHERE table_schema = 'public'
+      AND table_name = 'message_reactions'
+  );
+
+  3. Current Indexes on Messages Table
+
+  SELECT
+      indexname,
+      indexdef
+  FROM pg_indexes
+  WHERE schemaname = 'public'
+  AND tablename = 'messages';
+
+  4. RLS Policies on Messages Table
+
+  SELECT
+      pol.polname as policy_name,
+      pol.polcmd as command,
+      pg_get_expr(pol.polqual, pol.polrelid) as using_expression,
+      pg_get_expr(pol.polwithcheck, pol.polrelid) as check_expression
+  FROM pg_policy pol
+  JOIN pg_class cls ON pol.polrelid = cls.oid
+  WHERE cls.relname = 'messages'
+  AND cls.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public');
+
+  5. Check Real-time Publication Status
+
+  SELECT
+      tablename
+  FROM pg_publication_tables
+  WHERE pubname = 'supabase_realtime'
+  AND schemaname = 'public';
+
+  6. Foreign Key Constraints
+
+  SELECT
+      tc.constraint_name,
+      tc.table_name,
+      kcu.column_name,
+      ccu.table_name AS foreign_table_name,
+      ccu.column_name AS foreign_column_name
+  FROM information_schema.table_constraints AS tc
+  JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+  JOIN information_schema.constraint_column_usage AS ccu
+      ON ccu.constraint_name = tc.constraint_name
+  WHERE tc.constraint_type = 'FOREIGN KEY'
+  AND tc.table_name IN ('messages', 'session_participants');
+
+  7. Row Count and Sample Data
+
+  -- Get count of messages
+  SELECT COUNT(*) as message_count FROM messages;
+
+  -- Check if we have any UUIDs vs text IDs
+  SELECT
+      COUNT(*) FILTER (WHERE sender_id ~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') as uuid_count,
+      COUNT(*) FILTER (WHERE sender_id !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$') as text_count
+  FROM messages;
+
+  8. Important: Check User ID Format
+
+  Since the RLS policies in the migration use auth.uid() but your app doesn't use authentication:
+  -- Check what user_id values look like
+  SELECT DISTINCT sender_id, COUNT(*)
+  FROM messages
+  GROUP BY sender_id
+  LIMIT 10;
+
+  🤔 Additional Questions:
+
+  1. Authentication: The phase 1 doc mentions auth.uid() in RLS policies, but your app uses session-based identification. How are user IDs currently handled? Are they UUIDs or
+  session-based strings?
+  2. User ID Type: Should user_id in the reactions table be UUID or TEXT? This depends on your current user identification system.
+  3. Migration History: Do you have a migrations table or use Supabase's migration system?
+
+  Once you run these queries, we'll have a complete picture of the current state and can make informed decisions about:
+  - Whether to adjust the migration SQL
+  - How to handle the RLS policies without auth
+  - What the exact column types should be
+
+  This thorough audit will ensure we don't miss anything before proceeding with Phase 1!
+
+> 1\
+  [
+    {
+      "column_name": "id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": "uuid_generate_v4()"
+    },
+    {
+      "column_name": "session_id",
+      "data_type": "uuid",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "sender_id",
+      "data_type": "uuid",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "column_name": "original_text",
+      "data_type": "text",
+      "is_nullable": "NO",
+      "column_default": null
+    },
+    {
+      "column_name": "translated_text",
+      "data_type": "text",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "original_language",
+      "data_type": "character varying",
+      "is_nullable": "YES",
+      "column_default": null
+    },
+    {
+      "column_name": "timestamp",
+      "data_type": "timestamp with time zone",
+      "is_nullable": "YES",
+      "column_default": "now()"
+    },
+    {
+      "column_name": "is_delivered",
+      "data_type": "boolean",
+      "is_nullable": "YES",
+      "column_default": "false"
+    },
+    {
+      "column_name": "sequence_number",
+      "data_type": "integer",
+      "is_nullable": "NO",
+      "column_default": "nextval('messages_sequence_number_seq'::regclass)"
+    }
+  ]\
+  2\
+  [
+    {
+      "exists": false
+    }
+  ]\
+  3/ \
+  [
+    {
+      "indexname": "messages_pkey",
+      "indexdef": "CREATE UNIQUE INDEX messages_pkey ON public.messages USING btree (id)"
+    },
+    {
+      "indexname": "idx_messages_session_id",
+      "indexdef": "CREATE INDEX idx_messages_session_id ON public.messages USING btree (session_id)"
+    },
+    {
+      "indexname": "idx_messages_timestamp",
+      "indexdef": "CREATE INDEX idx_messages_timestamp ON public.messages USING btree (\"timestamp\")"
+    }
+  ]\
+  4\
+  [
+    {
+      "policy_name": "Users can view messages in their session",
+      "command": "r",
+      "using_expression": "(session_id IS NOT NULL)",
+      "check_expression": null
+    },
+    {
+      "policy_name": "Users can insert their own messages",
+      "command": "a",
+      "using_expression": null,
+      "check_expression": "(sender_id IS NOT NULL)"
+    }
+  ]\
+  5\
+  [
+    {
+      "tablename": "session_participants"
+    },
+    {
+      "tablename": "messages"
+    }
+  ]\
+  6\
+  SELECT
+        tc.constraint_name,
+        tc.table_name,
+        kcu.column_name,
+        ccu.table_name AS foreign_table_name,
+        ccu.column_name AS foreign_column_name
+    FROM information_schema.table_constraints AS tc
+    JOIN information_schema.key_column_usage AS kcu
+        ON tc.constraint_name = kcu.constraint_name
+    JOIN information_schema.constraint_column_usage AS ccu
+        ON ccu.constraint_name = tc.constraint_name
+    WHERE tc.constraint_type = 'FOREIGN KEY'
+    AND tc.table_name IN ('messages', 'session_participants');\
+  7\
+  [
+    {
+      "constraint_name": "messages_session_id_fkey",
+      "table_name": "messages",
+      "column_name": "session_id",
+      "foreign_table_name": "sessions",
+      "foreign_column_name": "id"
+    },
+    {
+      "constraint_name": "session_participants_session_id_fkey",
+      "table_name": "session_participants",
+      "column_name": "session_id",
+      "foreign_table_name": "sessions",
+      "foreign_column_name": "id"
+    }
+  ]\
+  8\
+  [
+    {
+      "sender_id": "a9265332-2c18-42e4-bff8-6204ab064843",
+      "count": 1
+    },
+    {
+      "sender_id": "f370068f-1104-4a34-a854-7889ce000a37",
+      "count": 1
+    },
+    {
+      "sender_id": "54c2b032-7523-46aa-a1eb-a0c0bb69bbd0",
+      "count": 1
+    },
+    {
+      "sender_id": "7523d8de-9c83-43f5-8821-ddd34e10f9a3",
+      "count": 1
+    },
+    {
+      "sender_id": "0bd01d79-9e03-45ed-a06a-0d78e1924173",
+      "count": 2
+    },
+    {
+      "sender_id": "1dc4bda6-3085-4c82-b33b-18130bd7676f",
+      "count": 1
+    },
+    {
+      "sender_id": "e34ef432-6aec-4826-807d-dfbd002329f7",
+      "count": 1
+    },
+    {
+      "sender_id": "91a765ba-d5be-4685-ae47-b009e9e01828",
+      "count": 2
+    },
+    {
+      "sender_id": "17036028-90fa-428a-a450-f0160ba8b362",
+      "count": 1
+    },
+    {
+      "sender_id": "df6d2dcc-9ac1-47b5-b9ce-72e9a96681c0",
+      "count": 2
+    }
+  ]
+
+⏺ Perfect! Now I have a complete picture of your database. Let me analyze what we've discovered and identify what needs to be addressed for Phase 1.
+
+  📊 Database Analysis Summary
+
+  ✅ Current State Confirmed:
+
+  1. Messages table exists with:
+    - All IDs are UUIDs (id, session_id, sender_id)
+    - Has proper indexes on session_id and timestamp
+    - Real-time is enabled
+    - Uses RLS policies (but simplified, not using auth.uid())
+    - Has foreign key to sessions table
+  2. Message_reactions table does NOT exist (confirmed)
+  3. Missing columns for edit/delete tracking:
+    - is_edited ❌
+    - edited_at ❌
+    - is_deleted ❌
+    - deleted_at ❌
+
+  🔍 Key Discoveries:
+
+  1. User IDs are UUIDs: All sender_ids are proper UUIDs, not text strings
+  2. No Auth System: RLS policies don't use auth.uid() - they use simple checks
+  3. Real-time Active: Both messages and session_participants tables have real-time enabled
+
+  📝 Updated Migration SQL for Phase 1
+
+  Based on this audit, here's the corrected migration that will work with your setup:
+
+  -- Forward Migration: Add message interaction support
+  BEGIN;
+
+  -- Add edit/delete tracking to messages table
+  ALTER TABLE public.messages
+  ADD COLUMN IF NOT EXISTS is_edited BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS edited_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS is_deleted BOOLEAN DEFAULT false,
+  ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ;
+
+  -- Create message_reactions table
+  CREATE TABLE IF NOT EXISTS public.message_reactions (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    message_id UUID NOT NULL REFERENCES public.messages(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL,  -- Changed from user_id to match your UUID pattern
+    emoji VARCHAR(10) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT unique_user_message_emoji UNIQUE(message_id, user_id, emoji)
+  );
+
+  -- Create indexes for performance
+  CREATE INDEX IF NOT EXISTS idx_message_reactions_message_id
+    ON public.message_reactions(message_id);
+  CREATE INDEX IF NOT EXISTS idx_message_reactions_user_id
+    ON public.message_reactions(user_id);
+  CREATE INDEX IF NOT EXISTS idx_messages_is_deleted
+    ON public.messages(is_deleted) WHERE is_deleted = false;
+
+  -- Enable RLS
+  ALTER TABLE public.message_reactions ENABLE ROW LEVEL SECURITY;
+
+  -- RLS Policies for message_reactions (updated to match your pattern)
+  CREATE POLICY "Users can view reactions on messages in their session"
+    ON public.message_reactions FOR SELECT
+    USING (
+      EXISTS (
+        SELECT 1 FROM public.messages m
+        WHERE m.id = message_reactions.message_id
+        AND m.session_id IS NOT NULL
+      )
+    );
+
+  CREATE POLICY "Users can add their own reactions"
+    ON public.message_reactions FOR INSERT
+    WITH CHECK (user_id IS NOT NULL);
+
+  CREATE POLICY "Users can remove their own reactions"
+    ON public.message_reactions FOR DELETE
+    USING (user_id IS NOT NULL);
+
+  -- Enable real-time for reactions
+  ALTER PUBLICATION supabase_realtime ADD TABLE public.message_reactions;
+
+  COMMIT;
+
+  🔄 Rollback Migration
+
+  -- Rollback Migration: Remove message interaction support
+  BEGIN;
+
+  -- Remove real-time subscription
+  ALTER PUBLICATION supabase_realtime DROP TABLE IF EXISTS public.message_reactions;
+
+  -- Drop policies
+  DROP POLICY IF EXISTS "Users can view reactions on messages in their session" ON public.message_reactions;
+  DROP POLICY IF EXISTS "Users can add their own reactions" ON public.message_reactions;
+  DROP POLICY IF EXISTS "Users can remove their own reactions" ON public.message_reactions;
+
+  -- Drop reactions table
+  DROP TABLE IF EXISTS public.message_reactions;
+
+  -- Remove columns from messages
+  ALTER TABLE public.messages
+  DROP COLUMN IF EXISTS is_edited,
+  DROP COLUMN IF EXISTS edited_at,
+  DROP COLUMN IF EXISTS is_deleted,
+  DROP COLUMN IF EXISTS deleted_at;
+
+  COMMIT;
+
+  ⚠️ Important Considerations:
+
+  1. UUID Consistency: Since all your IDs are UUIDs, the user_id in reactions will also be UUID
+  2. No Auth Dependency: I've removed auth.uid() references since your app doesn't use Supabase Auth
+  3. Simple RLS: The policies now match your existing pattern - just checking for non-null values
+  4. Testing Required: After migration, we should verify:
+    - Real-time subscriptions work for reactions
+    - RLS policies allow proper access
+    - Foreign key cascade works correctly
+
+  🤔 Questions Before Proceeding:
+
+  1. User ID Generation: How does your app generate user IDs? I see UUIDs but need to understand when/how they're created
+  2. Session Participants: Should we check the session_participants table structure too?
+  3. Migration Method: How do you prefer to run migrations?
+    - Supabase Dashboard SQL Editor?
+    - Migration files through Supabase CLI?
+    - Direct SQL execution?
+
+  Should we also check the session_participants table schema to ensure our RLS policies will work correctly?
