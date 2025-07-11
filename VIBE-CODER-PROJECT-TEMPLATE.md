@@ -318,8 +318,75 @@ npx playwright test --project=chromium
 - Red console errors with clear messages are extremely helpful for debugging
 - Clean up console logs later, but prioritize visibility during development
 
-#### 3. Manual Testing
-- Only after automated tests pass
+#### 3. UI/UX Testing (CRITICAL for UI changes)
+
+**🚨 MANDATORY: Always test on production URL after Vercel deployment**
+
+```typescript
+// ALWAYS use production URL - local dev is unreliable for UI testing
+const PRODUCTION_URL = 'https://your-app.vercel.app'
+
+test.use({
+  headless: true, // Never interrupt user's screen
+  viewport: { width: 375, height: 812 }, // iPhone 13 baseline
+})
+```
+
+**Screenshot Analysis Requirements:**
+```typescript
+test('UI improvement validation', async ({ page }) => {
+  await page.goto(PRODUCTION_URL)
+  await page.waitForLoadState('networkidle')
+  
+  // Take screenshots for manual analysis
+  await page.screenshot({ 
+    path: 'test-results/feature-validation.png',
+    fullPage: true
+  })
+  
+  // Test both light and dark modes
+  await page.evaluate(() => {
+    document.documentElement.classList.add('dark')
+  })
+  
+  await page.screenshot({ 
+    path: 'test-results/feature-dark-mode.png',
+    fullPage: true
+  })
+})
+```
+
+**Critical UI Validation Checklist:**
+- [ ] **Text Visibility**: All text fully visible (no truncation like "Joi" instead of "Join")
+- [ ] **Button Accessibility**: All buttons clickable and properly sized
+- [ ] **Color Contrast**: No gray-on-gray, proper contrast in both themes
+- [ ] **Layout Alignment**: Consistent spacing, no overlapping elements
+- [ ] **Cross-Device**: Test mobile (375px), tablet (768px), desktop (1920px)
+
+**UI Testing Deployment Flow:**
+```bash
+# 1. Deploy to production for testing
+npx vercel --prod
+
+# 2. Run UI validation tests
+npx playwright test tests/ui-validation.spec.ts --project=chromium
+
+# 3. Manually analyze screenshots for:
+#    - Text truncation issues
+#    - Button visibility problems
+#    - Color contrast failures
+#    - Layout alignment issues
+```
+
+**⚠️ UI Testing Failures:**
+These require immediate fixing before marking work complete:
+- **Text Truncation**: Any text cut off or hidden
+- **Button Invisibility**: Buttons not visible or accessible  
+- **Poor Contrast**: Gray-on-gray or unreadable text
+- **Layout Breaks**: Overlapping or misaligned elements
+
+#### 4. Manual Testing
+- Only after automated tests AND screenshot analysis pass
 - Focus on "feel" and performance
 
 ---

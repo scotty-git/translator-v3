@@ -148,20 +148,20 @@ export function HomeScreen() {
                 size="md"
                 variant="outline"
                 disabled={isCreatingSession}
-                className="flex flex-row items-center justify-center gap-2 h-auto py-4 bg-gray-50 dark:bg-gray-700 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-900 dark:text-gray-100 transition-colors"
+                className="flex flex-row items-center justify-center gap-2 h-12 px-4 bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
               >
                 <UserPlus className="h-4 w-4" />
-                <span className="text-sm">{t('home.startSession', 'Start Session')}</span>
+                <span className="text-sm font-medium">{t('home.startSession', 'Start Session')}</span>
               </Button>
               
               <Button
                 onClick={() => setShowJoinInput(!showJoinInput)}
                 size="md"
                 variant="outline"
-                className="flex flex-row items-center justify-center gap-2 h-auto py-4 bg-gray-50 dark:bg-gray-700 border-blue-200 dark:border-blue-800 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-gray-900 dark:text-gray-100 transition-colors"
+                className="flex flex-row items-center justify-center gap-2 h-12 px-4 bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
               >
                 <Hash className="h-4 w-4" />
-                <span className="text-sm">{t('home.joinSession', 'Join Session')}</span>
+                <span className="text-sm font-medium">{t('home.joinSession', 'Join Session')}</span>
               </Button>
             </div>
 
@@ -178,14 +178,14 @@ export function HomeScreen() {
                     onChange={(e) => setJoinCode(e.target.value.replace(/\D/g, ''))}
                     onKeyDown={handleInputKeyDown}
                     placeholder="Enter 4-digit code"
-                    className="h-10 px-4 py-2 text-center text-lg font-mono border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="h-12 px-4 py-2 text-center text-lg font-mono border border-blue-300 dark:border-blue-600 rounded-md bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     data-testid="join-code-input"
                   />
                   <Button
                     onClick={handleJoinSession}
                     disabled={isJoiningSession || joinCode.length !== 4}
                     size="md"
-                    className="h-10 px-6 whitespace-nowrap"
+                    className="h-12 px-6 whitespace-nowrap font-medium"
                   >
                     {isJoiningSession ? 'Joining...' : 'Join'}
                   </Button>
