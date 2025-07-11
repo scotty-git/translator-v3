@@ -69,6 +69,10 @@ export interface Database {
           timestamp: string
           is_delivered: boolean
           sequence_number: number
+          is_edited: boolean
+          edited_at: string | null
+          is_deleted: boolean
+          deleted_at: string | null
         }
         Insert: {
           id?: string
@@ -80,6 +84,10 @@ export interface Database {
           timestamp?: string
           is_delivered?: boolean
           sequence_number?: number
+          is_edited?: boolean
+          edited_at?: string | null
+          is_deleted?: boolean
+          deleted_at?: string | null
         }
         Update: {
           id?: string
@@ -91,6 +99,33 @@ export interface Database {
           timestamp?: string
           is_delivered?: boolean
           sequence_number?: number
+          is_edited?: boolean
+          edited_at?: string | null
+          is_deleted?: boolean
+          deleted_at?: string | null
+        }
+      }
+      message_reactions: {
+        Row: {
+          id: string
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          user_id: string
+          emoji: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          user_id?: string
+          emoji?: string
+          created_at?: string
         }
       }
     }
@@ -223,6 +258,10 @@ export interface SessionMessage {
   timestamp: string
   is_delivered: boolean
   sequence_number: number
+  is_edited?: boolean
+  edited_at?: string | null
+  is_deleted?: boolean
+  deleted_at?: string | null
 }
 
 export interface QueuedSessionMessage {
@@ -239,4 +278,13 @@ export interface QueuedSessionMessage {
   status: 'pending' | 'sending' | 'sent' | 'failed'
   retryCount: number
   lastAttempt: Date
+}
+
+// Database reaction type (matches database schema)
+export interface DatabaseReaction {
+  id: string
+  message_id: string
+  user_id: string
+  emoji: string
+  created_at: string
 }
