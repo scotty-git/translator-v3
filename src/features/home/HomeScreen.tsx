@@ -148,20 +148,20 @@ export function HomeScreen() {
                 size="md"
                 variant="outline"
                 disabled={isCreatingSession}
-                className="flex flex-row items-center justify-center gap-2 h-12 px-4 min-w-[120px] bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
+                className="flex flex-col items-center justify-center gap-1 h-12 px-4 min-w-[120px] bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
               >
                 <UserPlus className="h-4 w-4" />
-                <span className="text-sm font-medium">{t('home.startSession', 'Start Session')}</span>
+                <span className="text-xs font-medium">{t('home.startSession', 'Start Session')}</span>
               </Button>
               
               <Button
                 onClick={() => setShowJoinInput(!showJoinInput)}
                 size="md"
                 variant="outline"
-                className="flex flex-row items-center justify-center gap-2 h-12 px-4 min-w-[120px] bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
+                className="flex flex-col items-center justify-center gap-1 h-12 px-4 min-w-[120px] bg-blue-600 hover:bg-blue-700 focus:bg-blue-700 text-white border-blue-600 hover:border-blue-700 transition-colors"
               >
                 <Hash className="h-4 w-4" />
-                <span className="text-sm font-medium">{t('home.joinSession', 'Join Session')}</span>
+                <span className="text-xs font-medium">{t('home.joinSession', 'Join Session')}</span>
               </Button>
             </div>
 
@@ -171,7 +171,7 @@ export function HomeScreen() {
                 <label htmlFor="join-code-input" className="block text-sm font-medium text-gray-900 dark:text-gray-100 text-center">
                   Enter 4-digit session code
                 </label>
-                <div className="grid grid-cols-[1fr_auto] gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <input
                     id="join-code-input"
                     type="text"
@@ -190,7 +190,7 @@ export function HomeScreen() {
                     onClick={handleJoinSession}
                     disabled={isJoiningSession || joinCode.length !== 4}
                     size="md"
-                    className="h-12 px-6 whitespace-nowrap font-medium min-w-[100px]"
+                    className="h-12 px-6 whitespace-nowrap font-medium"
                     aria-label={isJoiningSession ? 'Joining session...' : 'Join session with code'}
                   >
                     {isJoiningSession ? 'Joining...' : 'Join'}

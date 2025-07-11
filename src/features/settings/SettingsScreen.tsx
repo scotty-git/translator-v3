@@ -12,10 +12,7 @@ import {
   Languages, 
   Palette, 
   Volume2, 
-  Shield, 
   Bell, 
-  Download, 
-  Trash2,
   Settings,
   Moon,
   Sun,
@@ -86,31 +83,6 @@ export function SettingsScreen() {
     }
   }
 
-  const handleClearData = () => {
-    if (confirm(t('settings.clearDataConfirm'))) {
-      UserManager.clearAll()
-      // Reset all states to defaults
-      setAudioQuality('high')
-      setHapticFeedback(true)
-      setNotifications(true)
-      setAutoSave(true)
-      setReducedMotion(false)
-      setLanguage('en')
-      setTheme('system')
-    }
-  }
-
-  const handleExportData = () => {
-    const userData = UserManager.getAllPreferences()
-    const dataStr = JSON.stringify(userData, null, 2)
-    const dataBlob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(dataBlob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = 'translator-settings.json'
-    link.click()
-    URL.revokeObjectURL(url)
-  }
 
   const languages = [
     { code: 'en', name: t('settings.languages.english'), flag: '🇺🇸' },
@@ -376,35 +348,6 @@ export function SettingsScreen() {
       </Card>
 
 
-      {/* Data Management */}
-      <Card className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Shield className="h-5 w-5 text-red-600 dark:text-red-400" />
-          <h2 className="font-semibold text-gray-900 dark:text-gray-100">{t('settings.dataManagement')}</h2>
-        </div>
-        
-        <div className="space-y-2">
-          <Button
-            onClick={handleExportData}
-            variant="secondary"
-            fullWidth
-            className="justify-start gap-2"
-          >
-            <Download className="h-4 w-4" />
-            {t('settings.exportData')}
-          </Button>
-          
-          <Button
-            onClick={handleClearData}
-            variant="ghost"
-            fullWidth
-            className="justify-start gap-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
-          >
-            <Trash2 className="h-4 w-4" />
-            {t('settings.clearData')}
-          </Button>
-        </div>
-      </Card>
 
       {/* App Information */}
       <Card className="space-y-2">
