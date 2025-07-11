@@ -1,5 +1,13 @@
 # Phase 2c: Refactor SessionTranslator
 
+## 🚨 CRITICAL WARNING: UI PRESERVATION REQUIRED
+
+**ZERO UI CHANGES ALLOWED** - This is a pure architectural refactor. The user interface must look and behave exactly the same as before.
+
+**Visual Regression Testing** - All baseline screenshots must match exactly. Any UI changes will be rejected.
+
+**Enforcement** - Pre-commit hooks and validation scripts will prevent UI changes from being committed.
+
 ## 🎯 Vibe Check
 
 **What we're doing**: Cleaning up SessionTranslator to be a pure orchestrator that combines SoloTranslator with real-time services.
@@ -17,6 +25,8 @@
 - [ ] Session features work perfectly
 - [ ] Better separation of concerns
 - [ ] Easier to understand and debug
+- [ ] **🚨 ZERO UI CHANGES ALLOWED** - Visual regression tests must pass
+- [ ] **🚨 UI CONTRACT PRESERVED** - All baseline screenshots must match exactly
 
 ## 🚀 Pre-Flight Checklist
 
@@ -25,6 +35,8 @@ Before starting, verify:
 - [ ] All Phase 1 services are working
 - [ ] Dev server is running: `npm run dev`
 - [ ] All tests pass: `npm test`
+- [ ] **🚨 CRITICAL: Take baseline screenshots**: `npm run ui:baseline`
+- [ ] **🚨 CRITICAL: Validate current UI**: `npm run ui:validate`
 - [ ] Create safety commit: `git add -A && git commit -m "chore: pre-phase-2c checkpoint"`
 - [ ] Create git tag: `git tag pre-phase-2c`
 
@@ -147,12 +159,18 @@ test.describe('Phase 2c: SessionTranslator Refactor Validation', () => {
 
 ## 📝 Implementation Steps
 
-### Step 1: Analyze current SessionTranslator
+### Step 1: **🚨 MANDATORY UI PRESERVATION CHECK**
+```bash
+# Before any code changes, validate current UI state
+npm run ui:validate
+```
+
+### Step 2: Analyze current SessionTranslator
 1. Identify what's truly session-specific
 2. Note what duplicates SoloTranslator functionality
 3. Plan the refactor approach
 
-### Step 2: Create enhanced props for SoloTranslator
+### Step 3: Create enhanced props for SoloTranslator
 ```typescript
 interface SessionEnhancedProps {
   // Base translator props
@@ -167,7 +185,14 @@ interface SessionEnhancedProps {
 }
 ```
 
-### Step 3: Refactor SessionTranslator as orchestrator
+### Step 4: **🚨 CRITICAL: Preserve exact UI layout**
+- Copy existing HTML structure exactly
+- Maintain all CSS classes and styling
+- Keep all button positions and sizes
+- Preserve all interactive elements
+- **NO visual changes allowed**
+
+### Step 5: Refactor SessionTranslator as orchestrator
 1. Remove duplicate translation logic
 2. Use SoloTranslator as main component
 3. Add session services on top:
@@ -176,44 +201,63 @@ interface SessionEnhancedProps {
    - SessionStateManager for session state
    - RealtimeConnection for connection management
 
-### Step 4: Implement message synchronization
+### Step 6: Implement message synchronization
 1. Intercept messages from SoloTranslator
 2. Send through MessageSyncService
 3. Receive partner messages
 4. Add to shared message queue
 
-### Step 5: Add session UI enhancements
+### Step 7: Add session UI enhancements
 1. Session header with code and status
 2. Partner online/offline indicator
 3. Connection status display
 4. Activity indicators from PresenceService
 
-### Step 6: Handle cleanup properly
+### Step 8: **🚨 MANDATORY UI VALIDATION**
+```bash
+# After each major change, validate UI preservation
+npm run ui:validate
+```
+
+### Step 9: Handle cleanup properly
 1. Clean up services on unmount
 2. Clear session state
 3. Unsubscribe from all channels
 
-### Step 7: Update imports and routing
+### Step 10: Update imports and routing
 Ensure App.tsx uses refactored SessionTranslator
 
 ## ✅ Validation Steps
 
 After implementation:
 
-1. **Session Testing**
+1. **🚨 MANDATORY UI REGRESSION CHECK**
+   ```bash
+   # CRITICAL: Run this first - must pass before continuing
+   npm run ui:validate
+   ```
+
+2. **Visual Regression Testing**
+   ```bash
+   # Full visual regression test suite
+   npm run test:visual
+   ```
+
+3. **Session Testing**
    ```bash
    npx playwright test tests/refactor/phase-2c-validation.spec.ts
    ```
 
-2. **Service Integration**
+4. **Service Integration**
    - [ ] All services initialize correctly
    - [ ] Clean cleanup on exit
    - [ ] No memory leaks
 
-3. **Code Quality**
+5. **Code Quality**
    - [ ] No duplicate logic with SoloTranslator
    - [ ] Clean service orchestration
    - [ ] Good error handling
+   - [ ] **🚨 ZERO UI CHANGES** - All screenshots match baselines
 
 ## 🔄 Rollback Plan
 

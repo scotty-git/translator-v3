@@ -1,5 +1,13 @@
 # Phase 2b: Build New SoloTranslator Component
 
+## 🚨 CRITICAL WARNING: UI PRESERVATION REQUIRED
+
+**ZERO UI CHANGES ALLOWED** - This is a pure architectural refactor. The user interface must look and behave exactly the same as before.
+
+**Visual Regression Testing** - All baseline screenshots must match exactly. Any UI changes will be rejected.
+
+**Enforcement** - Pre-commit hooks and validation scripts will prevent UI changes from being committed.
+
 ## 🎯 Vibe Check
 
 **What we're doing**: Creating a clean, focused SoloTranslator that only handles single-device translation, using our extracted services.
@@ -17,6 +25,8 @@
 - [ ] All solo mode features work perfectly
 - [ ] Better performance than before
 - [ ] Passes all existing solo mode tests
+- [ ] **🚨 ZERO UI CHANGES ALLOWED** - Visual regression tests must pass
+- [ ] **🚨 UI CONTRACT PRESERVED** - All baseline screenshots must match exactly
 
 ## 🚀 Pre-Flight Checklist
 
@@ -25,6 +35,7 @@ Before starting, verify:
 - [ ] All services from Phase 1 are working
 - [ ] Dev server is running: `npm run dev`
 - [ ] All tests pass: `npm test`
+- [ ] **🚨 CRITICAL: Take baseline screenshots**: `npm run ui:baseline`
 - [ ] Create safety commit: `git add -A && git commit -m "chore: pre-phase-2b checkpoint"`
 - [ ] Create git tag: `git tag pre-phase-2b`
 
@@ -138,10 +149,16 @@ test.describe('Phase 2b: SoloTranslator Validation', () => {
 
 ## 📝 Implementation Steps
 
-### Step 1: Create new SoloTranslator component
+### Step 1: **🚨 MANDATORY UI PRESERVATION CHECK**
+```bash
+# Before any code changes, validate current UI state
+npm run ui:validate
+```
+
+### Step 2: Create new SoloTranslator component
 Create `src/features/translator/solo/SoloTranslator.tsx`
 
-### Step 2: Import necessary services and components
+### Step 3: Import necessary services and components
 ```typescript
 import { MessageQueueService } from '@/services/queues/MessageQueueService'
 import { TranslationPipeline } from '@/services/pipeline/TranslationPipeline'
@@ -153,7 +170,7 @@ import {
 } from '../shared/components'
 ```
 
-### Step 3: Define clean props interface
+### Step 4: Define clean props interface
 ```typescript
 interface SoloTranslatorProps {
   messageQueue?: IMessageQueue
@@ -161,7 +178,7 @@ interface SoloTranslatorProps {
 }
 ```
 
-### Step 4: Implement core functionality
+### Step 5: Implement core functionality
 Focus on:
 1. Message display from queue
 2. Audio recording UI
@@ -170,7 +187,14 @@ Focus on:
 5. Mode toggle
 6. Error handling
 
-### Step 5: Remove all session-related code
+### Step 6: **🚨 CRITICAL: Preserve exact UI layout**
+- Copy existing HTML structure exactly
+- Maintain all CSS classes and styling
+- Keep all button positions and sizes
+- Preserve all interactive elements
+- **NO visual changes allowed**
+
+### Step 7: Remove all session-related code
 Do NOT include:
 - Session status
 - Partner activity
@@ -178,39 +202,58 @@ Do NOT include:
 - Connection states
 - Any session UI
 
-### Step 6: Optimize component size
+### Step 8: Optimize component size
 Target: Under 400 lines by:
 - Using shared components
 - Delegating to services
 - Minimal state management
 - Clean, focused methods
 
-### Step 7: Update routing
+### Step 9: Update routing
 Update App.tsx to use new SoloTranslator for solo route
 
-### Step 8: Verify all tests pass
+### Step 10: **🚨 MANDATORY UI VALIDATION**
+```bash
+# After each major change, validate UI preservation
+npm run ui:validate
+```
+
+### Step 11: Verify all tests pass
 Ensure existing solo mode tests work with new component
 
 ## ✅ Validation Steps
 
 After implementation:
 
-1. **Component Size Check**
+1. **🚨 MANDATORY UI REGRESSION CHECK**
+   ```bash
+   # CRITICAL: Run this first - must pass before continuing
+   npm run ui:validate
+   ```
+
+2. **Component Size Check**
    ```bash
    wc -l src/features/translator/solo/SoloTranslator.tsx
    # Should be < 400 lines
    ```
 
-2. **Solo Mode Testing**
+3. **Solo Mode Testing**
    ```bash
    npx playwright test tests/refactor/phase-2b-validation.spec.ts
    ```
 
-3. **Code Quality Check**
+4. **Visual Regression Testing**
+   ```bash
+   # Full visual regression test suite
+   npm run test:visual
+   ```
+
+5. **Code Quality Check**
    - [ ] No session imports
    - [ ] Clean service usage
    - [ ] Proper error handling
    - [ ] Good TypeScript types
+   - [ ] **🚨 ZERO UI CHANGES** - All screenshots match baselines
 
 ## 🔄 Rollback Plan
 

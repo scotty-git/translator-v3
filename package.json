@@ -19,7 +19,14 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:visual": "playwright test --config=playwright.visual.config.ts",
+    "test:visual:update": "UPDATE_SNAPSHOTS=true playwright test --config=playwright.visual.config.ts --update-snapshots",
+    "test:visual:debug": "playwright test --config=playwright.visual.config.ts --debug",
+    "test:visual:report": "playwright show-report test-results/visual-regression-report",
+    "ui:validate": "npm run test:visual -- --grep='UI Contract Validation'",
+    "ui:baseline": "npm run test:visual:update",
+    "setup:git-hooks": "node scripts/setup-git-hooks.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.3",
