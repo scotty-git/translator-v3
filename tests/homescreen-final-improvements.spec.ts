@@ -163,7 +163,7 @@ test.describe('HomeScreen Final UI/UX Improvements', () => {
       await page.click('button:has-text("Join Session")')
       await page.waitForTimeout(500)
       
-      const joinModalButton = page.locator('button:has-text("Join")')
+      const joinModalButton = page.locator('button:has-text("Join")').nth(1) // Modal button
       await expect(joinModalButton).toBeVisible()
       
       // Check text truncation
@@ -372,7 +372,7 @@ test.describe('HomeScreen After Improvements Validation', () => {
     await page.click('button:has-text("Join Session")')
     await page.waitForTimeout(500)
     
-    const joinModalButton = page.locator('button:has-text("Join")')
+    const joinModalButton = page.locator('button:has-text("Join")').nth(1) // Modal button
     await expect(joinModalButton).toBeVisible()
     
     // 3. Text truncation check
@@ -386,7 +386,7 @@ test.describe('HomeScreen After Improvements Validation', () => {
     
     // 5. Modal alignment
     const gridButtons = page.locator('.grid.grid-cols-2').first()
-    const modalContainer = page.locator('div:has(input[data-testid="join-code-input"])')
+    const modalContainer = page.locator('.grid.grid-cols-\\[1fr_auto\\]').first()
     
     const gridBounds = await gridButtons.boundingBox()
     const modalBounds = await modalContainer.boundingBox()
