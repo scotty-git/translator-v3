@@ -41,11 +41,12 @@ import { accessibilityManager } from '@/lib/accessibility/AccessibilityManager'
 import { pwaManager } from '@/lib/pwa/PWAManager'
 import { UserManager } from '@/lib/user/UserManager'
 import { MessageQueueService } from '@/services/queues/MessageQueueService'
+import SoloTranslator from '@/features/translator/solo/SoloTranslator'
 
 // Solo translator with injected MessageQueueService
 function SoloTranslatorWrapper() {
   const messageQueueService = new MessageQueueService()
-  return <SingleDeviceTranslator messageQueueService={messageQueueService} />
+  return <SoloTranslator messageQueueService={messageQueueService} />
 }
 
 // Loading fallback component for lazy loaded routes
