@@ -47,6 +47,14 @@ export class PersistentAudioManager {
   private permissionDenied: boolean = false
   private isIOS: boolean = false
   
+  // Audio level tracking for silence detection
+  private audioLevels: number[] = []
+  private silenceThresholds = {
+    avgLevel: 0.015,    // Average level threshold (below typical ambient noise)
+    maxLevel: 0.04,     // Maximum level threshold (must have some audio peaks for real speech)
+    minSamples: 10      // Minimum number of samples required for analysis
+  }
+  
   // Event callbacks
   public onStateChange?: (state: RecorderState) => void
   public onAudioData?: (audioLevel: number) => void
@@ -258,6 +266,9 @@ export class PersistentAudioManager {
       const normalizationFactor = this.isIOS ? 30 : 40
       const normalizedLevel = Math.min(rms / normalizationFactor, 1)
       
+      // Store audio level for silence detection
+      this.audioLevels.push(normalizedLevel)
+      
       // Send to callback for visualization
       if (this.onAudioData) {
         this.onAudioData(normalizedLevel)
@@ -309,8 +320,9 @@ export class PersistentAudioManager {
           this.mediaRecorder = new MediaRecorder(this.audioStream!, mediaRecorderOptions)
           console.log('🎙️ MediaRecorder created with persistent stream')
           
-          // Reset recording chunks
+          // Reset recording chunks and audio levels
           this.recordingChunks = []
+          this.audioLevels = []
           this.startTime = Date.now()
           
           // Set up data collection handler
@@ -391,6 +403,11 @@ export class PersistentAudioManager {
         throw new Error(`Recording too short: ${duration.toFixed(2)}s (minimum: ${minDuration}s)`)
       }
       
+      // Check for silent recording before processing
+      if (this.isSilentRecording()) {
+        throw new Error('No speech detected')
+      }
+      
       // Combine all chunks into single blob
       const audioBlob = new Blob(this.recordingChunks, {
         type: this.supportedFormat!.mimeType || 'audio/webm'
@@ -432,6 +449,39 @@ export class PersistentAudioManager {
     }
   }
   
+  /**
+   * Check if the recording is likely silent based on audio levels
+   */
+  private isSilentRecording(): boolean {
+    // Require minimum number of samples for reliable analysis
+    if (this.audioLevels.length < this.silenceThresholds.minSamples) {
+      console.log('🔇 Insufficient audio samples for silence detection:', this.audioLevels.length)
+      return true
+    }
+    
+    // Calculate average and maximum audio levels
+    const avgLevel = this.audioLevels.reduce((a, b) => a + b, 0) / this.audioLevels.length
+    const maxLevel = Math.max(...this.audioLevels)
+    
+    console.log('🔇 Silence detection analysis:', {
+      samples: this.audioLevels.length,
+      avgLevel: avgLevel.toFixed(4),
+      maxLevel: maxLevel.toFixed(4),
+      thresholds: this.silenceThresholds
+    })
+    
+    // Recording is considered silent if both average and max levels are below thresholds
+    const isSilent = avgLevel < this.silenceThresholds.avgLevel && maxLevel < this.silenceThresholds.maxLevel
+    
+    if (isSilent) {
+      console.log('🔇 Silent recording detected - will not send to OpenAI')
+    } else {
+      console.log('✅ Audio detected - proceeding to transcription')
+    }
+    
+    return isSilent
+  }
+
   /**
    * Validate audio blob (like working project)
    */

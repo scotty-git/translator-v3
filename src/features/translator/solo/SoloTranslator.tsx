@@ -419,6 +419,10 @@ export function SoloTranslator({
         setError('Please allow microphone access to record audio.')
       } else if (errorMessage.includes('Recording too short')) {
         setError('Recording too short. Please hold the button longer (minimum 0.5 seconds).')
+      } else if (errorMessage.includes('No speech detected')) {
+        setError('Try again, no audio detected')
+        // Auto-dismiss after 1 second
+        setTimeout(() => setError(null), 1000)
       } else if (errorMessage.includes('Invalid audio blob')) {
         setError('Recording failed. Please try again and hold the button longer.')
       } else {
