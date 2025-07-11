@@ -1,0 +1,1 @@
+export { default as SoloTranslator } from './SoloTranslator'
