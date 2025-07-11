@@ -27,6 +27,7 @@ export class MessageSyncService {
   private retryTimeouts: Map<string, NodeJS.Timeout> = new Map()
   private isProcessingQueue = false
   private sequenceNumber = 0
+  private processedMessageIds: Set<string> = new Set() // Track processed messages to prevent duplicates
   
   // Event listeners
   private onMessageReceived?: (message: SessionMessage) => void
@@ -42,6 +43,52 @@ export class MessageSyncService {
   private presenceService?: PresenceService
   private realtimeConnection?: RealtimeConnection
 
+  /**
+   * Load existing messages from database when joining a session
+   * This ensures users see the full conversation history
+   */
+  private async loadMessageHistory(sessionId: string): Promise<void> {
+    console.log('📚 [MessageSyncService] Loading message history for session:', sessionId)
+    
+    try {
+      const { data: messages, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('sequence_number', { ascending: true })
+      
+      if (error) {
+        console.error('❌ [MessageSyncService] Failed to load message history:', error)
+        return
+      }
+      
+      if (!messages || messages.length === 0) {
+        console.log('📭 [MessageSyncService] No historical messages found')
+        return
+      }
+      
+      console.log(`📚 [MessageSyncService] Found ${messages.length} historical messages`)
+      
+      // Process each historical message
+      messages.forEach(message => {
+        // Skip our own messages (we already have them locally)
+        if (message.sender_id !== this.currentUserId) {
+          console.log('📥 [MessageSyncService] Processing historical message:', {
+            messageId: message.id,
+            senderId: message.sender_id,
+            timestamp: message.timestamp
+          })
+          
+          // Use the existing handler to process the message
+          this.handleIncomingMessage(message as SessionMessage)
+        }
+      })
+      
+      console.log('✅ [MessageSyncService] Message history loaded successfully')
+    } catch (error) {
+      console.error('❌ [MessageSyncService] Error loading message history:', error)
+    }
+  }
 
   /**
    * Queue a message for sending when connection is available
@@ -218,13 +265,17 @@ export class MessageSyncService {
       // Clean up existing subscriptions (but preserve session info)
       await this.cleanupSubscriptions()
 
+      // NEW: Load message history BEFORE setting up subscription
+      // This ensures we don't miss any messages sent before we joined
+      await this.loadMessageHistory(sessionId)
+
       // Set up message subscription using RealtimeConnection
       await this.setupMessageSubscription(sessionId)
 
       // Process any queued messages
       await this.processMessageQueue()
 
-      console.log('✅ [MessageSyncService] Session initialized successfully')
+      console.log('✅ [MessageSyncService] Session initialized with history')
       
     } catch (error) {
       console.error('❌ [MessageSyncService] Failed to initialize session:', error)
@@ -327,6 +378,13 @@ export class MessageSyncService {
       return
     }
 
+    // NEW: Check if we've already processed this message ID
+    // This prevents duplicates between history load and real-time events
+    if (this.processedMessageIds.has(message.id)) {
+      console.log('⏭️ [MessageSyncService] Skipping duplicate message:', message.id)
+      return
+    }
+
     console.log('📥 [MessageSyncService] Processing incoming message:', {
       messageId: message.id,
       senderId: message.sender_id,
@@ -334,6 +392,10 @@ export class MessageSyncService {
       translatedText: message.translated_text?.substring(0, 100)
     })
 
+    // Mark this message as processed
+    this.processedMessageIds.add(message.id)
+
+    // Deliver the message
     this.onMessageReceived?.(message)
   }
 
@@ -416,6 +478,9 @@ export class MessageSyncService {
     // Clear message queue
     this.messageQueue.clear()
     this.sequenceNumber = 0
+    
+    // Clear processed messages tracking
+    this.processedMessageIds.clear()
     
     // Clear event handlers
     this.onMessageReceived = undefined
