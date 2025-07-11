@@ -548,6 +548,41 @@ resolve: {
 
 ## 🔄 Real-time & Session Issues
 
+### Messages Not Loading When Joining Session
+
+**Problem**: User B joins an existing session but doesn't see messages that User A sent before they joined
+
+**Diagnosis**:
+```javascript
+// Check if message history is being loaded
+console.log('Message count:', document.querySelectorAll('[data-testid="message-bubble"]').length)
+```
+
+**Solutions**:
+
+**1. Verify MessageSyncService is Loading History**:
+```javascript
+// Check console for history loading logs
+// Should see: "📚 [MessageSyncService] Loading message history for session: [sessionId]"
+// And: "✅ [MessageSyncService] Message history loaded successfully"
+```
+
+**2. Check Database for Messages**:
+```sql
+-- In Supabase SQL Editor
+SELECT * FROM messages 
+WHERE session_id = 'YOUR_SESSION_ID'
+ORDER BY sequence_number ASC;
+```
+
+**3. Force Reload History**:
+```javascript
+// If history not loading, try rejoining the session
+window.location.reload()
+```
+
+**Note**: As of July 11, 2025, MessageSyncService includes `loadMessageHistory()` method that prevents this issue.
+
 ### Messages Not Syncing
 
 **Problem**: Messages don't appear for other users in real-time

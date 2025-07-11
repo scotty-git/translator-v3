@@ -16,7 +16,8 @@ Session Mode enables two users to connect their devices for real-time translatio
 1. From the home screen, tap "Join Session"
 2. Enter the 4-digit code shared by the session creator
 3. Tap "Join" to connect to the session
-4. Both users are now connected and can start translating
+4. All previous messages from the session are loaded automatically
+5. Both users are now connected and can continue the conversation
 
 ### Session Lifecycle
 - Sessions are active for 12 hours from creation
@@ -54,6 +55,14 @@ Sessions are managed through three Supabase tables:
 - `timestamp`: Message timestamp
 - `is_delivered`: Delivery status
 - `sequence_number`: For message ordering
+
+### Message History Loading
+When a user joins an existing session, MessageSyncService automatically:
+1. Queries all messages for that session from the database
+2. Filters out messages from the joining user (they already have their own)
+3. Processes messages in sequence_number order to maintain chronology
+4. Prevents duplicate messages using a processedMessageIds Set
+5. Seamlessly integrates historical messages with real-time updates
 
 ### Services
 

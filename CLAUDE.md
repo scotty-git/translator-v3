@@ -368,6 +368,7 @@ npx vercel --prod
    - **Critical**: Proper channel cleanup requires both `unsubscribe()` AND `removeChannel()`
    - **FIXED July 10**: Use deterministic channel names `presence:${sessionId}` (removed timestamps)
    - **Critical**: Validate session ID on all incoming messages
+   - **NEW July 11**: Loads message history when joining existing sessions via `loadMessageHistory()`
 
 2. **Activity Indicators System:**
    - **Recording State**: Shows when partner is actively recording
@@ -401,6 +402,7 @@ npx vercel --prod
 4. **Session Flow:**
    - Host creates session → Gets 4-digit code
    - Guest joins with code → Both see "Partner Online"
+   - **NEW**: Guest immediately sees all previous messages from the session
    - Messages sync instantly between devices
    - Activity indicators show real-time status ("Partner is recording")
    - Network resilience handles disconnections
@@ -415,6 +417,7 @@ npx vercel --prod
 - ✅ **Console performance spam** (July 10): Removed render-time logging from ActivityIndicator and AudioVisualization
 - ✅ **Activity indicator isolation** (July 10): Fixed presence channel timestamps causing devices to join separate channels
 - ✅ **Deterministic channel naming** (July 10): Fixed RealtimeConnection timestamp suffixes breaking cross-device communication
+- ✅ **Message history race condition** (July 11): Fixed critical bug where User B couldn't see User A's messages when joining an existing session
 
 ### Phase 5: Mobile Network Resilience (COMPLETED)
 - Network quality detection (4G → 2G)
@@ -468,6 +471,7 @@ sudo networksetup -setproxybypassdomains Wi-Fi "*.local" "169.254/16" "localhost
 12. **Channel Management**: Use `presence:${sessionId}` not `presence:${sessionId}:${timestamp}`
 13. **Supabase Debugging Protocol**: Use SQL queries to investigate realtime subscription issues
 14. **Phase 1d Lesson**: RealtimeConnection timestamp suffixes broke cross-device communication entirely
+15. **Message History Loading** (July 11): Always load existing messages when joining a session to prevent missing conversation context
 
 ---
 

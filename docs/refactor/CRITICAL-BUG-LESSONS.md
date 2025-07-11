@@ -161,3 +161,28 @@ The user suggested checking Supabase RLS policies, but the issue wasn't permissi
 **Created**: July 10, 2025  
 **Bug Fixed**: RealtimeConnection deterministic channel naming  
 **Status**: Production stable, activity indicators working perfectly
+
+---
+
+## 🐛 The Bug: Message History Race Condition
+
+### What Happened (July 11, 2025)
+User B would join an existing session but couldn't see any messages that User A had sent before they joined. This created a broken conversation experience where participants had different views of the chat history.
+
+### Root Cause
+MessageSyncService only set up real-time subscriptions for new messages but never loaded existing messages from the database when initializing a session.
+
+### The Fix
+Added `loadMessageHistory()` method to MessageSyncService that:
+1. Queries all messages for the session from Supabase
+2. Filters out the user's own messages (they already have those)
+3. Processes messages in sequence order
+4. Prevents duplicates with a processedMessageIds Set
+
+### Key Lessons
+1. **Always consider the join scenario** - Don't assume users start sessions together
+2. **Load state before subscribing** - Get historical data before setting up real-time
+3. **Prevent duplicates explicitly** - Track processed messages to avoid double-display
+4. **Test multi-device scenarios** - Always test User A starts → User B joins flow
+
+**Impact**: Critical UX fix - ensures all participants see complete conversation history

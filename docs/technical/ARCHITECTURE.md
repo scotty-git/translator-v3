@@ -319,6 +319,7 @@ The `MessageSyncService` is responsible for real-time message synchronization be
 - Presence tracking
 - Connection state management
 - Offline resilience
+- Message history loading for new session joiners
 
 ### Channel Management Strategy
 
@@ -347,6 +348,7 @@ for (const channel of sessionChannels) {
 1. **Session Entry**:
    - Clean up any existing channels for the session
    - Create new channels with unique timestamps
+   - Load existing message history from database
    - Validate all incoming messages against current session ID
 
 2. **During Session**:
@@ -384,6 +386,10 @@ for (const channel of sessionChannels) {
    - Component unmount cleanup
    - Browser beforeunload handler
    - Navigation interception with confirmation
+
+4. **Duplicate Prevention**:
+   - Tracks processed message IDs to prevent duplicates
+   - Critical for preventing message duplication between history load and real-time events
 
 ---
 

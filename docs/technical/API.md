@@ -594,9 +594,28 @@ class MessageSyncService {
     // Clean up any existing subscriptions first
     await this.cleanupSubscriptions()
     
+    // Load existing message history (NEW as of July 11, 2025)
+    await this.loadMessageHistory(sessionId)
+    
     // Set up new subscriptions with unique channel names
     await this.setupMessageSubscription(sessionId)
     await this.setupPresenceSubscription(sessionId, userId)
+  }
+  
+  // Load historical messages when joining existing session
+  private async loadMessageHistory(sessionId: string): Promise<void> {
+    const { data: messages } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('sequence_number', { ascending: true })
+    
+    // Process historical messages (skip own messages)
+    messages?.forEach(message => {
+      if (message.sender_id !== this.currentUserId) {
+        this.handleIncomingMessage(message)
+      }
+    })
   }
   
   // Comprehensive cleanup to prevent session contamination
@@ -620,6 +639,8 @@ class MessageSyncService {
 2. Clean up existing channels before creating new ones
 3. Validate session ID on all incoming messages
 4. Call both `unsubscribe()` and `removeChannel()` for cleanup
+5. Load message history before setting up subscriptions to avoid race conditions
+6. Track processed message IDs to prevent duplicates between history and real-time
 
 ### Supabase Real-Time Pattern
 
