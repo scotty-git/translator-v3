@@ -50,8 +50,8 @@ export class PersistentAudioManager {
   // Audio level tracking for silence detection
   private audioLevels: number[] = []
   private silenceThresholds = {
-    avgLevel: 0.015,    // Average level threshold (below typical ambient noise)
-    maxLevel: 0.04,     // Maximum level threshold (must have some audio peaks for real speech)
+    avgLevel: 0.8,      // Average level threshold (adjusted for real environment with background noise)
+    maxLevel: 0.9,      // Maximum level threshold (must have significant peaks for real speech)
     minSamples: 10      // Minimum number of samples required for analysis
   }
   
