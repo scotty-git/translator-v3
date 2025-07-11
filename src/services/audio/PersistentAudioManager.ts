@@ -677,6 +677,13 @@ export class PersistentAudioManager {
     this.setState('error')
     this.cleanup()
     this.onError?.(error)
+    
+    // Reset to idle state after a brief delay to allow future recordings
+    setTimeout(() => {
+      if (this.state === 'error') {
+        this.setState('idle')
+      }
+    }, 100)
   }
   
   /**
