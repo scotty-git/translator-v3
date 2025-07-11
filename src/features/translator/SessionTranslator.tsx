@@ -350,7 +350,7 @@ export function SessionTranslator() {
           sender_id: sessionState.userId,
           original_text: message.original,
           translated_text: message.translation,
-          original_language: message.originalLang || 'auto',
+          original_language: message.original_lang || 'auto',
           timestamp: new Date().toISOString()
           // Note: Removed non-existent columns: audio_duration, is_audio, target_language, created_at
         }
@@ -401,6 +401,8 @@ export function SessionTranslator() {
             partnerActivity={partnerActivity}
             sessionInfo={{
               code: sessionState.sessionCode,
+              sessionId: sessionState.sessionId,
+              userId: sessionState.userId,
               status: connectionStatus,
               connectionState: connectionState,
               partnerOnline: partnerOnline

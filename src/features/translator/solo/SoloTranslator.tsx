@@ -49,6 +49,8 @@ interface SoloTranslatorProps {
   partnerActivity?: 'idle' | 'recording' | 'processing' | 'typing'
   sessionInfo?: {
     code: string
+    sessionId: string
+    userId: string
     status: 'connected' | 'connecting' | 'reconnecting' | 'disconnected'
     connectionState: string
     partnerOnline: boolean
@@ -500,12 +502,18 @@ export function SoloTranslator({
 
     const messageId = generateMessageId()
     
+    console.log('🔍 [processTextMessage] Starting text message processing:', {
+      isSessionMode,
+      sessionInfo: sessionInfo ? { sessionId: sessionInfo.sessionId, userId: sessionInfo.userId } : null,
+      messageText
+    })
+    
     try {
       // Create initial message in queue
       const initialMessage: QueuedMessage = {
         id: messageId,
-        session_id: 'solo-session',
-        user_id: 'single-user',
+        session_id: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session',
+        user_id: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
         original: messageText,
         translation: null,
         original_lang: 'auto',
@@ -538,8 +546,8 @@ export function SoloTranslator({
           isRomanticContext: UserManager.detectRomanticContext(recentMessages)
         },
         messageId,
-        userId: 'single-user',
-        sessionId: 'solo-session'
+        userId: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
+        sessionId: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session'
       }
       
       // Use translation pipeline
@@ -572,6 +580,16 @@ export function SoloTranslator({
       }
 
       await queueService.add(finalMessage)
+      
+      console.log('🔍 [processTextMessage] Calling updateMessage with final message:', {
+        messageId,
+        status: finalMessage.status,
+        original: finalMessage.original,
+        translation: finalMessage.translation,
+        session_id: finalMessage.session_id,
+        user_id: finalMessage.user_id
+      })
+      
       updateMessage(messageId, () => finalMessage)
 
       // Play message sent sound
@@ -620,8 +638,8 @@ export function SoloTranslator({
           isRomanticContext: UserManager.detectRomanticContext(recentMessages)
         },
         messageId,
-        userId: 'single-user',
-        sessionId: 'solo-session'
+        userId: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
+        sessionId: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session'
       }
       
       // Use translation pipeline
@@ -639,8 +657,8 @@ export function SoloTranslator({
       // Final message update
       const finalMessage: QueuedMessage = {
         id: messageId,
-        session_id: 'solo-session',
-        user_id: 'single-user',
+        session_id: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session',
+        user_id: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
         original: result.original,
         translation: result.translation,
         original_lang: result.originalLanguageCode,
