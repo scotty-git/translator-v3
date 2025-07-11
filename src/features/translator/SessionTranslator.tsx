@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import SingleDeviceTranslator from './SingleDeviceTranslator'
+import { SoloTranslator } from './solo/SoloTranslator'
 import { Layout } from '@/components/layout/Layout'
 import { sessionStateManager, type SessionState } from '@/services/session'
 import { messageSyncService } from '@/services/MessageSyncService'
@@ -382,12 +382,14 @@ export function SessionTranslator() {
         overscrollBehavior: 'none',
         WebkitOverflowScrolling: 'touch'
       }}>
-        {/* SingleDeviceTranslator - Takes full space with integrated session header */}
+        {/* SoloTranslator - Enhanced for session mode */}
         <div className="flex-1 min-h-0 overflow-hidden">
-          <SingleDeviceTranslator 
+          <SoloTranslator 
+            messageQueueService={messageQueueService}
+            translationPipeline={undefined} // Use default pipeline
             onNewMessage={handleNewMessage}
             messages={(() => {
-              console.log('🎯 [SessionTranslator] Passing messages to SingleDeviceTranslator:', messages.map(m => ({
+              console.log('🎯 [SessionTranslator] Passing messages to SoloTranslator:', messages.map(m => ({
                 id: m.id,
                 status: m.status,
                 original: m.original,
@@ -403,7 +405,6 @@ export function SessionTranslator() {
               connectionState: connectionState,
               partnerOnline: partnerOnline
             }}
-            messageQueueService={messageQueueService}
             presenceService={presenceServiceReady ? presenceService : undefined}
           />
         </div>

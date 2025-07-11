@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Mic, MicOff, Settings, Sun, Moon } from 'lucide-react'
+import { ArrowLeft, Mic, MicOff, Settings, Sun, Moon, Wifi, WifiOff, RotateCcw, Users } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { MobileContainer } from '@/components/layout/MobileContainer'
@@ -38,13 +38,34 @@ function generateMessageId(): string {
 }
 
 interface SoloTranslatorProps {
+  // Core solo mode props
   messageQueueService?: IMessageQueue
   translationPipeline?: ITranslationPipeline
+  
+  // Session mode enhancement props (optional for backward compatibility)
+  onNewMessage?: (message: QueuedMessage) => void
+  messages?: QueuedMessage[]
+  isSessionMode?: boolean
+  partnerActivity?: 'idle' | 'recording' | 'processing' | 'typing'
+  sessionInfo?: {
+    code: string
+    status: 'connected' | 'connecting' | 'reconnecting' | 'disconnected'
+    connectionState: string
+    partnerOnline: boolean
+  }
+  presenceService?: any // PresenceService type (avoid circular import)
 }
 
 export function SoloTranslator({ 
   messageQueueService,
-  translationPipeline
+  translationPipeline,
+  // Session mode props
+  onNewMessage,
+  messages: externalMessages,
+  isSessionMode = false,
+  partnerActivity = 'idle',
+  sessionInfo,
+  presenceService
 }: SoloTranslatorProps = {}) {
   const navigate = useNavigate()
   const { t } = useTranslation()
@@ -67,11 +88,53 @@ export function SoloTranslator({
   const queueService = messageQueueService || new MessageQueueService()
   const pipeline = translationPipeline || createTranslationPipeline()
   
-  // State
-  const [messages, setMessages] = useState<QueuedMessage[]>([])
+  // State - Use external messages in session mode, internal messages in solo mode
+  const [internalMessages, setInternalMessages] = useState<QueuedMessage[]>([])
+  const messages = isSessionMode ? (externalMessages || []) : internalMessages
+  const setMessages = isSessionMode ? () => {} : setInternalMessages // No-op in session mode
+  
   const [isRecording, setIsRecording] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentActivity, setCurrentActivity] = useState<'idle' | 'recording' | 'processing' | 'typing'>('idle')
+  
+  // Helper to update activity and notify presence service in session mode
+  const updateActivity = (activity: 'idle' | 'recording' | 'processing' | 'typing') => {
+    setCurrentActivity(activity)
+    if (isSessionMode && presenceService) {
+      presenceService.updateActivity?.(activity)
+    }
+  }
+  
+  // Helper functions for session status UI
+  const getSessionStatusIcon = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return <Wifi className="h-3 w-3 text-green-600" />
+      case 'connecting':
+        return <Wifi className="h-3 w-3 text-yellow-600 animate-pulse" />
+      case 'reconnecting':
+        return <RotateCcw className="h-3 w-3 text-yellow-600 animate-spin" />
+      case 'disconnected':
+        return <WifiOff className="h-3 w-3 text-red-600" />
+      default:
+        return <WifiOff className="h-3 w-3 text-gray-500" />
+    }
+  }
+  
+  const getSessionStatusText = (status: string) => {
+    switch (status) {
+      case 'connected':
+        return t('session.connected', 'Connected')
+      case 'connecting':
+        return t('session.connecting', 'Connecting...')
+      case 'reconnecting':
+        return t('session.reconnecting', 'Reconnecting...')
+      case 'disconnected':
+        return t('session.disconnected', 'Disconnected')
+      default:
+        return t('session.unknown', 'Unknown')
+    }
+  }
   const [error, setError] = useState<string | null>(null)
   const [targetLanguage, setTargetLanguage] = useState<'es' | 'pt' | 'fr' | 'de'>(() => {
     const saved = UserManager.getPreference('targetLanguage', 'es')
@@ -98,16 +161,59 @@ export function SoloTranslator({
     smoothScroll: true
   })
   
-  // Unread messages tracking - Solo mode specific
-  const userId = 'single-user'
+  // Unread messages tracking - Adapt for session vs solo mode
+  const userId = isSessionMode ? (sessionInfo ? `session-${sessionInfo.code}` : 'session-user') : 'single-user'
   const {
     unreadCount,
     firstUnreadMessageId,
     markAllAsRead,
     setLastReadOnBlur,
     checkForNewMessages
-  } = useUnreadMessages({ userId, isSessionMode: false })
+  } = useUnreadMessages({ userId, isSessionMode })
   
+  // Helper function to handle message updates in both solo and session modes
+  const handleMessageUpdate = (updater: (prev: QueuedMessage[]) => QueuedMessage[]) => {
+    if (isSessionMode) {
+      // In session mode, we need to call onNewMessage for each change
+      // For now, just call the updater to get the new messages array
+      const currentMessages = externalMessages || []
+      const newMessages = updater(currentMessages)
+      
+      // Find new or updated messages and call onNewMessage
+      newMessages.forEach(message => {
+        const existingMessage = currentMessages.find(m => m.id === message.id)
+        if (!existingMessage || JSON.stringify(existingMessage) !== JSON.stringify(message)) {
+          onNewMessage?.(message)
+        }
+      })
+    } else {
+      // In solo mode, update internal state normally
+      setInternalMessages(updater)
+    }
+  }
+  
+  const addMessage = (message: QueuedMessage) => {
+    if (isSessionMode) {
+      onNewMessage?.(message)
+    } else {
+      setInternalMessages(prev => [...prev, message])
+    }
+  }
+  
+  const updateMessage = (messageId: string, updater: (msg: QueuedMessage) => QueuedMessage) => {
+    if (isSessionMode) {
+      const currentMessages = externalMessages || []
+      const message = currentMessages.find(m => m.id === messageId)
+      if (message) {
+        onNewMessage?.(updater(message))
+      }
+    } else {
+      setInternalMessages(prev => prev.map(msg => 
+        msg.id === messageId ? updater(msg) : msg
+      ))
+    }
+  }
+
   // Track if app has focus
   const [hasFocus, setHasFocus] = useState(true)
 
@@ -300,7 +406,7 @@ export function SoloTranslator({
       // Update React state
       setIsRecording(true)
       console.log('🎤 [ActivityIndicator] Activity state change: idle → recording')
-      setCurrentActivity('recording')
+      updateActivity('recording')
       
     } catch (err) {
       console.error('❌ [Audio] Recording failed:', err)
@@ -321,7 +427,7 @@ export function SoloTranslator({
       
       // Reset states
       setIsRecording(false)
-      setCurrentActivity('idle')
+      updateActivity('idle')
       resetAudioLevel()
       playError()
     }
@@ -335,14 +441,14 @@ export function SoloTranslator({
     
     if (audioManager.getState() !== 'recording') {
       setIsRecording(false)
-      setCurrentActivity('idle')
+      updateActivity('idle')
       return
     }
 
     try {
       // Update UI state immediately
       setIsRecording(false)
-      setCurrentActivity('idle')
+      updateActivity('idle')
       
       // Reset audio level to 0
       resetAudioLevel()
@@ -353,7 +459,7 @@ export function SoloTranslator({
     } catch (err) {
       console.error('❌ Failed to stop recording:', err)
       setError('Failed to stop recording: ' + (err as Error).message)
-      setCurrentActivity('idle')
+      updateActivity('idle')
       playError()
     }
   }
@@ -366,7 +472,7 @@ export function SoloTranslator({
     try {
       // Update UI state immediately
       setIsRecording(false)
-      setCurrentActivity('idle')
+      updateActivity('idle')
       
       // Reset audio level to 0
       resetAudioLevel()
@@ -380,7 +486,7 @@ export function SoloTranslator({
     } catch (err) {
       console.error('❌ Failed to cancel recording:', err)
       setError('Failed to cancel recording: ' + (err as Error).message)
-      setCurrentActivity('idle')
+      updateActivity('idle')
       playError()
     }
   }
@@ -413,7 +519,7 @@ export function SoloTranslator({
       }
 
       await queueService.add(initialMessage)
-      setMessages(prev => [...prev, initialMessage])
+      addMessage(initialMessage)
 
       // Create translation request
       const recentMessages = messages.slice(-3).map(msg => msg.original).filter(Boolean)
@@ -462,9 +568,7 @@ export function SoloTranslator({
       }
 
       await queueService.add(finalMessage)
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId ? finalMessage : msg
-      ))
+      updateMessage(messageId, () => finalMessage)
 
       // Play message sent sound
       playMessageSent()
@@ -478,9 +582,7 @@ export function SoloTranslator({
       playError()
       
       // Update message to failed state
-      setMessages(prev => prev.map(msg => 
-        msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
-      ))
+      updateMessage(messageId, (msg) => ({ ...msg, status: 'failed' as const }))
     } finally {
       // Don't change global states - allow concurrent messages
       setTimeout(() => setError(null), 5000)
@@ -498,7 +600,7 @@ export function SoloTranslator({
     
     // Set activity to processing
     console.log('⚙️ [SoloTranslator] Activity state change: recording → processing')
-    setCurrentActivity('processing')
+    updateActivity('processing')
 
     try {
       // Create translation request
@@ -556,7 +658,7 @@ export function SoloTranslator({
       }
 
       await queueService.add(finalMessage)
-      setMessages(prev => [...prev, finalMessage])
+      addMessage(finalMessage)
 
     } catch (err) {
       console.error('❌ Solo audio processing failed:', err)
@@ -567,7 +669,7 @@ export function SoloTranslator({
     } finally {
       // Reset activity to idle when processing completes
       console.log('✅ [SoloTranslator] Activity state change: processing → idle')
-      setCurrentActivity('idle')
+      updateActivity('idle')
       
       // Clear error after 5 seconds
       setTimeout(() => setError(null), 5000)
@@ -758,6 +860,36 @@ export function SoloTranslator({
                 </div>
               </div>
 
+              {/* Center - Session Info (only in session mode) */}
+              {isSessionMode && sessionInfo && (
+                <div className="flex items-center gap-3 text-xs">
+                  {/* Session Code */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-gray-600 dark:text-gray-400">Session:</span>
+                    <span className="font-mono font-semibold text-blue-600 dark:text-blue-400 text-sm">
+                      {sessionInfo.code}
+                    </span>
+                  </div>
+                  
+                  {/* Connection Status */}
+                  <div className="flex items-center gap-1.5">
+                    {getSessionStatusIcon(sessionInfo.status)}
+                    <span className="text-gray-600 dark:text-gray-400">{getSessionStatusText(sessionInfo.status)}</span>
+                  </div>
+                  
+                  {/* Partner Status */}
+                  <div className="flex items-center gap-1.5">
+                    <Users className="h-3 w-3 text-gray-500" />
+                    <span className={`text-xs ${sessionInfo.partnerOnline ? 'text-green-600' : 'text-gray-500'}`}>
+                      {sessionInfo.partnerOnline 
+                        ? t('session.partnerOnline', 'Partner Online')
+                        : t('session.partnerOffline', 'Waiting for partner...')
+                      }
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Right side - Mode Toggle & Target Language */}
               <div className="flex items-center gap-2">
                 {/* Mode Toggle - Ultra Compact */}
@@ -862,6 +994,15 @@ export function SoloTranslator({
                 activity={currentActivity} 
                 userName={t('translator.you', 'You')}
                 isOwnMessage={true}
+              />
+            )}
+            
+            {/* Partner activity - Only in session mode */}
+            {isSessionMode && partnerActivity !== 'idle' && (
+              <ActivityIndicator 
+                activity={partnerActivity} 
+                userName={t('translator.partner', 'Partner')}
+                isOwnMessage={false}
               />
             )}
             
