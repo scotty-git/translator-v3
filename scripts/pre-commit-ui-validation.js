@@ -8,9 +8,9 @@
  * Usage: This script is called automatically by git pre-commit hooks
  */
 
-const { execSync } = require('child_process')
-const fs = require('fs')
-const path = require('path')
+import { execSync } from 'child_process'
+import fs from 'fs'
+import path from 'path'
 
 // ANSI color codes for terminal output
 const colors = {
@@ -68,7 +68,7 @@ function checkForUIChanges() {
   uiFiles.forEach(file => log(`   - ${file}`, 'blue'))
   
   // Check for specific UI preservation bypass
-  const commitMessage = process.env.COMMIT_MESSAGE || ''
+  const commitMessage = process.env.COMMIT_MESSAGE || process.argv.slice(2).join(' ') || ''
   if (commitMessage.includes('[skip-ui-validation]')) {
     log('⚠️  UI validation bypassed with [skip-ui-validation] flag', 'yellow')
     log('🚨 Remember: This bypass should only be used for intentional UI changes!', 'red')
@@ -141,7 +141,7 @@ function checkForBaselineChanges() {
       log('', 'reset')
       
       // Check for documentation of UI changes
-      const commitMessage = process.env.COMMIT_MESSAGE || ''
+      const commitMessage = process.env.COMMIT_MESSAGE || process.argv.slice(2).join(' ') || ''
       if (!commitMessage.includes('[ui-change]')) {
         log('❌ Baseline updates require [ui-change] flag in commit message', 'red')
         log('   This ensures UI changes are intentional and documented.', 'red')

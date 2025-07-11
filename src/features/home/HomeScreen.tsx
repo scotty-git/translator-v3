@@ -119,7 +119,7 @@ export function HomeScreen() {
               fullWidth
               className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
             >
-              🗣️ {t('home.singleDevice', 'Start Translating')} Test
+              🗣️ {t('home.singleDevice', 'Start Translating')}
             </Button>
             
             <div className="text-xs text-gray-500 text-center px-4">

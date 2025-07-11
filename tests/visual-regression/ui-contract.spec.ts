@@ -26,7 +26,7 @@ test.describe('UI Contract: Solo Translator Mode', () => {
     await page.goto('http://127.0.0.1:5173')
     
     // Navigate to solo mode
-    await page.click('text=Solo')
+    await page.click('text=Start Translating')
     await page.waitForLoadState('networkidle')
   })
 
@@ -335,7 +335,7 @@ test.describe('UI Contract: Home Screen', () => {
 test.describe('UI Contract: Critical Component States', () => {
   test('Language selector - All states', async ({ page }) => {
     await page.goto('http://127.0.0.1:5173')
-    await page.click('text=Solo')
+    await page.click('text=Start Translating')
     
     // Ensure light theme
     const darkToggle = page.locator('button[aria-label*="dark"]')
@@ -359,7 +359,7 @@ test.describe('UI Contract: Critical Component States', () => {
 
   test('Translation mode toggles - All states', async ({ page }) => {
     await page.goto('http://127.0.0.1:5173')
-    await page.click('text=Solo')
+    await page.click('text=Start Translating')
     
     // Ensure light theme
     const darkToggle = page.locator('button[aria-label*="dark"]')
@@ -383,7 +383,7 @@ test.describe('UI Contract: Critical Component States', () => {
 
   test('Error states - Network error', async ({ page }) => {
     await page.goto('http://127.0.0.1:5173')
-    await page.click('text=Solo')
+    await page.click('text=Start Translating')
     
     // Ensure light theme
     const darkToggle = page.locator('button[aria-label*="dark"]')
@@ -428,7 +428,7 @@ test.describe('UI Contract: Validation', () => {
     
     // Test solo mode
     await page.goto('http://127.0.0.1:5173')
-    await page.click('text=Solo')
+    await page.click('text=Start Translating')
     
     // Ensure light theme
     const darkToggle = page.locator('button[aria-label*="dark"]')

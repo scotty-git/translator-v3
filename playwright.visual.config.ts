@@ -106,8 +106,8 @@ export default defineConfig({
   ],
 
   // Global setup and teardown
-  globalSetup: require.resolve('./tests/visual-regression/global-setup.ts'),
-  globalTeardown: require.resolve('./tests/visual-regression/global-teardown.ts'),
+  globalSetup: './tests/visual-regression/global-setup.ts',
+  globalTeardown: './tests/visual-regression/global-teardown.ts',
   
   // Expect configuration for visual comparisons
   expect: {
@@ -134,11 +134,9 @@ export default defineConfig({
   // Web server configuration
   webServer: {
     command: 'npm run dev',
-    port: 5173,
+    url: 'http://127.0.0.1:5173',
     timeout: 30000,
     reuseExistingServer: !process.env.CI,
-    // Wait for the server to be ready
-    url: 'http://127.0.0.1:5173',
     // Don't show server logs in test output
     stdout: 'ignore',
     stderr: 'pipe',

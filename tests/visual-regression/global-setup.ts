@@ -29,8 +29,8 @@ async function globalSetup(config: FullConfig) {
     await page.waitForLoadState('networkidle')
     
     // Ensure we're on the home page
-    await page.waitForSelector('text=Solo')
-    await page.waitForSelector('text=Session')
+    await page.waitForSelector('text=Start Translating')
+    await page.waitForSelector('text=Start Session')
     
     console.log('✅ Visual Regression Setup: Application is ready for testing')
     
