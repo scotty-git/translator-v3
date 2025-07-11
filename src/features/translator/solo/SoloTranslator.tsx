@@ -944,7 +944,7 @@ export function SoloTranslator({
             marginTop: '64px', // Space for fixed header
             paddingLeft: '16px', // 4 * 4px = 16px
             paddingRight: '16px', // 4 * 4px = 16px  
-            paddingTop: '16px', // Match space-y-4 spacing for visual consistency
+            paddingTop: '4px', // Small padding to match inter-message spacing
             paddingBottom: '80px', // Space for fixed footer
             scrollPaddingTop: '22px', // Prevent content from scrolling under fixed header
             touchAction: 'pan-y',
