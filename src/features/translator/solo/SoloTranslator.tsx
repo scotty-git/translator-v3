@@ -520,31 +520,7 @@ export function SoloTranslator({
     })
     
     try {
-      // Create initial message in queue
-      const initialMessage: QueuedMessage = {
-        id: messageId,
-        session_id: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session',
-        user_id: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
-        original: messageText,
-        translation: null,
-        original_lang: 'auto',
-        target_lang: targetLanguage,
-        status: 'processing',
-        queued_at: new Date().toISOString(),
-        processed_at: null,
-        displayed_at: null,
-        performance_metrics: null,
-        timestamp: new Date().toISOString(),
-        created_at: new Date().toISOString(),
-        localId: messageId,
-        retryCount: 0,
-        displayOrder: messages.length + 1
-      }
-
-      await queueService.add(initialMessage)
-      addMessage(initialMessage)
-
-      // Create translation request
+      // Create translation request FIRST (like voice messages)
       const recentMessages = messages.slice(-3).map(msg => msg.original).filter(Boolean)
       const translationRequest: TranslationRequest = {
         input: messageText,
@@ -573,26 +549,35 @@ export function SoloTranslator({
       )
       setConversationContext(updatedContext)
       
-      // Update message
+      // Create final message with translation (like voice messages)
       const finalMessage: QueuedMessage = {
-        ...initialMessage,
+        id: messageId,
+        session_id: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session',
+        user_id: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
         original: result.original,
         translation: result.translation,
         original_lang: result.originalLanguageCode,
         target_lang: result.targetLanguageCode,
         status: 'displayed',
+        queued_at: new Date().toISOString(),
         processed_at: new Date().toISOString(),
         displayed_at: new Date().toISOString(),
         performance_metrics: {
           whisperTime: 0, // No whisper for text
           translationTime: result.metrics.translationTime,
           totalTime: result.metrics.totalTime
-        }
+        },
+        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        localId: messageId,
+        retryCount: 0,
+        displayOrder: messages.length + 1
       }
 
       await queueService.add(finalMessage)
       
-      console.log('🔍 [processTextMessage] Calling updateMessage with final message:', {
+      // Call addMessage ONCE with final message (like voice messages)
+      console.log('🔍 [processTextMessage] Calling addMessage with final message:', {
         messageId,
         status: finalMessage.status,
         original: finalMessage.original,
@@ -602,7 +587,7 @@ export function SoloTranslator({
         isSessionMode
       })
       
-      updateMessage(messageId, () => finalMessage)
+      addMessage(finalMessage)
 
       // Play message sent sound
       playMessageSent()
@@ -615,8 +600,28 @@ export function SoloTranslator({
       setError(`Processing failed: ${(err as Error).message}`)
       playError()
       
-      // Update message to failed state
-      updateMessage(messageId, (msg) => ({ ...msg, status: 'failed' as const }))
+      // Create failed message
+      const failedMessage: QueuedMessage = {
+        id: messageId,
+        session_id: isSessionMode && sessionInfo ? sessionInfo.sessionId : 'solo-session',
+        user_id: isSessionMode && sessionInfo ? sessionInfo.userId : 'single-user',
+        original: messageText,
+        translation: null,
+        original_lang: 'auto',
+        target_lang: targetLanguage,
+        status: 'failed',
+        queued_at: new Date().toISOString(),
+        processed_at: null,
+        displayed_at: null,
+        performance_metrics: null,
+        timestamp: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        localId: messageId,
+        retryCount: 0,
+        displayOrder: messages.length + 1
+      }
+      
+      addMessage(failedMessage)
     } finally {
       // Don't change global states - allow concurrent messages
       setTimeout(() => setError(null), 5000)

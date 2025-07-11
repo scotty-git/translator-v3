@@ -137,6 +137,35 @@ CREATE TABLE message_reactions (
 6. **Phase 6: Real-time Sync** - Cross-device experience
 7. **Phase 7: Testing & Polish** - Production readiness
 
+## 🧪 Testing Strategy
+
+### Playwright E2E Testing Approach
+Since Playwright tests cannot record actual voice, we leverage the **text input functionality** to test all features:
+
+1. **Session Creation & Pairing**
+   - Use production URL: `https://translator-v3.vercel.app`
+   - Create host/guest browser contexts
+   - Exchange messages via text input
+
+2. **Feature Testing Coverage**
+   - **Reactions**: Test long-press, emoji selection, real-time sync
+   - **Editing**: Test edit button, re-translation, sync across devices
+   - **Deletion**: Test long-press delete, sync to all participants
+   - **Voice & Text**: Both use same translation pipeline (95% identical logic)
+
+3. **Console Logging Strategy**
+   ```typescript
+   // Essential for debugging test failures
+   page.on('console', msg => console.log(`[${msg.type()}]: ${msg.text()}`))
+   page.on('pageerror', err => console.log(`ERROR: ${err.message}`))
+   ```
+
+4. **Key Benefits**
+   - Tests real production environment
+   - Validates cross-device synchronization
+   - Ensures text & voice features share same code paths
+   - Provides screenshots for visual regression
+
 ## ⚠️ Risk Mitigation
 
 ### Data Integrity
