@@ -939,7 +939,7 @@ export function SoloTranslator({
             height: 'calc(100vh - 64px - 80px)', // Full viewport minus header (64px) and footer (80px)
             marginTop: '64px', // Space for fixed header
             paddingBottom: '80px', // Space for fixed footer
-            scrollPaddingTop: '64px', // Prevent content from scrolling under fixed header
+            scrollPaddingTop: '22px', // Prevent content from scrolling under fixed header (reduced by 65%)
             touchAction: 'pan-y',
             overscrollBehavior: 'contain',
             WebkitOverflowScrolling: 'touch'
