@@ -89,13 +89,14 @@ UPPERCASE.md          # Documentation
 ```
 ✅ Good:
 src/components/ui/Button.tsx
-src/features/translator/SingleDeviceTranslator.tsx
+src/features/translator/SessionTranslator.tsx
+src/features/translator/solo/SoloTranslator.tsx
 src/lib/audio-utils.ts
 src/services/openai/translation.ts
 
 ❌ Bad:
 src/Components/UI/button.tsx
-src/features/Translator/single_device_translator.tsx
+src/features/Translator/session_translator.tsx
 src/lib/AudioUtils.ts
 ```
 

@@ -95,23 +95,36 @@ npx vercel --prod        # Deploy to Vercel
 ```
 translator-v3/
 ├── 📄 CLAUDE.md              # Vibe coder workflow guide
-├── 📄 PRD.md                 # Product requirements
-├── 📄 SETUP.md               # Detailed setup guide
-├── 📄 ARCHITECTURE.md        # System architecture
-├── 📄 phases/                # Development phase docs
+├── 📄 README.md              # This file
+├── 📄 CONTRIBUTING.md        # Development guidelines
+├── 📄 docs/                  # Documentation directory
+│   ├── 📁 technical/         # Architecture, API, Components, Testing
+│   ├── 📁 development/       # Setup, Deployment, Troubleshooting
+│   ├── 📁 user/              # User guide, FAQ
+│   └── 📁 archive/           # Historical documentation
 ├── 🔧 src/
 │   ├── 🎨 components/        # Reusable UI components
 │   ├── ⚛️  features/          # Feature-based modules
+│   │   ├── 📁 translator/    # Translation components
+│   │   │   ├── 📄 solo/      # SoloTranslator (core UI)
+│   │   │   └── 📄 SessionTranslator.tsx  # Session orchestrator
+│   │   └── 📁 home/          # Home screen
 │   ├── 📚 lib/               # Utilities & services
-│   ├── 🌐 services/          # External integrations
+│   ├── 🌐 services/          # External integrations & business logic
+│   │   ├── 📁 queues/        # Message queue management
+│   │   ├── 📁 pipeline/      # Translation pipeline
+│   │   ├── 📁 presence/      # Real-time presence
+│   │   ├── 📁 realtime/      # Real-time connection
+│   │   └── 📁 session/       # Session state management
 │   └── 🧪 tests/             # Test utilities
 ├── 🧪 tests/                 # E2E tests (Playwright)
 └── 📱 public/                # PWA assets & manifest
 ```
 
 **Key Directories:**
-- `src/features/translator/` - Single-device translation interface
-- `src/services/openai/` - AI translation pipeline  
+- `src/features/translator/solo/` - **SoloTranslator** (core translation UI)
+- `src/features/translator/SessionTranslator.tsx` - **SessionTranslator** (session orchestrator)
+- `src/services/` - **Service Architecture** (queues, pipeline, presence, realtime, session)
 - `src/lib/` - Core utilities (performance, caching, retry logic)
 - `tests/` - E2E validation tests
 
@@ -136,6 +149,8 @@ translator-v3/
 ## 🎯 Current Status
 
 **Production Ready** - Single-device translator with advanced features:
+- ✅ **Clean Architecture** - Service-based design with SoloTranslator + SessionTranslator
+- ✅ **Phase 2D Complete** - Mega-component refactor finished (45% code reduction)
 - ✅ Internationalization (3 languages)
 - ✅ PWA with offline support
 - ✅ WCAG 2.1 AA accessibility
@@ -143,7 +158,7 @@ translator-v3/
 - ✅ Comprehensive error handling
 - ✅ Master test suite passing
 
-**Focus**: Perfected single-device translation experience for face-to-face conversations.
+**Focus**: Perfected single-device translation experience with clean, maintainable architecture.
 
 ---
 
@@ -171,4 +186,4 @@ MIT License - See [LICENSE](./LICENSE) for details.
 
 ---
 
-**🚀 Ready to build real-time translation magic?** Start with [SETUP.md](./SETUP.md) or dive into [ARCHITECTURE.md](./ARCHITECTURE.md)!
+**🚀 Ready to build real-time translation magic?** Start with [SETUP.md](./docs/development/SETUP.md) or dive into [ARCHITECTURE.md](./docs/technical/ARCHITECTURE.md)!

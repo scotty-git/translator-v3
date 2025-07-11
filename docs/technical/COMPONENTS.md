@@ -575,7 +575,7 @@ const ExpensiveComponent = memo(({ data }) => {
 The recording functionality uses the **PersistentAudioManager** for optimal mobile performance:
 
 ```tsx
-// SingleDeviceTranslator.tsx
+// SoloTranslator.tsx
 import { PersistentAudioManager } from '@/services/audio/PersistentAudioManager'
 
 function RecordingComponent() {
@@ -638,6 +638,148 @@ function RecordingComponent() {
 
 ---
 
+## 🧩 TranslatorShared Components (Phase 2 Refactor)
+
+The translator features use a **shared component library** that provides consistent UI across solo and session modes. All components are located in `src/features/translator/shared/components/`.
+
+### MessageBubble
+
+Complex message display with translation states, TTS, and reactions:
+
+```tsx
+import { MessageBubble } from '@/features/translator/shared'
+
+<MessageBubble
+  message={message}
+  isSessionMode={true}
+  onReaction={(emoji) => handleReaction(message.id, emoji)}
+  onTTS={() => handleTTS(message.translation)}
+  onRetry={() => handleRetry(message.id)}
+/>
+```
+
+**Features**:
+- Translation state display (processing, completed, failed)
+- TTS playback with audio controls
+- Emoji reactions with real-time sync
+- Retry functionality for failed messages
+- Accessibility-compliant design
+
+### ActivityIndicator
+
+Real-time status display for recording/processing/idle states:
+
+```tsx
+import { ActivityIndicator } from '@/features/translator/shared'
+
+<ActivityIndicator
+  activity={partnerActivity}
+  isSessionMode={true}
+  className="activity-status"
+/>
+```
+
+**States**:
+- `recording` - Partner is actively recording
+- `processing` - Partner's audio is being transcribed/translated
+- `idle` - Default state when no activity
+
+### AudioVisualization
+
+60fps audio level visualization with Web Audio API:
+
+```tsx
+import { AudioVisualization } from '@/features/translator/shared'
+
+<AudioVisualization
+  isRecording={isRecording}
+  audioLevels={audioLevels}
+  className="audio-bars"
+/>
+```
+
+**Features**:
+- 5-bar audio level display
+- 60fps smooth animations
+- Web Audio API integration
+- GPU-accelerated rendering
+
+### ScrollToBottomButton
+
+WhatsApp-style message navigation with unread count:
+
+```tsx
+import { ScrollToBottomButton } from '@/features/translator/shared'
+
+<ScrollToBottomButton
+  unreadCount={unreadCount}
+  onScrollToBottom={() => messagesEndRef.current?.scrollIntoView()}
+  className="scroll-button"
+/>
+```
+
+**Features**:
+- Automatic show/hide based on scroll position
+- Unread message count display
+- Smooth scroll animations
+- Mobile-optimized touch targets
+
+### UnreadMessagesDivider
+
+Visual separator for unread messages with auto-fade:
+
+```tsx
+import { UnreadMessagesDivider } from '@/features/translator/shared'
+
+<UnreadMessagesDivider
+  unreadCount={unreadCount}
+  onMarkAsRead={() => setUnreadCount(0)}
+/>
+```
+
+**Features**:
+- Automatic fade after 5 seconds
+- Smooth animations
+- Accessibility announcements
+- Click to mark as read
+
+### ErrorDisplay
+
+Comprehensive error handling with retry actions:
+
+```tsx
+import { ErrorDisplay } from '@/features/translator/shared'
+
+<ErrorDisplay
+  error={error}
+  onRetry={() => handleRetry()}
+  onDismiss={() => setError(null)}
+  className="error-message"
+/>
+```
+
+**Error Types**:
+- Network errors with retry actions
+- Permission errors with guidance
+- API errors with explanations
+- Generic errors with support contact
+
+### Shared Props Interface
+
+All TranslatorShared components extend base props:
+
+```typescript
+interface TranslatorSharedProps {
+  message?: Message
+  isSessionMode?: boolean
+  onAction?: (action: string, data?: any) => void
+  className?: string
+  'data-testid'?: string
+}
+```
+
+---
+
 ## 🎨 Component Patterns
 
 ### Compound Components
@@ -695,7 +837,7 @@ function RecordingComponent() {
 
 **1. Component Structure**:
 ```tsx
-// src/components/ui/NewComponent.tsx
+// src/components/ui/NewComponent.tsx (for basic UI components)
 interface NewComponentProps {
   // Props interface
 }
@@ -717,11 +859,38 @@ export const NewComponent = forwardRef<HTMLElement, NewComponentProps>(
 NewComponent.displayName = 'NewComponent'
 ```
 
-**2. Add to Index**:
+**2. Shared Translator Components**:
 ```tsx
-// src/components/ui/index.ts
+// src/features/translator/shared/components/NewTranslatorComponent.tsx
+import { TranslatorSharedProps } from '../types'
+
+interface NewTranslatorComponentProps extends TranslatorSharedProps {
+  // Component-specific props
+}
+
+export default function NewTranslatorComponent({
+  message,
+  isSessionMode,
+  onAction,
+  ...props
+}: NewTranslatorComponentProps) {
+  return (
+    <div className="translator-component">
+      {/* Component content */}
+    </div>
+  )
+}
+```
+
+**3. Add to Exports**:
+```tsx
+// src/components/ui/index.ts (for basic UI)
 export { NewComponent } from './NewComponent'
 export type { NewComponentProps } from './NewComponent'
+
+// src/features/translator/shared/index.ts (for translator components)
+export { default as NewTranslatorComponent } from './components/NewTranslatorComponent'
+export type { NewTranslatorComponentProps } from './components/NewTranslatorComponent'
 ```
 
 **3. Document Usage**:

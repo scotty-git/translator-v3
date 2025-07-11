@@ -112,23 +112,30 @@ Understanding how the Real-time Translator v3 works under the hood.
 ```
 src/
 ├── features/               # Feature-based organization
-│   ├── translator/         # Main translation interface
-│   ├── session/           # Session management
-│   ├── messages/          # Message display & real-time
-│   └── audio/            # Audio recording controls
+│   ├── translator/         # Translation components
+│   │   ├── solo/          # SoloTranslator (core UI)
+│   │   │   └── SoloTranslator.tsx  # Main translation interface
+│   │   ├── SessionTranslator.tsx   # Session orchestrator
+│   │   └── shared/        # Shared components library
+│   ├── home/             # Home screen & navigation
+│   └── settings/         # User settings & preferences
 │
-├── services/             # External service integrations
-│   ├── openai/          # Translation pipeline
-│   ├── supabase/        # Database & real-time
-│   └── audio/           # Recording & playback
-│       ├── PersistentAudioManager.ts  # Persistent stream management
-│       └── AudioRecorderService.ts    # Recording functionality
+├── services/             # Service architecture (Phase 2 refactor)
+│   ├── queues/           # MessageQueueService
+│   ├── pipeline/         # TranslationPipeline
+│   ├── presence/         # PresenceService (real-time activity)
+│   ├── realtime/         # RealtimeConnection
+│   ├── session/          # SessionStateManager
+│   └── openai/           # OpenAI integration
 │
 ├── lib/                 # Core utilities
 │   ├── performance.ts   # Monitoring & logging
 │   ├── cache/          # Response caching
 │   ├── retry/          # Error recovery
-│   └── network/        # Quality detection
+│   ├── network/        # Quality detection
+│   └── audio/          # Audio recording & playback
+│       ├── PersistentAudioManager.ts  # Persistent stream management
+│       └── AudioRecorderService.ts    # Recording functionality
 │
 └── components/         # Reusable UI components
     ├── ui/            # Basic components (Button, Input)
@@ -137,15 +144,22 @@ src/
 
 ### Key Architectural Patterns
 
-**1. Feature-Based Organization**
+**1. Component Architecture (Phase 2 Refactor)**
+- **SoloTranslator**: Core translation UI used by both solo and session modes
+- **SessionTranslator**: Orchestrator that wraps SoloTranslator with session-specific features
+- **Service Layer**: 5 independent services (queues, pipeline, presence, realtime, session)
+- **Zero Duplicate Logic**: Single source of truth for all translation functionality
+
+**2. Service-Based Architecture**
+- Clean separation between UI and business logic
+- Each service has a single responsibility
+- Dependency injection for testability
+- Centralized error handling and retry logic
+
+**3. Feature-Based Organization**
 - Each feature is self-contained with its own components, hooks, and logic
 - Easy to understand, test, and maintain
 - Follows domain-driven design principles
-
-**2. Service Layer Abstraction**
-- Clean separation between UI and external services
-- Retry logic and error handling centralized
-- Easy to mock for testing
 
 **3. Performance-First Design**
 - Aggressive caching (CacheManager, CachedOpenAIService)

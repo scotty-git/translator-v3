@@ -1,6 +1,6 @@
-<testsuites id="" name="" tests="4" failures="0" skipped="0" errors="0" time="4.941563">
-<testsuite name="ui-contract.spec.ts" timestamp="2025-07-11T09:58:35.366Z" hostname="chromium" tests="1" failures="0" skipped="0" time="2" errors="0">
-<testcase name="UI Contract: Validation › Validate no UI regressions exist" classname="ui-contract.spec.ts" time="2">
+<testsuites id="" name="" tests="4" failures="0" skipped="0" errors="0" time="5.118326">
+<testsuite name="ui-contract.spec.ts" timestamp="2025-07-11T10:00:25.838Z" hostname="chromium" tests="1" failures="0" skipped="0" time="1.712" errors="0">
+<testcase name="UI Contract: Validation › Validate no UI regressions exist" classname="ui-contract.spec.ts" time="1.712">
 <system-out>
 <![CDATA[🔍 UI Contract Validation: Checking for visual regressions...
 ✅ UI Contract Validation: No regressions detected
@@ -8,8 +8,8 @@
 </system-out>
 </testcase>
 </testsuite>
-<testsuite name="ui-contract.spec.ts" timestamp="2025-07-11T09:58:35.366Z" hostname="webkit" tests="1" failures="0" skipped="0" time="2.528" errors="0">
-<testcase name="UI Contract: Validation › Validate no UI regressions exist" classname="ui-contract.spec.ts" time="2.528">
+<testsuite name="ui-contract.spec.ts" timestamp="2025-07-11T10:00:25.838Z" hostname="webkit" tests="1" failures="0" skipped="0" time="2.437" errors="0">
+<testcase name="UI Contract: Validation › Validate no UI regressions exist" classname="ui-contract.spec.ts" time="2.437">
 <system-out>
 <![CDATA[🔍 UI Contract Validation: Checking for visual regressions...
 ✅ UI Contract Validation: No regressions detected
@@ -17,8 +17,8 @@
 </system-out>
 </testcase>
 </testsuite>
-<testsuite name="ui-contract.spec.ts" timestamp="2025-07-11T09:58:35.366Z" hostname="mobile-chrome" tests="1" failures="0" skipped="0" time="2.028" errors="0">
-<testcase name="UI Contract: Validation › Validate no UI regressions exist" classname="ui-contract.spec.ts" time="2.028">
+<testsuite name="ui-contract.spec.ts" timestamp="2025-07-11T10:00:25.838Z" hostname="mobile-chrome" tests="1" failures="0" skipped="0" time="1.676" errors="0">
+<testcase name="UI Contract: Validation › Validate no UI regressions exist" classname="ui-contract.spec.ts" time="1.676">
 <system-out>
 <![CDATA[🔍 UI Contract Validation: Checking for visual regressions...
 ✅ UI Contract Validation: No regressions detected
@@ -26,8 +26,8 @@
 </system-out>
 </testcase>
 </testsuite>
-<testsuite name="ui-contract.spec.ts" timestamp="2025-07-11T09:58:35.366Z" hostname="mobile-safari" tests="1" failures="0" skipped="0" time="2.62" errors="0">
-<testcase name="UI Contract: Validation › Validate no UI regressions exist" classname="ui-contract.spec.ts" time="2.62">
+<testsuite name="ui-contract.spec.ts" timestamp="2025-07-11T10:00:25.838Z" hostname="mobile-safari" tests="1" failures="0" skipped="0" time="2.511" errors="0">
+<testcase name="UI Contract: Validation › Validate no UI regressions exist" classname="ui-contract.spec.ts" time="2.511">
 <system-out>
 <![CDATA[🔍 UI Contract Validation: Checking for visual regressions...
 ✅ UI Contract Validation: No regressions detected
