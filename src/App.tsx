@@ -6,7 +6,6 @@ import { Spinner } from '@/components/ui/Spinner'
 
 // Lazy load main components for code splitting
 const HomeScreen = lazy(() => import('@/features/home/HomeScreen').then(m => ({ default: m.HomeScreen })))
-const SingleDeviceTranslator = lazy(() => import('@/features/translator/SingleDeviceTranslator').then(m => ({ default: m.SingleDeviceTranslator })))
 const SessionTranslator = lazy(() => import('@/features/translator/SessionTranslator').then(m => ({ default: m.SessionTranslator })))
 
 // Lazy load test components (only loaded when needed)

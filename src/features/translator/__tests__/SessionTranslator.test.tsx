@@ -15,9 +15,9 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-vi.mock('../SingleDeviceTranslator', () => ({
-  default: ({ onNewMessage, messages, isSessionMode }: any) => {
-    // This mock simulates the SingleDeviceTranslator behavior
+vi.mock('../solo/SoloTranslator', () => {
+  const MockSoloTranslator = ({ onNewMessage, messages, isSessionMode }: any) => {
+    // This mock simulates the SoloTranslator behavior
     const handleAddMessage = () => {
       if (onNewMessage) {
         onNewMessage({ 
@@ -40,7 +40,7 @@ vi.mock('../SingleDeviceTranslator', () => ({
     }
     
     return (
-      <div data-testid="single-device-translator">
+      <div data-testid="solo-translator">
         <div>Messages: {messages?.length || 0}</div>
         <div>Session Mode: {isSessionMode ? 'true' : 'false'}</div>
         <button onClick={handleAddMessage}>
@@ -49,7 +49,12 @@ vi.mock('../SingleDeviceTranslator', () => ({
       </div>
     )
   }
-}))
+  
+  return {
+    default: MockSoloTranslator,
+    SoloTranslator: MockSoloTranslator
+  }
+})
 
 vi.mock('@/components/SessionHeader', () => ({
   SessionHeader: ({ code, status, partnerOnline }: any) => (
@@ -213,7 +218,7 @@ describe('SessionTranslator', () => {
     )
     
     await waitFor(() => {
-      expect(screen.getByTestId('single-device-translator')).toBeInTheDocument()
+      expect(screen.getByTestId('solo-translator')).toBeInTheDocument()
     })
     
     // Click button to trigger onNewMessage
@@ -259,7 +264,7 @@ describe('SessionTranslator', () => {
     )
     
     await waitFor(() => {
-      expect(screen.getByTestId('single-device-translator')).toBeInTheDocument()
+      expect(screen.getByTestId('solo-translator')).toBeInTheDocument()
     })
     
     expect(screen.getByText('Session Mode: true')).toBeInTheDocument()
@@ -288,7 +293,7 @@ describe('SessionTranslator', () => {
     )
     
     await waitFor(() => {
-      expect(screen.getByTestId('single-device-translator')).toBeInTheDocument()
+      expect(screen.getByTestId('solo-translator')).toBeInTheDocument()
     })
     
     const addButton = screen.getByText('Add Message')
