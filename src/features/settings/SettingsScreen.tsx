@@ -191,7 +191,7 @@ export function SettingsScreen() {
         <div className="flex items-center gap-2">
           <Type className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
           <h2 className="font-semibold text-gray-900 dark:text-gray-100">Font Size</h2>
-          <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Press F to cycle</span>
+          <span className="text-xs text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded">Press F to cycle</span>
         </div>
         
         <div className="space-y-2">
@@ -360,7 +360,7 @@ export function SettingsScreen() {
       </Card>
 
       {/* Footer */}
-      <div className="text-center text-xs text-gray-500 dark:text-gray-400">
+      <div className="text-center text-xs text-gray-600 dark:text-gray-400">
         <p>{t('settings.footer')}</p>
       </div>
     </MobileContainer>

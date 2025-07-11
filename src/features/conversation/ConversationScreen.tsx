@@ -182,7 +182,7 @@ export function ConversationScreen() {
                 aria-controls={`${tab.id}-panel`}
                 className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   activeTab === tab.id
-                    ? 'bg-purple-100 text-purple-700'
+                    ? 'bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
                 onClick={() => setActiveTab(tab.id)}
@@ -380,25 +380,25 @@ export function ConversationScreen() {
               <Card className="space-y-4">
                 <h2 className="font-semibold">Overview</h2>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                  <div className="text-center p-3 bg-blue-25 dark:bg-blue-950/30 rounded-lg">
                     <div className="text-2xl font-bold text-blue-600">
                       {stats.totalSessions}
                     </div>
                     <div className="text-sm text-blue-700">Total Sessions</div>
                   </div>
-                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                  <div className="text-center p-3 bg-green-25 dark:bg-green-950/30 rounded-lg">
                     <div className="text-2xl font-bold text-green-600">
                       {stats.totalMessages}
                     </div>
                     <div className="text-sm text-green-700">Total Messages</div>
                   </div>
-                  <div className="text-center p-3 bg-purple-50 rounded-lg">
+                  <div className="text-center p-3 bg-purple-25 dark:bg-purple-950/30 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">
                       {stats.bookmarkedSessions}
                     </div>
                     <div className="text-sm text-purple-700">Bookmarked</div>
                   </div>
-                  <div className="text-center p-3 bg-orange-50 rounded-lg">
+                  <div className="text-center p-3 bg-orange-25 dark:bg-orange-950/30 rounded-lg">
                     <div className="text-2xl font-bold text-orange-600">
                       {stats.languagePairs.length}
                     </div>
@@ -411,7 +411,7 @@ export function ConversationScreen() {
                 <h2 className="font-semibold">Language Pairs</h2>
                 <div className="space-y-2">
                   {stats.languagePairs.map((pair: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-25 dark:bg-gray-800 rounded">
                       <span className="text-sm">
                         {pair.from.toUpperCase()} → {pair.to.toUpperCase()}
                       </span>
@@ -427,7 +427,7 @@ export function ConversationScreen() {
                 <h2 className="font-semibold">Recent Activity</h2>
                 <div className="space-y-2">
                   {stats.recentActivity.map((activity: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-25 dark:bg-gray-800 rounded">
                       <span className="text-sm">
                         {new Date(activity.date).toLocaleDateString()}
                       </span>
