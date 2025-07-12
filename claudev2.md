@@ -106,34 +106,11 @@ VITE_DEV_MODE=true                            # Enable dev features
 ### 📁 Directory Organization
 ```
 src/
-├── features/                    # Feature-based modules
-│   ├── translator/             # Core translation functionality
-│   │   ├── SessionTranslator.tsx      # Multi-user session mode
-│   │   ├── solo/                      # Solo translator mode
-│   │   └── shared/                    # TranslatorShared component library
-│   ├── messages/               # Message display and management
-│   ├── home/                   # Landing page components
-│   ├── conversation/           # Conversation management
-│   ├── settings/               # App settings and preferences
-│   └── test/                   # In-app test suites
-├── services/                   # Single-responsibility services
-│   ├── session/               # SessionStateManager (singleton)
-│   ├── queues/                # MessageQueueService (offline queuing)
-│   ├── pipeline/              # TranslationPipeline (audio processing)
-│   ├── presence/              # PresenceService (activity indicators)
-│   ├── realtime/              # RealtimeConnection (Supabase channels)
-│   ├── audio/                 # Audio recording and processing
-│   └── openai/                # OpenAI API integrations
-├── lib/                       # Shared utilities and libraries
-│   ├── accessibility/         # WCAG 2.1 AA compliance tools
-│   ├── i18n/                  # 5-language internationalization
-│   ├── pwa/                   # Progressive Web App features
-│   ├── user/                  # User preferences (font sizing, etc.)
-│   ├── cache/                 # API response caching
-│   └── network-quality.ts     # Connection monitoring
-└── components/                # Shared UI components
-    ├── ui/                    # Basic UI primitives
-    └── layout/                # Layout components
+├── features/translator/         # Core translation (SessionTranslator, solo/, shared/)
+├── features/[messages|home|conversation|settings|test]/
+├── services/[session|queues|pipeline|presence|realtime|audio|openai]/
+├── lib/[accessibility|i18n|pwa|user|cache]/
+└── components/[ui|layout]/
 ```
 
 ### 🎯 Architectural Patterns
@@ -148,20 +125,7 @@ const [presenceService] = useState(() => new PresenceService())
 <SoloTranslator messageQueueService={messageQueueService} />
 ```
 
-**2. Singleton Pattern for Global State**:
-```typescript
-// SessionStateManager example - use for app-wide state
-export class SessionStateManager implements ISessionStateManager {
-  private static instance: SessionStateManager
-  
-  static getInstance(): SessionStateManager {
-    if (!SessionStateManager.instance) {
-      SessionStateManager.instance = new SessionStateManager()
-    }
-    return SessionStateManager.instance
-  }
-}
-```
+**2. Singleton Pattern for Global State**: Use for app-wide state (e.g., SessionStateManager)
 
 **3. Feature-Based Organization**:
 - Group related components, hooks, and utilities together
@@ -207,28 +171,17 @@ npm run test:playwright                # Uses sanitizer automatically
 ```
 
 ### What the Sanitizer Does
-The `safe-test-smart.sh` script converts ALL non-ASCII characters to safe labels:
-- 🏠 → `[EMOJI]`
-- → → `[ARROW]`
-- ✅ → `[SYM]`
-- é → `e` (strips accents)
-- Any other Unicode → `[U+XXXX]`
+The `safe-test-smart.sh` script converts Unicode to safe labels (🏠 → `[EMOJI]`, é → `e`)
 
 ### If You Forget and Get Corrupted
-1. Exit Claude Code (Cmd+Esc)
-2. Run: `python3 scripts/clean-claude-history.py --max-entries 0`
-3. Start a new Claude session
-4. Use the sanitizer from now on!
+Exit Claude Code, run `python3 scripts/clean-claude-history.py --max-entries 0`, restart
 
 ---
 
 ## ⚙️ DEVELOPMENT WORKFLOW
 
 ### ⚡ Bash Command Rule
-**ALWAYS use 15-second timeout unless command specifically needs longer:**
-- Add `timeout: 15000` to every bash command by default
-- Most commands (npm run dev, npm run test, git commit) complete within 5-15 seconds
-- Only use longer timeouts for specific cases like `npx vercel --prod` (60 seconds)
+Add `timeout: 15000` to all bash commands. Use 60 seconds only for `npx vercel --prod`
 
 ### 🧪 Test-Driven Development Protocol
 **⚠️ MANDATORY SEQUENCE** - Follow this exact order for every feature:
@@ -251,41 +204,22 @@ The `safe-test-smart.sh` script converts ALL non-ASCII characters to safe labels
     └── ONLY tell user task is complete when ALL tests pass (unit + E2E + accessibility)
 ```
 
-### 🎭 Playwright + Accessibility Testing Protocol
-
-> **🚨 MANDATORY**: Tests ONLY run on production URL after Vercel deployment
-
-```
-🎯 TESTING REQUIREMENTS
-├── 0. 🚨 ALWAYS use ./scripts/safe-test-smart.sh to prevent corruption!
-├── 1. 🚀 MUST deploy to Vercel production FIRST before any testing
-├── 2. ALWAYS test with Playwright in headless mode (`headless: true`)
-├── 3. Take screenshots to verify UI appearance
-├── 4. Run Axe Core accessibility tests on BOTH light and dark modes
-├── 5. Fix ALL accessibility violations immediately and re-deploy/re-test
-└── 6. ONLY report completion when ALL tests pass with zero violations
-```
+### 🎭 Testing Requirements
+- 🚨 ALWAYS use `./scripts/safe-test-smart.sh` 
+- 🚀 Deploy to Vercel production FIRST before any testing
+- Test headless mode only, take screenshots, run Axe Core on both themes
+- Fix violations immediately, re-deploy/re-test until zero violations
 
 ### 🧪 Test Flow Template
 ```javascript
-test('feature name - full UI/UX validation', async ({ page }) => {
-  // Test light mode on PRODUCTION
+test('feature name', async ({ page }) => {
   await page.goto('https://translator-v3.vercel.app');
   await page.screenshot({ path: 'test-results/light-mode-test.png' });
+  const lightResults = await new AxeBuilder({ page }).analyze();
   
-  // Run Axe Core accessibility test - Light Mode
-  const lightModeResults = await new AxeBuilder({ page }).analyze();
-  console.log('🌞 Light Mode Accessibility Results:', lightModeResults.violations);
-  
-  // Test dark mode on PRODUCTION
   await page.click('button[aria-label="Toggle dark mode"]');
   await page.screenshot({ path: 'test-results/dark-mode-test.png' });
-  
-  // Run Axe Core accessibility test - Dark Mode
-  const darkModeResults = await new AxeBuilder({ page }).analyze();
-  console.log('🌙 Dark Mode Accessibility Results:', darkModeResults.violations);
-  
-  // Verify zero accessibility violations in both modes
+  const darkResults = await new AxeBuilder({ page }).analyze();
 });
 ```
 
@@ -307,17 +241,8 @@ sleep 3 && curl -s http://127.0.0.1:5173/ > /dev/null && echo "✅ Server is run
 
 ### 📝 Git Commit Management
 
-**🤖 Proactively auto-commit when:**
-```
-🎯 AUTO-COMMIT TRIGGERS
-├── 1. Major feature complete
-├── 2. Planned goal achieved
-├── 3. Major bug fixes complete
-├── 4. Before switching contexts
-├── 5. After documentation updates
-├── 6. Before any destructive operations
-└── 7. After successful test runs
-```
+**🤖 Auto-commit triggers:**
+Major feature complete, planned goal achieved, major bug fixes, before switching contexts, after documentation updates, before destructive operations, after successful test runs
 
 **📝 Commit Format Template:**
 ```bash
@@ -334,13 +259,7 @@ EOF
 )"
 ```
 
-**🏷️ Commit Types:**
-- `feat`: New feature added
-- `fix`: Bug fix
-- `refactor`: Code refactoring
-- `docs`: Documentation changes
-- `test`: Adding tests
-- `chore`: Maintenance tasks
+**🏷️ Commit Types:** feat, fix, refactor, docs, test, chore
 
 ### 🌐 Vercel Deployment
 

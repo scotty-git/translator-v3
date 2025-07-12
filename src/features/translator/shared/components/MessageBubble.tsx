@@ -1,14 +1,18 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { clsx } from 'clsx'
 import { Check, Clock, AlertCircle, Play, Pause, Loader2, Volume2, ChevronDown, ChevronUp } from 'lucide-react'
 import type { TranslatorMessage } from '../types'
+import { useLongPress } from '@/hooks/useLongPress'
+import { EmojiReactionPicker } from '@/features/messages/EmojiReactionPicker'
+import { MessageReactions } from '@/features/messages/MessageReactions'
+import type { MessageReactions as MessageReactionsType } from '@/types/database'
 
 // Re-export compatible type for compatibility
 export type QueuedMessage = TranslatorMessage & {
   created_at: string
   original_lang: string
   target_lang: string
-  reactions?: Record<string, string[]>
+  reactions?: MessageReactionsType
 }
 
 export interface MessageBubbleProps {
@@ -43,11 +47,25 @@ export function MessageBubble({
   const [audioUrl, setAudioUrl] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [showOriginal, setShowOriginal] = useState(false)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [pickerPosition, setPickerPosition] = useState({ x: 0, y: 0 })
   const audioRef = useRef<HTMLAudioElement | null>(null)
   const messageRef = useRef<HTMLDivElement | null>(null)
   
   // Determine message alignment and styling based on mode
   const isOwnMessage = message.user_id === userId || message.userId === userId
+  
+  // Determine if reactions are allowed
+  const canReact = isSessionMode && !isOwnMessage && onReactionToggle
+  
+  // Debug logging
+  if (process.env.NODE_ENV === 'development') {
+    console.log(`🔍 MessageBubble: canReact=${canReact}, isSessionMode=${isSessionMode}, isOwnMessage=${isOwnMessage}`, {
+      messageId: message.id,
+      senderId: message.sender_id || message.user_id,
+      currentUserId
+    })
+  }
   
   let isLeftAligned: boolean
   let useOwnMessageStyling: boolean
@@ -155,42 +173,74 @@ export function MessageBubble({
     }
   }
 
-  // Handle long press for reactions
-  const handleLongPress = (event: React.MouseEvent | React.TouchEvent) => {
-    const rect = messageRef.current?.getBoundingClientRect()
-    if (!rect || !onLongPress) return
-
-    const position = {
-      x: rect.left + rect.width / 2,
-      y: rect.top - 10
+  // Long press handler with logging
+  const handleLongPress = useCallback((event: React.MouseEvent | React.TouchEvent) => {
+    console.log('👆 Long press detected on message', { 
+      messageId: message.id, 
+      canReact,
+      isOwnMessage 
+    })
+    
+    if (!canReact) {
+      console.log('❌ Cannot react to this message')
+      return
     }
+    
+    const rect = messageRef.current?.getBoundingClientRect()
+    if (!rect) {
+      console.error('❌ Message ref not found')
+      return
+    }
+    
+    const clientX = 'clientX' in event ? event.clientX : event.touches[0].clientX
+    const clientY = 'clientY' in event ? event.clientY : event.touches[0].clientY
+    
+    setPickerPosition({
+      x: clientX,
+      y: rect.bottom + 8
+    })
+    setShowEmojiPicker(true)
+    
+    // Also call custom long press handler if provided
+    if (onLongPress) {
+      onLongPress(message.id, { x: clientX, y: clientY })
+    }
+  }, [canReact, message.id, onLongPress, isOwnMessage])
 
-    onLongPress(message.id, position)
+  // Handle reaction toggle
+  const handleReactionToggle = (emoji: string) => {
+    if (onReactionToggle && currentUserId) {
+      onReactionToggle(message.id, emoji, currentUserId)
+    }
   }
-
-  // Handle reaction click
-  const handleReactionClick = (emoji: string) => {
-    if (!userId || !onReactionToggle) return
-    onReactionToggle(message.id, emoji, userId)
-  }
+  
+  // Long press handlers using proper hook
+  const longPressHandlers = useLongPress({
+    onLongPress: handleLongPress,
+    threshold: 500
+  })
+  
+  // Get user's reactions
+  const userReactions = message.reactions 
+    ? Object.keys(message.reactions).filter(emoji => 
+        message.reactions![emoji].users.includes(currentUserId || '')
+      )
+    : []
 
   return (
-    <div 
-      className={clsx(
-        'flex',
-        isLeftAligned ? 'justify-start' : 'justify-end',
-        className
-      )}
-      data-testid={testId}
-    >
+    <>
+      <div 
+        className={clsx(
+          'flex mb-4 animate-fade-in',
+          isLeftAligned ? 'justify-start' : 'justify-end',
+          className
+        )}
+        data-testid={testId}
+        data-own={isOwnMessage}
+        {...(canReact ? longPressHandlers : {})}
+      >
       <div 
         ref={messageRef}
-        onMouseDown={(e) => {
-          // Simple long press detection for demo
-          const timer = setTimeout(() => handleLongPress(e), 500)
-          const cleanup = () => clearTimeout(timer)
-          document.addEventListener('mouseup', cleanup, { once: true })
-        }}
         className={clsx(
           'max-w-[80%] rounded-2xl px-4 py-3 shadow-sm transition-all duration-300 cursor-pointer select-none relative transform-gpu hover:scale-[1.02]',
           {
@@ -315,27 +365,26 @@ export function MessageBubble({
             </button>
           </div>
           
-          {/* Reactions overlay */}
+          {/* Reactions display */}
           {message.reactions && Object.keys(message.reactions).length > 0 && (
-            <div className={clsx(
-              'absolute -bottom-2 z-10',
-              useOwnMessageStyling ? '-left-2' : '-right-2'
-            )}>
-              <div className="flex gap-1">
-                {Object.entries(message.reactions).map(([emoji, users]) => (
-                  <button
-                    key={emoji}
-                    onClick={() => handleReactionClick(emoji)}
-                    className="bg-white dark:bg-gray-800 rounded-full px-2 py-1 text-xs shadow-md hover:shadow-lg transition-all duration-200"
-                  >
-                    {emoji} {users.length}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <MessageReactions
+              reactions={message.reactions}
+              onToggle={handleReactionToggle}
+              currentUserId={currentUserId}
+            />
           )}
         </div>
+        </div>
       </div>
-    </div>
+      
+      {/* Emoji picker */}
+      <EmojiReactionPicker
+        isOpen={showEmojiPicker}
+        position={pickerPosition}
+        onSelect={handleReactionToggle}
+        onClose={() => setShowEmojiPicker(false)}
+        currentReactions={userReactions}
+      />
+    </>
   )
 }
