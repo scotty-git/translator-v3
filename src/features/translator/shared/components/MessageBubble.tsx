@@ -462,10 +462,7 @@ export function MessageBubble({
             </button>
           </div>
         </div>
-        </div>
         
-      </div>
-      
         {/* WhatsApp-style emoji overlay reactions */}
         {message.reactions && Object.keys(message.reactions).length > 0 && currentUserId && (() => {
           const transformedReactions = transformReactions(message.reactions, currentUserId)
@@ -483,6 +480,7 @@ export function MessageBubble({
             </div>
           )
         })()}
+        </div>
       </div>
       
       {/* Emoji picker */}
