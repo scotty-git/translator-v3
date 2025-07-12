@@ -7,7 +7,7 @@ import { messageSyncService } from '@/services/MessageSyncService'
 import { PresenceService } from '@/services/presence'
 import { RealtimeConnection } from '@/services/realtime'
 import type { QueuedMessage } from '@/features/messages/MessageQueue'
-import type { SessionMessage, ConnectionStatus } from '@/types/database'
+import type { SessionMessage, ConnectionStatus, DatabaseReaction } from '@/types/database'
 import type { ConnectionState } from '@/services/realtime'
 import { ErrorToast } from '@/components/ErrorDisplay'
 import { useSounds } from '@/lib/sounds/SoundManager'
@@ -52,6 +52,34 @@ export function SessionTranslator() {
   // Create RealtimeConnection instance for session mode
   const [realtimeConnection] = useState(() => new RealtimeConnection())
   
+  // Handle reaction toggle for messages
+  const handleReactionToggle = async (messageId: string, emoji: string, userId: string) => {
+    if (!sessionState) {
+      console.warn('⚠️ [SessionTranslator] No session state, cannot toggle reaction')
+      return
+    }
+    
+    try {
+      console.log('👍 [SessionTranslator] Toggling reaction:', { messageId, emoji, userId })
+      
+      // Check if user already reacted with this emoji
+      const message = messages.find(m => m.id === messageId)
+      const reactions = message?.reactions?.[emoji]
+      const hasReacted = Array.isArray(reactions) ? reactions.includes(userId) : false
+      
+      if (hasReacted) {
+        console.log('👎 [SessionTranslator] Removing reaction')
+        await messageSyncService.removeReaction(messageId, emoji, userId)
+      } else {
+        console.log('👍 [SessionTranslator] Adding reaction')
+        await messageSyncService.addReaction(messageId, emoji, userId)
+      }
+    } catch (error) {
+      console.error('❌ [SessionTranslator] Failed to toggle reaction:', error)
+      setError(error instanceof Error ? error : new Error('Failed to toggle reaction'))
+    }
+  }
+
   // Redirect if no session and handle session expiry
   useEffect(() => {
     if (!sessionState) {
@@ -133,6 +161,61 @@ export function SessionTranslator() {
         setMessages(prev => prev.map(msg => 
           msg.id === messageId ? { ...msg, status: 'failed' as const } : msg
         ))
+      },
+      
+      onReactionAdded: (reaction: DatabaseReaction) => {
+        console.log('👍 [SessionTranslator] Reaction added:', reaction)
+        // Update local message state with new reaction (simplified array format)
+        setMessages(prev => prev.map(msg => {
+          if (msg.id === reaction.message_id) {
+            const currentReactions = msg.reactions || {}
+            const emojiUsers = currentReactions[reaction.emoji] || []
+            
+            // Add user if not already present
+            if (!emojiUsers.includes(reaction.user_id)) {
+              return {
+                ...msg,
+                reactions: {
+                  ...currentReactions,
+                  [reaction.emoji]: [...emojiUsers, reaction.user_id]
+                }
+              }
+            }
+          }
+          return msg
+        }))
+      },
+      
+      onReactionRemoved: (reaction: DatabaseReaction) => {
+        console.log('👎 [SessionTranslator] Reaction removed:', reaction)
+        // Update local message state by removing reaction (simplified array format)
+        setMessages(prev => prev.map(msg => {
+          if (msg.id === reaction.message_id) {
+            const currentReactions = msg.reactions || {}
+            const emojiUsers = currentReactions[reaction.emoji] || []
+            
+            // Remove user from reaction
+            const updatedUsers = emojiUsers.filter(u => u !== reaction.user_id)
+            
+            // Remove reaction entirely if no users left
+            if (updatedUsers.length === 0) {
+              const { [reaction.emoji]: removed, ...remainingReactions } = currentReactions
+              return {
+                ...msg,
+                reactions: remainingReactions
+              }
+            } else {
+              return {
+                ...msg,
+                reactions: {
+                  ...currentReactions,
+                  [reaction.emoji]: updatedUsers
+                }
+              }
+            }
+          }
+          return msg
+        }))
       }
     })
     
@@ -408,6 +491,7 @@ export function SessionTranslator() {
               partnerOnline: partnerOnline
             }}
             presenceService={presenceServiceReady ? presenceService : undefined}
+            onReactionToggle={handleReactionToggle}
           />
         </div>
       </div>

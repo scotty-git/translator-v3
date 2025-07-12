@@ -56,6 +56,7 @@ interface SoloTranslatorProps {
     partnerOnline: boolean
   }
   presenceService?: any // PresenceService type (avoid circular import)
+  onReactionToggle?: (messageId: string, emoji: string, userId: string) => void
 }
 
 export function SoloTranslator({ 
@@ -67,8 +68,9 @@ export function SoloTranslator({
   isSessionMode = false,
   partnerActivity = 'idle',
   sessionInfo,
+  onReactionToggle,
   presenceService
-}: SoloTranslatorProps = {}) {
+}: SoloTranslatorProps) {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const { 
@@ -1025,6 +1027,7 @@ export function SoloTranslator({
                           currentUserId={isSessionMode && sessionInfo ? sessionInfo.userId : "single-user"}
                           isSessionMode={isSessionMode}
                           fontSize={fontSize}
+                          onReactionToggle={onReactionToggle}
                         />
                       </div>
                     </div>
