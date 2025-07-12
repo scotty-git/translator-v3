@@ -10,7 +10,7 @@ import { Check, Clock, AlertCircle, Play, Pause, Loader2, Volume2, Edit3 } from 
 import type { QueuedMessage } from './MessageQueue'
 import { useSession } from '../session/SessionContext'
 import { TTSService } from '../../services/openai/tts'
-import { EmojiReactionPicker } from './EmojiReactionPicker'
+import { EmojiReactionPickerFixed as EmojiReactionPicker } from './EmojiReactionPickerFixed'
 import { MessageReactions } from './MessageReactions'
 import { useLongPress } from '../../hooks/useLongPress'
 import { performanceLogger, PERF_OPS } from '@/lib/performance'

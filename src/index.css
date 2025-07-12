@@ -42,3 +42,30 @@
     font-size: calc(0.8125rem * var(--message-scale)) !important;
   }
 }
+
+/* Emoji Picker Width Constraint - CRITICAL FIX */
+[role="dialog"][aria-label="Emoji reaction picker"] {
+  width: 180px !important;
+  max-width: 180px !important;
+  min-width: 160px !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+/* Extended mode width */
+[role="dialog"][aria-label="Emoji reaction picker"][style*="12px"] {
+  width: 162px !important;
+  max-width: 162px !important;
+}
+
+/* Ensure children don't force expansion */
+[role="dialog"][aria-label="Emoji reaction picker"] > * {
+  max-width: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+[role="dialog"][aria-label="Emoji reaction picker"] .flex {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+}

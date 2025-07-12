@@ -3,7 +3,7 @@ import { clsx } from 'clsx'
 import { Check, Clock, AlertCircle, Play, Pause, Loader2, Volume2, ChevronDown, ChevronUp } from 'lucide-react'
 import type { TranslatorMessage } from '../types'
 import { useLongPress } from '@/hooks/useLongPress'
-import { EmojiReactionPicker } from '@/features/messages/EmojiReactionPicker'
+import { EmojiReactionPickerFixed as EmojiReactionPicker } from '@/features/messages/EmojiReactionPickerFixed'
 import { MessageReactions } from '@/features/messages/MessageReactions'
 import type { MessageReactions as MessageReactionsType } from '@/types/database'
 
@@ -214,11 +214,37 @@ export function MessageBubble({
     }
   }, [canReact, message.id, onLongPress, isOwnMessage])
 
-  // Handle reaction toggle
+  // Handle reaction toggle from picker
   const handleReactionToggle = (emoji: string) => {
     if (onReactionToggle && currentUserId) {
       onReactionToggle(message.id, emoji, currentUserId)
     }
+  }
+
+  // Handle reaction click from existing reactions
+  const handleReactionClick = (emoji: string, hasReacted: boolean) => {
+    if (onReactionToggle && currentUserId) {
+      // Toggle the reaction based on current state
+      onReactionToggle(message.id, emoji, currentUserId)
+    }
+  }
+
+  // Transform reactions from simple Record<string, string[]> format to EmojiReaction format
+  const transformReactions = (reactions: Record<string, string[]>, currentUserId: string) => {
+    const transformed: Record<string, import('@/types/database').EmojiReaction> = {}
+    
+    Object.entries(reactions).forEach(([emoji, users]) => {
+      if (users.length > 0) {
+        transformed[emoji] = {
+          emoji,
+          count: users.length,
+          users,
+          hasReacted: users.includes(currentUserId)
+        }
+      }
+    })
+    
+    return transformed
   }
   
   // Long press handlers using proper hook
@@ -377,11 +403,12 @@ export function MessageBubble({
           </div>
           
           {/* Reactions display */}
-          {message.reactions && Object.keys(message.reactions).length > 0 && (
+          {message.reactions && Object.keys(message.reactions).length > 0 && currentUserId && (
             <MessageReactions
-              reactions={message.reactions}
-              onToggle={handleReactionToggle}
-              currentUserId={currentUserId}
+              reactions={transformReactions(message.reactions, currentUserId)}
+              isOwnMessage={isOwnMessage}
+              onReactionClick={handleReactionClick}
+              isOverlay={false}
             />
           )}
         </div>
