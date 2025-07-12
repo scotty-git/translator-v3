@@ -231,18 +231,78 @@ export function MessageBubble({
 
   // Transform reactions from simple Record<string, string[]> format to EmojiReaction format
   const transformReactions = (reactions: Record<string, string[]>, currentUserId: string) => {
+    console.log('🎯 [transformReactions] INPUT VALIDATION:', {
+      reactions,
+      currentUserId,
+      isValidReactions: reactions && typeof reactions === 'object',
+      reactionKeys: Object.keys(reactions || {}),
+      reactionValues: Object.values(reactions || {})
+    })
+    
+    // Input validation assertions
+    if (!reactions || typeof reactions !== 'object') {
+      console.error('❌ [transformReactions] INVALID INPUT: reactions is not an object:', reactions)
+      return {}
+    }
+    
+    if (!currentUserId) {
+      console.error('❌ [transformReactions] INVALID INPUT: currentUserId is missing:', currentUserId)
+      return {}
+    }
+    
     const transformed: Record<string, import('@/types/database').EmojiReaction> = {}
     
     Object.entries(reactions).forEach(([emoji, users]) => {
+      console.log('🎯 [transformReactions] PROCESSING EMOJI:', {
+        emoji,
+        users,
+        isValidUsers: Array.isArray(users),
+        userCount: Array.isArray(users) ? users.length : 'invalid'
+      })
+      
+      // Validation: ensure users is array and has users
+      if (!Array.isArray(users)) {
+        console.error('❌ [transformReactions] INVALID USERS: not an array:', { emoji, users })
+        return
+      }
+      
       if (users.length > 0) {
-        transformed[emoji] = {
+        const emojiReaction = {
           emoji,
           count: users.length,
           users,
           hasReacted: users.includes(currentUserId)
         }
+        
+        transformed[emoji] = emojiReaction
+        
+        console.log('🎯 [transformReactions] CREATED EMOJI REACTION:', {
+          emoji,
+          count: emojiReaction.count,
+          users: emojiReaction.users,
+          hasReacted: emojiReaction.hasReacted,
+          currentUserId
+        })
+      } else {
+        console.log('🎯 [transformReactions] SKIPPING EMPTY EMOJI:', { emoji, users })
       }
     })
+    
+    console.log('🎯 [transformReactions] FINAL OUTPUT:', {
+      input: reactions,
+      transformed,
+      transformedKeys: Object.keys(transformed),
+      transformedCount: Object.keys(transformed).length,
+      hasValidOutput: Object.keys(transformed).length > 0
+    })
+    
+    // Final validation assertion
+    if (Object.keys(reactions).length > 0 && Object.keys(transformed).length === 0) {
+      console.error('❌ [transformReactions] TRANSFORMATION FAILED: Input had reactions but output is empty', {
+        inputKeys: Object.keys(reactions),
+        outputKeys: Object.keys(transformed)
+      })
+    }
     
     return transformed
   }
@@ -405,20 +465,67 @@ export function MessageBubble({
         </div>
         
         {/* WhatsApp-style emoji overlay reactions */}
-        {message.reactions && Object.keys(message.reactions).length > 0 && currentUserId && (
-          <div className={clsx(
-            'absolute bottom-0 flex items-center gap-1 transform translate-y-1/2',
-            // Position based on message ownership - bottom-left for both styles like WhatsApp
-            isOwnMessage ? 'left-2' : 'left-2'
-          )}>
-            <MessageReactions
-              reactions={transformReactions(message.reactions, currentUserId)}
-              isOwnMessage={isOwnMessage}
-              onReactionClick={handleReactionClick}
-              isOverlay={true}
-            />
-          </div>
-        )}
+        {(() => {
+          console.log('🎯 [MessageBubble] EMOJI OVERLAY DIAGNOSTIC:', {
+            messageId: message.id,
+            hasReactions: !!message.reactions,
+            reactionKeys: message.reactions ? Object.keys(message.reactions) : [],
+            reactionValues: message.reactions,
+            currentUserId,
+            shouldRender: !!(message.reactions && Object.keys(message.reactions).length > 0 && currentUserId)
+          })
+          
+          if (message.reactions && Object.keys(message.reactions).length > 0 && currentUserId) {
+            const transformedReactions = transformReactions(message.reactions, currentUserId)
+            console.log('🎯 [MessageBubble] TRANSFORMED REACTIONS:', {
+              messageId: message.id,
+              original: message.reactions,
+              transformed: transformedReactions,
+              transformedKeys: Object.keys(transformedReactions),
+              hasTransformedData: Object.keys(transformedReactions).length > 0
+            })
+            
+            console.log('🎯 [MessageBubble] OVERLAY DIV WILL RENDER:', {
+              messageId: message.id,
+              isOwnMessage,
+              overlayPosition: isOwnMessage ? 'left-2' : 'left-2'
+            })
+            
+            return (
+              <div 
+                className={clsx(
+                  'absolute bottom-0 flex items-center gap-1 transform translate-y-1/2',
+                  // Position based on message ownership - bottom-left for both styles like WhatsApp
+                  isOwnMessage ? 'left-2' : 'left-2'
+                )}
+                style={{
+                  // DIAGNOSTIC: Add bright background to make overlay visible
+                  backgroundColor: 'rgba(255, 0, 0, 0.5)',
+                  border: '2px solid yellow',
+                  zIndex: 1000,
+                  minWidth: '20px',
+                  minHeight: '20px'
+                }}
+              >
+                <MessageReactions
+                  reactions={transformedReactions}
+                  isOwnMessage={isOwnMessage}
+                  onReactionClick={handleReactionClick}
+                  isOverlay={true}
+                />
+              </div>
+            )
+          }
+          
+          console.log('🎯 [MessageBubble] OVERLAY NOT RENDERING:', {
+            messageId: message.id,
+            hasReactions: !!message.reactions,
+            hasCurrentUserId: !!currentUserId,
+            reactionCount: message.reactions ? Object.keys(message.reactions).length : 0
+          })
+          
+          return null
+        })()}
       </div>
       
       {/* Emoji picker */}

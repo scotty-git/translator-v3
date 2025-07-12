@@ -165,25 +165,68 @@ export function SessionTranslator() {
       
       onReactionAdded: (reaction: DatabaseReaction) => {
         console.log('👍 [SessionTranslator] Reaction added:', reaction)
+        
         // Update local message state with new reaction (simplified array format)
-        setMessages(prev => prev.map(msg => {
-          if (msg.id === reaction.message_id) {
-            const currentReactions = msg.reactions || {}
-            const emojiUsers = currentReactions[reaction.emoji] || []
-            
-            // Add user if not already present
-            if (!emojiUsers.includes(reaction.user_id)) {
-              return {
-                ...msg,
-                reactions: {
-                  ...currentReactions,
-                  [reaction.emoji]: [...emojiUsers, reaction.user_id]
+        setMessages(prev => {
+          const updatedMessages = prev.map(msg => {
+            if (msg.id === reaction.message_id) {
+              const currentReactions = msg.reactions || {}
+              const emojiUsers = currentReactions[reaction.emoji] || []
+              
+              console.log('🎯 [SessionTranslator] REACTION AGGREGATION BEFORE:', {
+                messageId: msg.id,
+                emoji: reaction.emoji,
+                currentReactions,
+                emojiUsers,
+                newUserId: reaction.user_id,
+                userAlreadyReacted: emojiUsers.includes(reaction.user_id)
+              })
+              
+              // Add user if not already present
+              if (!emojiUsers.includes(reaction.user_id)) {
+                const updatedMessage = {
+                  ...msg,
+                  reactions: {
+                    ...currentReactions,
+                    [reaction.emoji]: [...emojiUsers, reaction.user_id]
+                  }
                 }
+                
+                console.log('🎯 [SessionTranslator] REACTION AGGREGATION AFTER:', {
+                  messageId: msg.id,
+                  emoji: reaction.emoji,
+                  updatedReactions: updatedMessage.reactions,
+                  newEmojiUsers: updatedMessage.reactions[reaction.emoji],
+                  totalReactionCount: Object.keys(updatedMessage.reactions).length
+                })
+                
+                return updatedMessage
+              } else {
+                console.log('🎯 [SessionTranslator] USER ALREADY REACTED:', {
+                  messageId: msg.id,
+                  emoji: reaction.emoji,
+                  userId: reaction.user_id,
+                  existingUsers: emojiUsers
+                })
               }
             }
+            return msg
+          })
+          
+          // Log final message state to verify data integrity
+          const targetMessage = updatedMessages.find(m => m.id === reaction.message_id)
+          if (targetMessage) {
+            console.log('🎯 [SessionTranslator] FINAL MESSAGE STATE:', {
+              messageId: targetMessage.id,
+              hasReactions: !!targetMessage.reactions,
+              reactions: targetMessage.reactions,
+              reactionKeys: targetMessage.reactions ? Object.keys(targetMessage.reactions) : [],
+              totalMessages: updatedMessages.length
+            })
           }
-          return msg
-        }))
+          
+          return updatedMessages
+        })
       },
       
       onReactionRemoved: (reaction: DatabaseReaction) => {
@@ -476,7 +519,10 @@ export function SessionTranslator() {
                 id: m.id,
                 status: m.status,
                 original: m.original,
-                translation: m.translation
+                translation: m.translation,
+                hasReactions: !!m.reactions,
+                reactions: m.reactions,
+                reactionKeys: m.reactions ? Object.keys(m.reactions) : []
               })))
               return messages
             })()}
