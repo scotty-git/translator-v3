@@ -106,11 +106,33 @@ VITE_DEV_MODE=true                            # Enable dev features
 ### 📁 Directory Organization
 ```
 src/
-├── features/translator/         # Core translation (SessionTranslator, solo/, shared/)
-├── features/[messages|home|conversation|settings|test]/
-├── services/[session|queues|pipeline|presence|realtime|audio|openai]/
-├── lib/[accessibility|i18n|pwa|user|cache]/
-└── components/[ui|layout]/
+├── features/                    # Feature-based modules
+│   ├── translator/             # Core translation functionality
+│   │   ├── SessionTranslator.tsx      # Multi-user session mode
+│   │   ├── solo/                      # Solo translator mode
+│   │   └── shared/                    # TranslatorShared component library
+│   ├── messages/               # Message display and management
+│   ├── home/                   # Landing page components
+│   ├── conversation/           # Conversation management
+│   ├── settings/               # App settings and preferences
+│   └── test/                   # In-app test suites
+├── services/                   # Single-responsibility services
+│   ├── session/               # SessionStateManager (singleton)
+│   ├── queues/                # MessageQueueService (offline queuing)
+│   ├── pipeline/              # TranslationPipeline (audio processing)
+│   ├── presence/              # PresenceService (activity indicators)
+│   ├── realtime/              # RealtimeConnection (Supabase channels)
+│   ├── audio/                 # Audio recording and processing
+│   └── openai/                # OpenAI API integrations
+├── lib/                       # Shared utilities
+│   ├── accessibility/         # WCAG 2.1 AA compliance tools
+│   ├── i18n/                  # 5-language internationalization
+│   ├── pwa/                   # Progressive Web App features
+│   ├── user/                  # User preferences (font sizing, etc.)
+│   └── cache/                 # API response caching
+└── components/                # Shared UI components
+    ├── ui/                    # Basic UI primitives
+    └── layout/                # Layout components
 ```
 
 ### 🎯 Architectural Patterns

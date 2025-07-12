@@ -136,7 +136,7 @@ export function EmojiReactionPicker({ isVisible, position, onEmojiSelect, onClos
    * 3. Ensure picker stays within viewport bounds
    * 4. Add padding from screen edges for mobile safety
    */
-  const pickerWidth = showExtended ? 320 : 400 // Extended mode is wider for grid layout
+  const pickerWidth = showExtended ? 320 : 280 // Default mode narrower for just 8 buttons
   const pickerHeight = showExtended ? 200 : 60 // Extended mode is taller for multiple rows
   
   // Calculate horizontal position (centered on message, but within bounds)
