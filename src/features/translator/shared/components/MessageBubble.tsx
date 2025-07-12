@@ -401,18 +401,24 @@ export function MessageBubble({
               {getTTSButton()}
             </button>
           </div>
-          
-          {/* Reactions display */}
-          {message.reactions && Object.keys(message.reactions).length > 0 && currentUserId && (
+        </div>
+        </div>
+        
+        {/* WhatsApp-style emoji overlay reactions */}
+        {message.reactions && Object.keys(message.reactions).length > 0 && currentUserId && (
+          <div className={clsx(
+            'absolute bottom-0 flex items-center gap-1 transform translate-y-1/2',
+            // Position based on message ownership - bottom-left for both styles like WhatsApp
+            isOwnMessage ? 'left-2' : 'left-2'
+          )}>
             <MessageReactions
               reactions={transformReactions(message.reactions, currentUserId)}
               isOwnMessage={isOwnMessage}
               onReactionClick={handleReactionClick}
-              isOverlay={false}
+              isOverlay={true}
             />
-          )}
-        </div>
-        </div>
+          </div>
+        )}
       </div>
       
       {/* Emoji picker */}

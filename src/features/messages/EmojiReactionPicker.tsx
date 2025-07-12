@@ -20,17 +20,6 @@ export interface EmojiReactionPickerProps {
 /**
  * Extended emoji set for the expanded picker
  * Organized by emotional categories for better UX
- * 
- * Categories:
- * - Happy/Positive: 😀-🙃
- * - Love/Affection: 😉-😙  
- * - Playful/Silly: 😋-🤑
- * - Thoughtful/Neutral: 🤗-🤥
- * - Tired/Sick: 😔-🤧
- * - Extreme/Special: 🥵-🧐
- * - Sad/Worried: 😕-😞
- * - Stressed/Angry: 😓-👿
- * - Special/Fun: 💀-🤖
  */
 const EXTENDED_EMOJIS = [
   // Happy & Positive emotions
@@ -57,67 +46,33 @@ const EXTENDED_EMOJIS = [
 /**
  * EmojiReactionPicker Component
  * 
- * This is the core emoji selection interface that appears when users long-press messages.
- * It mimics WhatsApp's emoji reaction system with:
- * 1. Quick access to 7 most common emojis
- * 2. Expandable grid for full emoji selection
- * 3. Smart positioning to stay within viewport
- * 4. Backdrop dismissal for intuitive UX
- * 
- * Architecture:
- * - State management for expanded/collapsed modes
- * - Dynamic positioning based on message location
- * - Event handling for emoji selection and dismissal
- * - Responsive design for mobile and desktop
+ * REBUILT with mobile-first approach and fixed width constraints
+ * - Maximum width: 250px (safe for 390px viewport)
+ * - Grid-based layout: 6 emojis per row maximum
+ * - No dynamic calculations that can fail
+ * - Simple, reliable positioning
  */
 export function EmojiReactionPicker({ isVisible, position, onEmojiSelect, onClose }: EmojiReactionPickerProps) {
-  /**
-   * Controls whether the picker shows the default 7 emojis or the extended grid
-   * false = Default mode (7 emojis + plus button)
-   * true = Extended mode (full emoji grid + back button)
-   */
   const [showExtended, setShowExtended] = useState(false)
 
-  /**
-   * Handles emoji selection and cleanup
-   * Calls the parent callback and closes the picker
-   * 
-   * @param emoji - The selected emoji string
-   */
   const handleEmojiClick = (emoji: string) => {
     onEmojiSelect(emoji)
     handleClose()
   }
 
-  /**
-   * Expands to show the full emoji grid
-   * Transitions from default view to extended view
-   */
   const handleMoreClick = () => {
     setShowExtended(true)
   }
 
-  /**
-   * Returns to the default 7-emoji view
-   * Used when user wants to go back from extended view
-   */
   const handleBackClick = () => {
     setShowExtended(false)
   }
 
-  /**
-   * Closes the picker and resets state
-   * Ensures we always return to default view when reopened
-   */
   const handleClose = () => {
     setShowExtended(false)
     onClose()
   }
 
-  /**
-   * Handles backdrop clicks to dismiss the picker
-   * Provides intuitive "click outside to close" behavior
-   */
   const handleBackdropClick = () => {
     handleClose()
   }
@@ -128,96 +83,75 @@ export function EmojiReactionPicker({ isVisible, position, onEmojiSelect, onClos
   }
 
   /**
-   * Calculate optimal picker position and width
+   * FIXED WIDTH APPROACH - No more dynamic calculations
    * 
-   * Strategy:
-   * 1. Dynamic width based on content and viewport
-   * 2. Center the picker horizontally on the message
-   * 3. Position above the message with small offset
-   * 4. Ensure picker stays within viewport bounds with proper margins
-   * 
-   * Width calculation (content-aware):
-   * - Default mode: 8 buttons × 24px + 7 gaps × 1px + 12px padding = 211px
-   * - Extended mode: 7 columns × 24px + 6 gaps × 1px + 16px padding = 190px
-   * - Apply 15% reduction as requested: 211px → 180px, 190px → 162px
+   * Mobile-first constraints:
+   * - Default mode: 250px max width (7 × 32px buttons + 6 × 2px gaps + 16px padding = 238px)
+   * - Extended mode: 250px max width (6 × 32px buttons + 5 × 2px gaps + 32px padding = 234px)
+   * - Always safe for 390px viewport (leaves 70px margins)
    */
-  const baseWidth = showExtended ? 162 : 180 // 15% reduced from calculated content width
-  const maxAllowedWidth = Math.min(baseWidth, window.innerWidth - 40) // 20px margin each side
-  const pickerHeight = showExtended ? 180 : 48 // Reduced height for better proportions
-  
-  // Calculate horizontal position (centered on message, but within bounds)
-  const safetyMargin = 20; // Proper mobile margin
+  const PICKER_WIDTH = 250 // Fixed maximum width
+  const PICKER_HEIGHT = showExtended ? 160 : 48
+
+  // Calculate position with proper constraints
   const leftPosition = Math.max(
-    safetyMargin, // Minimum margin from left edge
+    20, // 20px minimum margin from left
     Math.min(
-      position.x - maxAllowedWidth / 2, // Center on message
-      window.innerWidth - maxAllowedWidth - safetyMargin // Maximum position
+      position.x - PICKER_WIDTH / 2, // Center on message
+      window.innerWidth - PICKER_WIDTH - 20 // 20px minimum margin from right
     )
   )
   
-  // Calculate vertical position (above message, but within bounds)
   const topPosition = Math.max(
-    20, // Minimum 20px from top edge (increased safety)
-    position.y - pickerHeight - 12 // 12px offset above the message
+    20, // 20px minimum margin from top
+    position.y - PICKER_HEIGHT - 12 // 12px offset above message
   )
 
   return (
     <>
-      {/* 
-        Backdrop overlay
-        - Covers entire screen to capture outside clicks
-        - Semi-transparent to darken background
-        - High z-index to appear above message content
-      */}
+      {/* Backdrop overlay */}
       <div 
         className="fixed inset-0 z-40 bg-black/10" 
         onClick={handleBackdropClick}
         aria-label="Close emoji picker"
       />
 
-      {/* 
-        Main picker container
-        - Positioned absolutely at calculated coordinates
-        - Highest z-index to appear above backdrop
-        - Rounded corners and shadow for modern look
-        - Dark mode support
-      */}
+      {/* Main picker container - FIXED WIDTH */}
       <div 
         className="fixed z-50 bg-white dark:bg-gray-800 shadow-lg border border-gray-200 dark:border-gray-700"
         style={{ 
           left: leftPosition, 
           top: topPosition,
-          // Conditional styling based on mode
-          borderRadius: showExtended ? '12px' : '24px', // Better proportions for smaller sizes
-          // Dynamic width based on content and viewport
-          width: `${maxAllowedWidth}px`,
-          maxWidth: `${maxAllowedWidth}px`,
-          minWidth: `${Math.min(160, maxAllowedWidth)}px`, // Minimum usable width
-          // Ensure content doesn't overflow
+          width: PICKER_WIDTH,
+          maxWidth: PICKER_WIDTH,
+          height: PICKER_HEIGHT,
+          borderRadius: showExtended ? '12px' : '24px',
           overflow: 'hidden',
-          // Better box sizing
-          boxSizing: 'border-box',
-          // Force content to fit
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'stretch'
+          boxSizing: 'border-box'
         }}
         role="dialog"
         aria-label="Emoji reaction picker"
       >
         {!showExtended ? (
-          /* 
-            DEFAULT MODE: Quick emoji bar
-            - Horizontal layout with 7 default emojis
-            - Plus button for expanding to full grid
-            - Optimized for quick reactions
-          */
-          <div className="flex items-center gap-0.5 px-1.5 py-1 overflow-x-auto scrollbar-hide" style={{ flexShrink: 1, minWidth: 0 }}>
+          /* DEFAULT MODE: Quick emoji bar with FIXED sizing */
+          <div 
+            className="flex items-center justify-center gap-2 px-4 py-2"
+            style={{ 
+              width: '100%', 
+              height: '100%',
+              overflow: 'hidden'
+            }}
+          >
             {DEFAULT_REACTION_EMOJIS.map((emoji) => (
               <button
                 key={emoji}
                 onClick={() => handleEmojiClick(emoji)}
-                className="flex items-center justify-center w-6 h-6 rounded-full text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 hover:scale-110 transform flex-shrink-0"
+                className="flex items-center justify-center rounded-full text-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 hover:scale-110 transform"
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  flexShrink: 0
+                }}
                 title={`React with ${emoji}`}
                 aria-label={`React with ${emoji}`}
               >
@@ -225,53 +159,61 @@ export function EmojiReactionPicker({ isVisible, position, onEmojiSelect, onClos
               </button>
             ))}
             
-            {/* Plus button to expand to full grid */}
+            {/* Plus button */}
             <button
               onClick={handleMoreClick}
-              className="flex items-center justify-center w-6 h-6 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 hover:scale-110 transform text-gray-600 dark:text-gray-400 flex-shrink-0"
+              className="flex items-center justify-center rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 hover:scale-110 transform text-gray-600 dark:text-gray-400"
+              style={{
+                width: '32px',
+                height: '32px',
+                flexShrink: 0
+              }}
               title="More emojis"
               aria-label="Show more emojis"
             >
-              <Plus className="h-2.5 w-2.5" />
+              <Plus className="h-4 w-4" />
             </button>
           </div>
         ) : (
-          /* 
-            EXTENDED MODE: Full emoji grid
-            - Grid layout for browsing all available emojis
-            - Back button to return to default view
-            - Scrollable for large emoji sets
-          */
-          <div className="p-2">
+          /* EXTENDED MODE: Fixed grid layout */
+          <div className="p-4 h-full overflow-hidden">
             {/* Header with back button */}
-            <div className="flex items-center gap-1.5 mb-1.5">
+            <div className="flex items-center gap-2 mb-3">
               <button
                 onClick={handleBackClick}
-                className="flex items-center justify-center w-5 h-5 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-gray-600 dark:text-gray-400"
+                className="flex items-center justify-center w-6 h-6 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 text-gray-600 dark:text-gray-400"
                 title="Back to quick reactions"
                 aria-label="Back to quick reactions"
               >
-                <svg className="h-2.5 w-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <span className="text-xs font-medium text-gray-700 dark:text-gray-300">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 All Emojis
               </span>
             </div>
 
             {/* 
-              Emoji grid
-              - Responsive grid layout (optimized for smaller width)
-              - Hover effects for better UX
-              - Keyboard navigation support
+              FIXED GRID: 6 columns maximum (6 × 32px + 5 × 2px + padding = fits in 250px)
             */}
-            <div className="grid grid-cols-8 gap-0.5 max-h-32 overflow-y-auto">
+            <div 
+              className="grid gap-1 overflow-y-auto"
+              style={{
+                gridTemplateColumns: 'repeat(6, 32px)',
+                justifyContent: 'center',
+                maxHeight: '100px'
+              }}
+            >
               {EXTENDED_EMOJIS.map((emoji) => (
                 <button
                   key={emoji}
                   onClick={() => handleEmojiClick(emoji)}
-                  className="flex items-center justify-center w-5 h-5 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 hover:scale-110 transform text-xs"
+                  className="flex items-center justify-center rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 hover:scale-110 transform text-sm"
+                  style={{
+                    width: '32px',
+                    height: '32px'
+                  }}
                   title={`React with ${emoji}`}
                   aria-label={`React with ${emoji}`}
                 >
