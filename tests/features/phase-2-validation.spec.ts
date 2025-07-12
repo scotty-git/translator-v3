@@ -7,8 +7,8 @@ test.describe('Phase 2: Sync Service Validation', () => {
   const testMessageId = 'test-msg-123'
   
   test.beforeEach(async ({ page }) => {
-    // Navigate to test environment
-    await page.goto('http://127.0.0.1:5173')
+    // Navigate to production environment 
+    await page.goto('https://translator-v3.vercel.app')
     
     // Set up console logging for debugging
     page.on('console', msg => {
@@ -32,8 +32,8 @@ test.describe('Phase 2: Sync Service Validation', () => {
     
     try {
       // Both users navigate to the app
-      await page1.goto('http://127.0.0.1:5173')
-      await page2.goto('http://127.0.0.1:5173')
+      await page1.goto('https://translator-v3.vercel.app')
+      await page2.goto('https://translator-v3.vercel.app')
       
       // Take screenshots to verify UI appearance
       await page1.screenshot({ path: 'test-results/phase2-reactions-page1.png' })
@@ -175,7 +175,7 @@ test.describe('Phase 2: Sync Service Validation', () => {
     const context1 = await browser.newContext()
     const page1 = await context1.newPage()
     
-    await page1.goto('http://127.0.0.1:5173')
+    await page1.goto('https://translator-v3.vercel.app')
     await page1.click('[data-test="create-session"]')
     
     const sessionCode = await page1.locator('[data-test="session-code"]').textContent()
@@ -196,7 +196,7 @@ test.describe('Phase 2: Sync Service Validation', () => {
     const context2 = await browser.newContext()
     const page2 = await context2.newPage()
     
-    await page2.goto('http://127.0.0.1:5173')
+    await page2.goto('https://translator-v3.vercel.app')
     await page2.fill('[data-test="session-code-input"]', sessionCode!)
     await page2.click('[data-test="join-session"]')
     
