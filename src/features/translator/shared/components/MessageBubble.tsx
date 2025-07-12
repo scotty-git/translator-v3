@@ -379,11 +379,10 @@ export function MessageBubble({
       
       {/* Emoji picker */}
       <EmojiReactionPicker
-        isOpen={showEmojiPicker}
+        isVisible={showEmojiPicker}
         position={pickerPosition}
-        onSelect={handleReactionToggle}
+        onEmojiSelect={handleReactionToggle}
         onClose={() => setShowEmojiPicker(false)}
-        currentReactions={userReactions}
       />
     </>
   )

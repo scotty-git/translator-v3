@@ -9,7 +9,7 @@
   - main:
     - button
     - button
-    - text: "Session: 2052 Connected Partner Online"
+    - text: "Session: 7896 Connected Partner Online"
     - button "🎉"
     - combobox:
       - option "ES" [selected]
@@ -19,7 +19,7 @@
     - paragraph: ¡Mensaje popular!
     - button "Show original"
     - paragraph: Popular message!
-    - text: 11:22 AM
+    - text: 11:39 AM
     - button "Play audio"
     - button "Scroll to bottom"
     - textbox "Type message..."

@@ -9,18 +9,15 @@
   - main:
     - button
     - button
-    - text: "Session: 9389 Connected Partner Online"
+    - text: "Session: 6511 Connected Partner Online"
     - button "🎉"
     - combobox:
       - option "ES" [selected]
       - option "PT"
       - option "FR"
       - option "DE"
-    - paragraph: Mi propio mensaje
-    - button "Show original"
-    - paragraph: My own message
-    - text: 11:22 AM
-    - button "Play audio"
+    - heading "Ready to Translate" [level=3]
+    - paragraph: Click the button below to start recording and translate between languages automatically.
     - button "Scroll to bottom"
     - textbox "Type message..."
     - button "Send" [disabled]

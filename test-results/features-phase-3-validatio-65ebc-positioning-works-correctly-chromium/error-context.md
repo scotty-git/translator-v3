@@ -9,7 +9,7 @@
   - main:
     - button
     - button
-    - text: "Session: 6999 Connected Partner Online"
+    - text: "Session: 5973 Connected Partner Online"
     - button "🎉"
     - combobox:
       - option "ES" [selected]
@@ -19,7 +19,7 @@
     - paragraph: Prueba de posicionamiento
     - button "Show original"
     - paragraph: Test positioning
-    - text: 11:23 AM
+    - text: 11:39 AM
     - button "Play audio"
     - button "Scroll to bottom"
     - textbox "Type message..."

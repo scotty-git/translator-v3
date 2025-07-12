@@ -9,17 +9,17 @@
   - main:
     - button
     - button
-    - text: "Session: 4304 Connected Partner Online"
+    - text: "Session: 1763 Connected Partner Online"
     - button "🎉"
     - combobox:
       - option "ES" [selected]
       - option "PT"
       - option "FR"
       - option "DE"
-    - paragraph: ¡Hola, invitado! ¡Reacciona a esto!
+    - paragraph: Prueba de alternar
     - button "Show original"
-    - paragraph: Hello guest, react to this!
-    - text: 11:38 AM
+    - paragraph: Toggle test
+    - text: 11:39 AM
     - button "Play audio"
     - button "Scroll to bottom"
     - textbox "Type message..."
