@@ -2,13 +2,25 @@ import type {
   QueuedSessionMessage, 
   SessionMessage, 
   ConnectionStatus,
-  QueuedMessage 
+  QueuedMessage,
+  DatabaseReaction,
+  MessageReactions,
+  EmojiReaction
 } from '@/types/database'
 import type { RealtimeChannel } from '@supabase/supabase-js'
 import type { PresenceService } from './presence'
 import { RealtimeConnection } from './realtime'
 import type { RealtimeConnectionConfig } from './realtime'
 import { supabase } from '@/lib/supabase'
+import type { 
+  SyncOperation,
+  QueuedSyncOperation,
+  MessageSyncCallbacks,
+  MessageWithReactionsData,
+  ReactionOperation,
+  EditOperation,
+  DeleteOperation
+} from './types/sync.types'
 
 /**
  * MessageSyncService - Handles real-time message synchronization for sessions
@@ -23,7 +35,9 @@ import { supabase } from '@/lib/supabase'
  */
 export class MessageSyncService {
   private messageQueue: Map<string, QueuedSessionMessage> = new Map()
+  private syncQueue: Map<string, QueuedSyncOperation> = new Map()
   private messageChannel: RealtimeChannel | null = null
+  private reactionChannel: RealtimeChannel | null = null
   private retryTimeouts: Map<string, NodeJS.Timeout> = new Map()
   private isProcessingQueue = false
   private sequenceNumber = 0
@@ -33,6 +47,14 @@ export class MessageSyncService {
   private onMessageReceived?: (message: SessionMessage) => void
   private onMessageDelivered?: (messageId: string) => void
   private onMessageFailed?: (messageId: string, error: string) => void
+  
+  // New event listeners for Phase 2
+  private onReactionAdded?: (reaction: DatabaseReaction) => void
+  private onReactionRemoved?: (reaction: DatabaseReaction) => void
+  private onMessageEdited?: (messageId: string, newText: string) => void
+  private onMessageDeleted?: (messageId: string) => void
+  private onReTranslationNeeded?: (messageId: string, originalText: string) => void
+  private onMessagesLoaded?: (messages: any[]) => void
 
   // Current session state
   private currentSessionId: string | null = null
@@ -45,7 +67,7 @@ export class MessageSyncService {
 
   /**
    * Load existing messages from database when joining a session
-   * This ensures users see the full conversation history
+   * This ensures users see the full conversation history with reactions
    */
   private async loadMessageHistory(sessionId: string): Promise<void> {
     console.log('📚 [MessageSyncService] Loading message history for session:', sessionId)
@@ -53,8 +75,17 @@ export class MessageSyncService {
     try {
       const { data: messages, error } = await supabase
         .from('messages')
-        .select('*')
+        .select(`
+          *,
+          message_reactions (
+            id,
+            user_id,
+            emoji,
+            created_at
+          )
+        `)
         .eq('session_id', sessionId)
+        .eq('is_deleted', false) // Don't load deleted messages
         .order('sequence_number', { ascending: true })
       
       if (error) {
@@ -70,17 +101,36 @@ export class MessageSyncService {
       console.log(`📚 [MessageSyncService] Found ${messages.length} historical messages`)
       
       // Process each historical message
-      messages.forEach(message => {
+      messages.forEach((message: MessageWithReactionsData) => {
         // Skip our own messages (we already have them locally)
         if (message.sender_id !== this.currentUserId) {
           console.log('📥 [MessageSyncService] Processing historical message:', {
             messageId: message.id,
             senderId: message.sender_id,
-            timestamp: message.timestamp
+            timestamp: message.timestamp,
+            reactionsCount: message.message_reactions?.length || 0
           })
           
+          // Convert to SessionMessage format and include reactions
+          const sessionMessage: SessionMessage & { reactions?: MessageReactions } = {
+            id: message.id,
+            session_id: message.session_id,
+            sender_id: message.sender_id,
+            original_text: message.original_text,
+            translated_text: message.translated_text,
+            original_language: message.original_language,
+            timestamp: message.timestamp,
+            is_delivered: message.is_delivered,
+            sequence_number: message.sequence_number,
+            is_edited: message.is_edited,
+            edited_at: message.edited_at,
+            is_deleted: message.is_deleted,
+            deleted_at: message.deleted_at,
+            reactions: this.processReactions(message.message_reactions || [])
+          }
+          
           // Use the existing handler to process the message
-          this.handleIncomingMessage(message as SessionMessage)
+          this.handleIncomingMessage(sessionMessage)
         }
       })
       
@@ -88,6 +138,33 @@ export class MessageSyncService {
     } catch (error) {
       console.error('❌ [MessageSyncService] Error loading message history:', error)
     }
+  }
+
+  /**
+   * Process raw reactions into grouped format
+   */
+  private processReactions(reactions: DatabaseReaction[]): MessageReactions {
+    const grouped: MessageReactions = {}
+    
+    reactions.forEach((reaction) => {
+      if (!grouped[reaction.emoji]) {
+        grouped[reaction.emoji] = {
+          emoji: reaction.emoji,
+          count: 0,
+          users: [],
+          hasReacted: false
+        }
+      }
+      
+      grouped[reaction.emoji].users.push(reaction.user_id)
+      grouped[reaction.emoji].count++
+      
+      if (reaction.user_id === this.currentUserId) {
+        grouped[reaction.emoji].hasReacted = true
+      }
+    })
+    
+    return grouped
   }
 
   /**
@@ -271,11 +348,17 @@ export class MessageSyncService {
 
       // Set up message subscription using RealtimeConnection
       await this.setupMessageSubscription(sessionId)
+      
+      // Set up reaction subscription for real-time reaction updates
+      await this.setupReactionSubscription(sessionId)
 
       // Process any queued messages
       await this.processMessageQueue()
+      
+      // Process any queued sync operations
+      await this.processSyncQueue()
 
-      console.log('✅ [MessageSyncService] Session initialized with history')
+      console.log('✅ [MessageSyncService] Session initialized with history and subscriptions')
       
     } catch (error) {
       console.error('❌ [MessageSyncService] Failed to initialize session:', error)
@@ -369,6 +452,142 @@ export class MessageSyncService {
   }
 
   /**
+   * Set up real-time reaction subscription
+   */
+  private async setupReactionSubscription(sessionId: string): Promise<void> {
+    if (!this.realtimeConnection) {
+      throw new Error('RealtimeConnection not available')
+    }
+
+    console.log('👍 [MessageSyncService] Setting up reaction subscription for session:', sessionId)
+    
+    // Create the reactions channel via RealtimeConnection
+    this.reactionChannel = await this.realtimeConnection.createChannel({
+      name: `reactions:${sessionId}`,
+      type: 'reactions'
+    })
+    
+    // Set up reaction event handlers
+    this.reactionChannel
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'message_reactions'
+      }, (payload) => {
+        console.log('👍 [MessageSyncService] Reaction INSERT event received:', {
+          messageId: payload.new.message_id,
+          emoji: payload.new.emoji,
+          userId: payload.new.user_id
+        })
+        
+        // Notify listeners about the new reaction
+        this.onReactionAdded?.(payload.new as DatabaseReaction)
+      })
+      .on('postgres_changes', {
+        event: 'DELETE',
+        schema: 'public',
+        table: 'message_reactions'
+      }, (payload) => {
+        console.log('👎 [MessageSyncService] Reaction DELETE event received:', {
+          messageId: payload.old.message_id,
+          emoji: payload.old.emoji,
+          userId: payload.old.user_id
+        })
+        
+        // Notify listeners about the removed reaction
+        this.onReactionRemoved?.(payload.old as DatabaseReaction)
+      })
+      .subscribe(async (status) => {
+        console.log('👍 [MessageSyncService] Reaction subscription status:', status)
+      })
+  }
+
+  /**
+   * Process queued sync operations (reactions, edits, deletes)
+   */
+  private async processSyncQueue(): Promise<void> {
+    if (this.syncQueue.size === 0 || this.getConnectionStatus() !== 'connected') {
+      return
+    }
+    
+    console.log('🔄 [MessageSyncService] Processing sync queue...')
+    const operations = Array.from(this.syncQueue.values())
+      .sort((a, b) => a.sequence - b.sequence)
+    
+    for (const queuedOp of operations) {
+      try {
+        await this.processSyncOperation(queuedOp)
+        this.syncQueue.delete(queuedOp.id)
+      } catch (error) {
+        console.error('❌ [MessageSyncService] Failed to process sync operation:', error)
+        this.handleSyncOperationFailure(queuedOp, error)
+      }
+    }
+  }
+
+  /**
+   * Process a single sync operation
+   */
+  private async processSyncOperation(queuedOp: QueuedSyncOperation): Promise<void> {
+    const { operation } = queuedOp
+    
+    switch (operation.type) {
+      case 'add_reaction':
+        await this.addReaction(
+          operation.messageId,
+          operation.emoji,
+          operation.userId
+        )
+        break
+        
+      case 'remove_reaction':
+        await this.removeReaction(
+          operation.messageId,
+          operation.emoji,
+          operation.userId
+        )
+        break
+        
+      case 'edit_message':
+        await this.editMessage(
+          operation.messageId,
+          operation.originalText
+        )
+        break
+        
+      case 'delete_message':
+        await this.deleteMessage(operation.messageId)
+        break
+        
+      default:
+        console.warn('⚠️ [MessageSyncService] Unknown operation type:', operation)
+    }
+  }
+
+  /**
+   * Handle sync operation failure
+   */
+  private handleSyncOperationFailure(queuedOp: QueuedSyncOperation, error: any): void {
+    queuedOp.retryCount++
+    queuedOp.lastAttempt = new Date().toISOString()
+    queuedOp.error = error?.message || 'Unknown error'
+    
+    if (queuedOp.retryCount < 3) {
+      // Schedule retry
+      const delay = this.getRetryDelay(queuedOp.retryCount - 1)
+      setTimeout(() => {
+        this.processSyncQueue().catch(console.error)
+      }, delay)
+      
+      console.log(`⏰ [MessageSyncService] Scheduled sync retry in ${delay}ms`)
+    } else {
+      // Max retries exceeded, remove from queue
+      this.syncQueue.delete(queuedOp.id)
+      console.error(`💀 [MessageSyncService] Sync operation failed permanently:`, queuedOp)
+    }
+  }
+
+  /**
    * Handle incoming message from real-time subscription
    */
   private handleIncomingMessage(message: SessionMessage): void {
@@ -403,20 +622,215 @@ export class MessageSyncService {
   /**
    * Set event handlers for message sync
    */
-  setEventHandlers({
-    onMessageReceived,
-    onMessageDelivered,
-    onMessageFailed
-  }: {
-    onMessageReceived?: (message: SessionMessage) => void
-    onMessageDelivered?: (messageId: string) => void
-    onMessageFailed?: (messageId: string, error: string) => void
-  }): void {
-    this.onMessageReceived = onMessageReceived
-    this.onMessageDelivered = onMessageDelivered
-    this.onMessageFailed = onMessageFailed
+  setEventHandlers(callbacks: MessageSyncCallbacks): void {
+    // Set all callbacks from the MessageSyncCallbacks interface
+    this.onMessageReceived = callbacks.onMessageReceived
+    this.onMessageDelivered = callbacks.onMessageDelivered
+    this.onMessageFailed = callbacks.onMessageFailed
+    this.onReactionAdded = callbacks.onReactionAdded
+    this.onReactionRemoved = callbacks.onReactionRemoved
+    this.onMessageEdited = callbacks.onMessageEdited
+    this.onMessageDeleted = callbacks.onMessageDeleted
+    this.onReTranslationNeeded = callbacks.onReTranslationNeeded
+    this.onMessagesLoaded = callbacks.onMessagesLoaded
     
     console.log('✅ [MessageSyncService] Event handlers set successfully')
+  }
+
+  /**
+   * Add a reaction to a message
+   */
+  async addReaction(messageId: string, emoji: string, userId: string): Promise<void> {
+    const operation: ReactionOperation = {
+      type: 'add_reaction',
+      messageId,
+      userId,
+      emoji,
+      timestamp: new Date().toISOString()
+    }
+    
+    if (this.getConnectionStatus() === 'connected') {
+      try {
+        const { error } = await supabase
+          .from('message_reactions')
+          .insert({
+            message_id: messageId,
+            user_id: userId,
+            emoji: emoji
+          })
+        
+        if (error) throw error
+        
+        console.log('✅ [MessageSyncService] Reaction added successfully:', {
+          messageId,
+          emoji,
+          userId
+        })
+        
+      } catch (error) {
+        console.error('❌ [MessageSyncService] Failed to add reaction:', error)
+        this.queueSyncOperation(operation)
+      }
+    } else {
+      this.queueSyncOperation(operation)
+    }
+  }
+
+  /**
+   * Remove a reaction from a message
+   */
+  async removeReaction(messageId: string, emoji: string, userId: string): Promise<void> {
+    const operation: ReactionOperation = {
+      type: 'remove_reaction',
+      messageId,
+      userId,
+      emoji,
+      timestamp: new Date().toISOString()
+    }
+    
+    if (this.getConnectionStatus() === 'connected') {
+      try {
+        const { error } = await supabase
+          .from('message_reactions')
+          .delete()
+          .eq('message_id', messageId)
+          .eq('user_id', userId)
+          .eq('emoji', emoji)
+        
+        if (error) throw error
+        
+        console.log('✅ [MessageSyncService] Reaction removed successfully:', {
+          messageId,
+          emoji,
+          userId
+        })
+        
+      } catch (error) {
+        console.error('❌ [MessageSyncService] Failed to remove reaction:', error)
+        this.queueSyncOperation(operation)
+      }
+    } else {
+      this.queueSyncOperation(operation)
+    }
+  }
+
+  /**
+   * Edit a message and trigger re-translation
+   */
+  async editMessage(messageId: string, newOriginalText: string): Promise<void> {
+    const operation: EditOperation = {
+      type: 'edit_message',
+      messageId,
+      originalText: newOriginalText,
+      previousText: '', // Will be filled from current message
+      timestamp: new Date().toISOString()
+    }
+    
+    if (this.getConnectionStatus() === 'connected') {
+      try {
+        // Get current message for history
+        const { data: currentMessage, error: fetchError } = await supabase
+          .from('messages')
+          .select('original_text')
+          .eq('id', messageId)
+          .single()
+        
+        if (fetchError) throw fetchError
+        
+        operation.previousText = currentMessage.original_text
+        
+        // Update message
+        const { error: updateError } = await supabase
+          .from('messages')
+          .update({
+            original_text: newOriginalText,
+            is_edited: true,
+            edited_at: new Date().toISOString(),
+            // Clear translation to trigger re-translation
+            translated_text: null
+          })
+          .eq('id', messageId)
+        
+        if (updateError) throw updateError
+        
+        console.log('✅ [MessageSyncService] Message edited successfully:', messageId)
+        
+        // Notify listeners
+        this.onMessageEdited?.(messageId, newOriginalText)
+        this.onReTranslationNeeded?.(messageId, newOriginalText)
+        
+      } catch (error) {
+        console.error('❌ [MessageSyncService] Failed to edit message:', error)
+        this.queueSyncOperation(operation)
+      }
+    } else {
+      this.queueSyncOperation(operation)
+    }
+  }
+
+  /**
+   * Soft delete a message
+   */
+  async deleteMessage(messageId: string): Promise<void> {
+    const operation: DeleteOperation = {
+      type: 'delete_message',
+      messageId,
+      timestamp: new Date().toISOString()
+    }
+    
+    if (this.getConnectionStatus() === 'connected') {
+      try {
+        const { error } = await supabase
+          .from('messages')
+          .update({
+            is_deleted: true,
+            deleted_at: new Date().toISOString(),
+            // Clear sensitive content
+            original_text: '',
+            translated_text: ''
+          })
+          .eq('id', messageId)
+        
+        if (error) throw error
+        
+        // Also delete all reactions
+        await supabase
+          .from('message_reactions')
+          .delete()
+          .eq('message_id', messageId)
+        
+        console.log('✅ [MessageSyncService] Message deleted successfully:', messageId)
+        
+        // Notify listeners
+        this.onMessageDeleted?.(messageId)
+        
+      } catch (error) {
+        console.error('❌ [MessageSyncService] Failed to delete message:', error)
+        this.queueSyncOperation(operation)
+      }
+    } else {
+      this.queueSyncOperation(operation)
+    }
+  }
+
+  /**
+   * Queue a sync operation for later processing
+   */
+  private queueSyncOperation(operation: SyncOperation): void {
+    const operationId = crypto.randomUUID()
+    const queuedOperation: QueuedSyncOperation = {
+      id: operationId,
+      operation,
+      retryCount: 0,
+      queuedAt: new Date().toISOString(),
+      sequence: this.sequenceNumber++
+    }
+    
+    this.syncQueue.set(operationId, queuedOperation)
+    console.log('📦 [MessageSyncService] Sync operation queued:', {
+      type: operation.type,
+      operationId
+    })
   }
 
   /**
@@ -455,6 +869,17 @@ export class MessageSyncService {
       }
       this.messageChannel = null
     }
+    
+    // Remove reaction channel via RealtimeConnection
+    if (this.reactionChannel && this.realtimeConnection) {
+      console.log('🔌 [MessageSyncService] Removing reaction channel...')
+      try {
+        await this.realtimeConnection.removeChannel(`reactions:${this.currentSessionId}`)
+      } catch (error) {
+        console.error('❌ [MessageSyncService] Error removing reaction channel:', error)
+      }
+      this.reactionChannel = null
+    }
 
     // Reset subscription ready state
     this.subscriptionReady = false
@@ -477,6 +902,7 @@ export class MessageSyncService {
     
     // Clear message queue
     this.messageQueue.clear()
+    this.syncQueue.clear()
     this.sequenceNumber = 0
     
     // Clear processed messages tracking
@@ -486,6 +912,12 @@ export class MessageSyncService {
     this.onMessageReceived = undefined
     this.onMessageDelivered = undefined
     this.onMessageFailed = undefined
+    this.onReactionAdded = undefined
+    this.onReactionRemoved = undefined
+    this.onMessageEdited = undefined
+    this.onMessageDeleted = undefined
+    this.onReTranslationNeeded = undefined
+    this.onMessagesLoaded = undefined
     
     console.log('✅ [MessageSyncService] Complete cleanup finished')
   }

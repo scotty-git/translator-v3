@@ -278,6 +278,9 @@ export interface QueuedSessionMessage {
   status: 'pending' | 'sending' | 'sent' | 'failed'
   retryCount: number
   lastAttempt: Date
+  queuedAt: string
+  lastError?: string
+  sequence: number
 }
 
 // Database reaction type (matches database schema)
