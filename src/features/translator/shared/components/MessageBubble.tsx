@@ -63,7 +63,14 @@ export function MessageBubble({
     console.log(`🔍 MessageBubble: canReact=${canReact}, isSessionMode=${isSessionMode}, isOwnMessage=${isOwnMessage}`, {
       messageId: message.id,
       senderId: message.sender_id || message.user_id,
-      currentUserId
+      currentUserId,
+      reactionsType: message.reactions ? typeof message.reactions : 'none',
+      reactionsFormat: message.reactions ? Object.keys(message.reactions).map(emoji => ({
+        emoji,
+        dataType: typeof message.reactions![emoji],
+        isArray: Array.isArray(message.reactions![emoji]),
+        value: message.reactions![emoji]
+      })) : []
     })
   }
   
@@ -221,10 +228,14 @@ export function MessageBubble({
   })
   
   // Get user's reactions
+  // SessionTranslator provides reactions as Record<string, string[]> format
   const userReactions = message.reactions 
-    ? Object.keys(message.reactions).filter(emoji => 
-        message.reactions![emoji].users.includes(currentUserId || '')
-      )
+    ? Object.keys(message.reactions).filter(emoji => {
+        const reactionData = message.reactions![emoji]
+        // Handle both array format (SessionTranslator) and object format (fallback)
+        const users = Array.isArray(reactionData) ? reactionData : reactionData?.users || []
+        return users.includes(currentUserId || '')
+      })
     : []
 
   return (
