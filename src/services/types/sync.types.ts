@@ -1,9 +1,11 @@
-import type { DatabaseReaction, MessageReactions } from '@/types/database'
-
 /**
- * Operation types for message synchronization
+ * Sync operation types for MessageSyncService
+ * Handles reactions, edits, and deletions with offline support
  */
 
+import type { DatabaseReaction } from '../../types/database'
+
+// Reaction operations
 export interface ReactionOperation {
   type: 'add_reaction' | 'remove_reaction'
   messageId: string
@@ -12,6 +14,7 @@ export interface ReactionOperation {
   timestamp: string
 }
 
+// Edit operation
 export interface EditOperation {
   type: 'edit_message'
   messageId: string
@@ -20,33 +23,33 @@ export interface EditOperation {
   timestamp: string
 }
 
+// Delete operation
 export interface DeleteOperation {
   type: 'delete_message'
   messageId: string
   timestamp: string
 }
 
+// Message operation (existing)
 export interface MessageOperation {
   type: 'send_message'
-  message: {
-    id: string
-    session_id: string
-    sender_id: string
-    original_text: string
-    translated_text: string | null
-    original_language: string
-    timestamp: string
-  }
+  messageId: string
+  sessionId: string
+  senderId: string
+  originalText: string
+  translatedText: string
+  originalLanguage: string
+  timestamp: string
 }
 
-// Unified sync operation type
+// Union type for all sync operations
 export type SyncOperation = 
   | ReactionOperation 
   | EditOperation 
   | DeleteOperation
   | MessageOperation
 
-// Extended queued operation interface
+// Queued operation with retry metadata
 export interface QueuedSyncOperation {
   id: string
   operation: SyncOperation
@@ -57,40 +60,52 @@ export interface QueuedSyncOperation {
   sequence: number
 }
 
-// Callback interfaces for UI updates
-export interface MessageSyncCallbacks {
-  // Existing callbacks
-  onMessageReceived?: (message: any) => void
-  onMessageDelivered?: (messageId: string) => void
-  onMessageFailed?: (messageId: string, error: string) => void
-  
-  // New callbacks for reactions
-  onReactionAdded?: (reaction: DatabaseReaction) => void
-  onReactionRemoved?: (reaction: DatabaseReaction) => void
-  
-  // Callbacks for edits and deletes
-  onMessageEdited?: (messageId: string, newText: string) => void
-  onMessageDeleted?: (messageId: string) => void
-  onReTranslationNeeded?: (messageId: string, originalText: string) => void
-  
-  // Callback for batch operations
-  onMessagesLoaded?: (messages: any[]) => void
-}
-
-// Helper type for message with reactions
+// Message with reactions data from database join
 export interface MessageWithReactionsData {
   id: string
   session_id: string
   sender_id: string
   original_text: string
-  translated_text: string | null
+  translated_text: string
   original_language: string
   timestamp: string
   is_delivered: boolean
   sequence_number: number
-  is_edited?: boolean
-  edited_at?: string | null
-  is_deleted?: boolean
-  deleted_at?: string | null
+  is_edited: boolean
+  edited_at: string | null
+  is_deleted: boolean
+  deleted_at: string | null
   message_reactions?: DatabaseReaction[]
 }
+
+// Callbacks for UI updates
+export interface MessageSyncCallbacks {
+  // Existing callbacks
+  onMessageReceived?: (message: any) => void
+  onMessageDelivered?: (messageId: string) => void
+  onMessageFailed?: (messageId: string, error: string) => void
+  onConnectionStatusChange?: (status: 'connecting' | 'connected' | 'disconnected' | 'reconnecting') => void
+  
+  // New callbacks for reactions
+  onReactionAdded?: (reaction: DatabaseReaction) => void
+  onReactionRemoved?: (reaction: DatabaseReaction) => void
+  
+  // New callbacks for edits/deletes
+  onMessageEdited?: (messageId: string, newText: string) => void
+  onMessageDeleted?: (messageId: string) => void
+  onReTranslationNeeded?: (messageId: string, originalText: string) => void
+  
+  // Batch loading callback
+  onMessagesLoaded?: (messages: any[]) => void
+}
+
+// Reaction grouping for UI
+export interface ReactionGroup {
+  emoji: string
+  count: number
+  users: string[]
+  hasReacted: boolean
+}
+
+// Message reactions map
+export type MessageReactions = Record<string, ReactionGroup>

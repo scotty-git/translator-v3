@@ -202,9 +202,7 @@ export interface EmojiReaction {
  * Maps emoji characters to their reaction data.
  * Example: { "👍": { emoji: "👍", count: 3, users: ["user1", "user2", "user3"] } }
  */
-export interface MessageReactions {
-  [emoji: string]: EmojiReaction
-}
+export type MessageReactions = Record<string, EmojiReaction>
 
 /**
  * Default Emoji Set for Quick Reactions
