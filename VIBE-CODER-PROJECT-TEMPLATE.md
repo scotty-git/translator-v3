@@ -168,6 +168,7 @@ Before starting, verify:
 - [ ] Previous phases complete and working
 - [ ] Dev server is running: `npm run dev`
 - [ ] All tests pass: `npm test`
+- [ ] Playwright sanitizer is set up: `./scripts/safe-test-smart.sh`
 - [ ] Create safety commit: `git add -A && git commit -m "chore: pre-phase-X checkpoint"`
 - [ ] Create git tag: `git tag pre-phase-X`
 
@@ -213,7 +214,7 @@ After implementation:
 
 2. **Integration Testing**
    ```bash
-   npx playwright test tests/refactor/phase-X-validation.spec.ts
+   ./scripts/safe-test-smart.sh tests/refactor/phase-X-validation.spec.ts
    ```
 
 3. **Manual Testing**
@@ -296,6 +297,119 @@ npm run dev
 
 ## 🧪 Testing & Validation Framework
 
+### 🚨 CRITICAL SAFETY PROTOCOL: Test Output Sanitization
+
+**⚠️ NEVER RUN PLAYWRIGHT TESTS DIRECTLY - IT WILL CORRUPT CLAUDE CODE!**
+
+#### The Problem That Will Break Your Entire Development Session
+Running `npx playwright test` outputs Unicode characters (emojis like 🏠, ✅, →) that corrupt `~/.claude.json`. This causes:
+- `API Error: 400 "no low surrogate in string"`
+- Complete Claude Code failure - you lose your session
+- Hours of lost work and debugging
+
+#### The Solution: Mandatory Sanitized Testing
+
+**EVERY new project MUST include this sanitizer script in `/scripts/safe-test-smart.sh`:**
+
+```bash
+#!/bin/bash
+# safe-test-smart.sh - Smart replacement of Unicode characters
+#
+# 🚨 CRITICAL: This script prevents Claude Code JSON corruption!
+# 
+# NEVER run Playwright tests directly - they output Unicode/emoji characters
+# that corrupt ~/.claude.json and break your entire Claude Code session.
+#
+# This sanitizer replaces ALL non-ASCII characters with safe, readable labels
+# so Claude can process test output without corruption.
+#
+# Usage:
+#   ./scripts/safe-test-smart.sh tests/my-test.spec.ts
+#   ./scripts/safe-test-smart.sh --project=chromium
+#
+# What it does:
+# - Emojis → [EMOJI]
+# - Arrows → [ARROW]  
+# - Symbols → [SYM]
+# - Accented letters → plain ASCII (é→e, ñ→n)
+# - Everything else → [U+XXXX] format
+#
+# This MUST be used for ALL Playwright test runs to prevent corruption!
+
+npx playwright test "$@" 2>&1 | python3 -c "
+import sys
+import unicodedata
+
+def safe_char(char):
+    code = ord(char)
+    if code <= 127:
+        return char
+    
+    # Get Unicode category
+    category = unicodedata.category(char)
+    
+    # Emoji and symbols
+    if 0x1F300 <= code <= 0x1F9FF:
+        return '[EMOJI]'
+    # Arrows
+    elif 0x2190 <= code <= 0x21FF:
+        return '[ARROW]'
+    # Box drawing
+    elif 0x2500 <= code <= 0x257F:
+        return '[BOX]'
+    # Math symbols
+    elif category.startswith('Sm'):
+        return '[MATH]'
+    # Currency
+    elif category == 'Sc':
+        return '[CURR]'
+    # Other symbols
+    elif category.startswith('S'):
+        return '[SYM]'
+    # Letters with accents
+    elif category.startswith('L'):
+        # Try to get ASCII equivalent
+        try:
+            normalized = unicodedata.normalize('NFD', char)
+            ascii_char = normalized.encode('ascii', 'ignore').decode('ascii')
+            if ascii_char:
+                return ascii_char
+        except:
+            pass
+        return '[CHAR]'
+    else:
+        return '[U+{:04X}]'.format(code)
+
+for line in sys.stdin:
+    output = ''.join(safe_char(c) for c in line)
+    print(output, end='')
+"
+```
+
+#### Project Setup Requirements
+
+1. **Create scripts directory**: `mkdir -p scripts`
+2. **Add sanitizer script**: Save the above as `/scripts/safe-test-smart.sh`
+3. **Make executable**: `chmod +x scripts/safe-test-smart.sh`
+4. **Update package.json**:
+   ```json
+   "scripts": {
+     "test:e2e": "./scripts/safe-test-smart.sh",
+     "test:playwright": "./scripts/safe-test-smart.sh"
+   }
+   ```
+
+#### Usage in ALL Test Examples
+
+```bash
+# ❌ NEVER DO THIS:
+npx playwright test                    # WILL CORRUPT CLAUDE.JSON!
+
+# ✅ ALWAYS DO THIS:
+./scripts/safe-test-smart.sh           # Safe, sanitized output
+npm run test:e2e                       # Uses sanitizer automatically
+```
+
 ### Testing Approach
 
 #### 1. Unit Tests
@@ -307,8 +421,10 @@ npm test -- [pattern]
 
 #### 2. Playwright Integration Tests
 ```bash
-# Always run in headless mode
-npx playwright test --project=chromium
+# ✅ ALWAYS use the sanitizer:
+./scripts/safe-test-smart.sh --project=chromium
+# or
+npm run test:e2e
 ```
 **Purpose**: Validate full user workflows still work
 
@@ -451,13 +567,13 @@ const detectUIIssues = async (page) => {
 npx vercel --prod
 
 # 2. Run comprehensive automated analysis
-npx playwright test tests/automated-ui-analysis.spec.ts --project=chromium
+./scripts/safe-test-smart.sh tests/automated-ui-analysis.spec.ts --project=chromium
 
 # 3. Apply specific fixes based on axe-core suggestions
 # (No manual screenshot review required - tools provide actionable feedback)
 
 # 4. Re-test to confirm violations resolved
-npx playwright test tests/automated-ui-analysis.spec.ts --project=chromium
+./scripts/safe-test-smart.sh tests/automated-ui-analysis.spec.ts --project=chromium
 ```
 
 **🎯 Key Automated Testing Principles:**
@@ -474,6 +590,21 @@ npx playwright test tests/automated-ui-analysis.spec.ts --project=chromium
 ---
 
 ## 📚 Git Strategy & Safety Nets
+
+### Critical Setup Requirement
+
+**⚠️ BEFORE ANY COMMITS**: Ensure your project has the safe testing infrastructure:
+
+```bash
+# 1. Check for sanitizer script
+test -f scripts/safe-test-smart.sh || echo "WARNING: Missing sanitizer!"
+
+# 2. Verify it's executable
+chmod +x scripts/safe-test-smart.sh
+
+# 3. Update package.json scripts
+# Add: "test:e2e": "./scripts/safe-test-smart.sh"
+```
 
 ### Commit Strategy
 
@@ -635,6 +766,18 @@ npm run dev
 ```
 
 ### Common Issues & Fixes
+
+#### Claude Code JSON Corruption
+```bash
+# If you see: "API Error: 400 no low surrogate in string"
+# This means you ran Playwright without sanitizer!
+
+# Emergency fix:
+python3 scripts/clean-claude-history.py
+
+# Prevention: ALWAYS use:
+./scripts/safe-test-smart.sh  # Not npx playwright test
+```
 
 #### "Module not found" errors
 ```bash

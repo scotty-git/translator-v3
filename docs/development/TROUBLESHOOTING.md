@@ -514,6 +514,57 @@ npx playwright test --headed
 npx playwright test
 ```
 
+**5. Claude JSON Config File Issues**:
+```
+⎿ API Error: 400 {"type":"error","error":{"type":"invalid_request_error","message":"The request body is not valid JSON: no low surrogate in string: line 1 column 357753 (char 357752)"}}
+```
+
+**Problem**: Large (~7.9MB) `~/.claude.json` file with emoji characters or malformed JSON
+
+**Solution**:
+```bash
+# Backup the problematic file
+cp ~/.claude.json ~/.claude.json.backup-$(date +%Y%m%d-%H%M%S)
+
+# Create minimal clean version
+python3 -c "
+import json
+minimal_config = {
+    'numStartups': 32,
+    'installMethod': 'unknown',
+    'autoUpdates': True,
+    'tipsHistory': {},
+    'promptQueueUseCount': 4,
+    'userID': 'your-user-id-here',
+    'firstStartTime': '2025-07-10T09:37:23.956Z',
+    'projects': {},
+    'mcpServers': {}
+}
+with open('/Users/$(whoami)/.claude.json', 'w', encoding='utf-8') as f:
+    json.dump(minimal_config, f, indent=2, ensure_ascii=False)
+print('Created clean claude.json file')
+"
+
+# Verify file size is reasonable
+ls -lh ~/.claude.json  # Should be <1KB, not MB
+```
+
+**Root Cause**: Claude Code now automatically stores chat history in `~/.claude.json` under `projects[projectPath].history[]`. This history grows indefinitely without cleanup, and emoji characters (like `⎿`) can cause JSON parsing errors.
+
+**Prevention**: Use the cleanup script to prevent this issue:
+```bash
+# Check current file size
+python3 scripts/clean-claude-history.py --check-only
+
+# Clean history (keeps 10 most recent entries per project)
+python3 scripts/clean-claude-history.py
+
+# Clean more aggressively (keeps 5 entries)
+python3 scripts/clean-claude-history.py --max-entries 5
+```
+
+**Note**: This is a built-in Claude Code feature, not related to custom hooks. The `projects[projectPath].history[]` array stores chat messages and can grow very large with frequent use.
+
 ### Unit Tests Failing
 
 **Problem**: Vitest tests fail or don't run

@@ -26,7 +26,11 @@
     "test:visual:report": "playwright show-report test-results/visual-regression-report",
     "ui:validate": "npm run test:visual -- --grep='UI Contract: Validation'",
     "ui:baseline": "npm run test:visual:update",
-    "setup:git-hooks": "node scripts/setup-git-hooks.js"
+    "setup:git-hooks": "node scripts/setup-git-hooks.js",
+    "test:e2e": "./scripts/safe-test-smart.sh",
+    "test:playwright": "./scripts/safe-test-smart.sh",
+    "safe-test": "./scripts/safe-test-smart.sh",
+    "setup:safe-testing": "./scripts/setup-safe-playwright.sh"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.50.3",

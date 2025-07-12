@@ -86,19 +86,19 @@ export const setupConsoleLogging = (page: Page, prefix: string) => {
 
 ```bash
 # Run all feature tests with detailed console output
-npx playwright test tests/features --reporter=list
+./scripts/safe-test-smart.sh tests/features --reporter=list
 
 # Run specific phase test with debugging
-DEBUG=pw:api npx playwright test tests/features/phase-3-validation.spec.ts
+DEBUG=pw:api ./scripts/safe-test-smart.sh tests/features/phase-3-validation.spec.ts
 
 # Generate HTML report after test run
 npx playwright show-report
 
 # Run with screenshots on failure
-npx playwright test --screenshot=only-on-failure
+./scripts/safe-test-smart.sh --screenshot=only-on-failure
 
 # Run with video recording for debugging
-npx playwright test --video=retain-on-failure
+./scripts/safe-test-smart.sh --video=retain-on-failure
 ```
 
 ### Unit Tests

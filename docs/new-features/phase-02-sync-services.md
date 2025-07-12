@@ -570,7 +570,7 @@ After implementation:
 
 2. **Integration Testing**
    ```bash
-   npx playwright test tests/features/phase-2-validation.spec.ts
+   ./scripts/safe-test-smart.sh tests/features/phase-2-validation.spec.ts
    ```
 
 3. **Manual Testing**

@@ -255,6 +255,44 @@ When I ask about a problem or need help with something:
 
 ---
 
+## 🚨 CRITICAL: PLAYWRIGHT TEST CORRUPTION PREVENTION
+
+> **⚠️ NEVER RUN PLAYWRIGHT TESTS DIRECTLY - IT WILL BREAK CLAUDE CODE!**
+
+### The Problem
+Running `npx playwright test` outputs Unicode characters (emojis, symbols) that corrupt `~/.claude.json`, causing:
+- `API Error: 400 "no low surrogate in string"`
+- Complete Claude Code session failure
+- Loss of work and conversation history
+
+### The Solution: ALWAYS Use Sanitized Testing
+
+```bash
+# ❌ NEVER DO THIS:
+npx playwright test                    # WILL CORRUPT CLAUDE.JSON!
+
+# ✅ ALWAYS DO THIS:
+./scripts/safe-test-smart.sh           # Safe, sanitized output
+npm run test:e2e                       # Uses sanitizer automatically
+npm run test:playwright                # Uses sanitizer automatically
+```
+
+### What the Sanitizer Does
+The `safe-test-smart.sh` script converts ALL non-ASCII characters to safe labels:
+- 🏠 → `[EMOJI]`
+- → → `[ARROW]`
+- ✅ → `[SYM]`
+- é → `e` (strips accents)
+- Any other Unicode → `[U+XXXX]`
+
+### If You Forget and Get Corrupted
+1. Exit Claude Code (Cmd+Esc)
+2. Run: `python3 scripts/clean-claude-history.py --max-entries 0`
+3. Start a new Claude session
+4. Use the sanitizer from now on!
+
+---
+
 ## ⚙️ DEVELOPMENT WORKFLOW
 
 > **At a Glance**: Test-driven development with automated quality gates
@@ -268,7 +306,8 @@ When I ask about a problem or need help with something:
 │   ├── npm run test              # Unit tests (sub-second)
 │   └── npm run test:coverage     # Ensure >95% coverage
 ├── 2. 🤖 Phase 2: Playwright E2E Integration
-│   ├── npm run test:e2e         # Playwright full-app testing
+│   ├── npm run test:e2e         # Safe, sanitized Playwright testing
+│   ├── ./scripts/safe-test-smart.sh  # Alternative: Direct sanitizer usage
 │   └── ⚠️ ALWAYS RUN IN HEADLESS MODE - Never use `--headed` flag
 └── 3. 👤 Phase 3: Manual Testing
     └── Only ask for manual testing when all automated tests pass 100%
@@ -280,6 +319,7 @@ When I ask about a problem or need help with something:
 
 ```
 🎯 PLAYWRIGHT REQUIREMENTS
+├── 0. 🚨 ALWAYS use ./scripts/safe-test-smart.sh to prevent corruption!
 ├── 1. ALWAYS test with Playwright in headless mode (`headless: true`)
 ├── 2. NEVER show browser on user's screen
 ├── 3. Take screenshots to verify UI appearance
@@ -556,9 +596,28 @@ CREATE POLICY "Users can insert their own messages"
 sudo networksetup -setproxybypassdomains Wi-Fi "*.local" "169.254/16" "localhost" "127.0.0.1" "::1" "[::1]" "localhost:5173" "localhost:5174" "127.0.0.1:5173" "127.0.0.1:5174"
 ```
 
+### 🚨 Claude JSON Corruption from Playwright Tests
+**Issue**: Running `npx playwright test` causes `API Error: 400 "no low surrogate in string"`
+
+**Root Cause**: Playwright outputs Unicode/emoji characters that corrupt `~/.claude.json`
+
+**Solution**: ALWAYS use the sanitizer script:
+```bash
+./scripts/safe-test-smart.sh tests/my-test.spec.ts
+```
+
+**Recovery Steps**:
+1. Exit Claude Code (Cmd+Esc)
+2. Clean the corrupted JSON: `python3 scripts/clean-claude-history.py --max-entries 0`
+3. Start fresh Claude session
+4. Use sanitizer for all future tests
+
+**Prevention**: The package.json scripts are pre-configured to use the sanitizer.
+
 ### 💡 Development Lessons Learned
 ```
 🎯 GOLDEN RULES
+├── 0. 🚨 ALWAYS use sanitized Playwright testing to prevent corruption
 ├── 1. VPN + Localhost = Use 127.0.0.1
 ├── 2. Keep Dev Server Running - Don't interrupt with other commands
 ├── 3. Avoid Alpha/Beta Packages - Use stable alternatives
@@ -583,7 +642,8 @@ sudo networksetup -setproxybypassdomains Wi-Fi "*.local" "169.254/16" "localhost
 ├── 17. MessageBubble Field Compatibility: Component checks both `user_id` AND `userId` fields for alignment logic
 ├── 18. Message Alignment Bug Pattern: Missing `userId` field causes all messages to appear on left side
 ├── 19. Field Consistency Rule: Always include both `user_id` (database) and `userId` (UI compatibility) in message objects
-└── 20. Message Flow Debugging: Compare working voice flow vs broken text flow to identify divergence patterns
+├── 20. Message Flow Debugging: Compare working voice flow vs broken text flow to identify divergence patterns
+└── 21. Playwright Unicode Corruption (July 12): NEVER run raw Playwright - Unicode output corrupts ~/.claude.json causing session failure
 ```
 
 ---
