@@ -466,50 +466,13 @@ export function MessageBubble({
         
       </div>
       
-      {/* WhatsApp-style emoji overlay reactions - MOVED OUTSIDE message container to avoid clipping */}
-      {(() => {
-        console.log('🎯 [MessageBubble] EMOJI OVERLAY DIAGNOSTIC:', {
-          messageId: message.id,
-          hasReactions: !!message.reactions,
-          reactionKeys: message.reactions ? Object.keys(message.reactions) : [],
-          reactionValues: message.reactions,
-          currentUserId,
-          shouldRender: !!(message.reactions && Object.keys(message.reactions).length > 0 && currentUserId)
-        })
-        
-        if (message.reactions && Object.keys(message.reactions).length > 0 && currentUserId) {
+        {/* WhatsApp-style emoji overlay reactions */}
+        {message.reactions && Object.keys(message.reactions).length > 0 && currentUserId && (() => {
           const transformedReactions = transformReactions(message.reactions, currentUserId)
-          console.log('🎯 [MessageBubble] TRANSFORMED REACTIONS:', {
-            messageId: message.id,
-            original: message.reactions,
-            transformed: transformedReactions,
-            transformedKeys: Object.keys(transformedReactions),
-            hasTransformedData: Object.keys(transformedReactions).length > 0
-          })
-          
-          const messageRect = messageRef.current?.getBoundingClientRect()
-          console.log('🎯 [MessageBubble] MESSAGE RECT FOR POSITIONING:', {
-            messageId: message.id,
-            rect: messageRect,
-            hasRect: !!messageRect
-          })
           
           return (
             <div 
-              className="fixed flex items-center gap-1 z-[9999] pointer-events-auto"
-              style={{
-                // Position relative to the message bubble using fixed positioning
-                left: messageRect ? `${messageRect.left + 8}px` : '20px',
-                top: messageRect ? `${messageRect.bottom - 12}px` : '100px',
-                // DIAGNOSTIC: Make overlay extremely visible
-                backgroundColor: 'rgba(255, 0, 0, 0.9)',
-                border: '4px solid yellow',
-                borderRadius: '8px',
-                padding: '8px',
-                minWidth: '40px',
-                minHeight: '40px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
-              }}
+              className="absolute bottom-0 left-2 flex items-center gap-1 transform translate-y-1/2 z-10 pointer-events-auto"
             >
               <MessageReactions
                 reactions={transformedReactions}
@@ -519,17 +482,8 @@ export function MessageBubble({
               />
             </div>
           )
-        }
-        
-        console.log('🎯 [MessageBubble] OVERLAY NOT RENDERING:', {
-          messageId: message.id,
-          hasReactions: !!message.reactions,
-          hasCurrentUserId: !!currentUserId,
-          reactionCount: message.reactions ? Object.keys(message.reactions).length: 0
-        })
-        
-        return null
-      })()}
+        })()}
+      </div>
       
       {/* Emoji picker */}
       <EmojiReactionPicker

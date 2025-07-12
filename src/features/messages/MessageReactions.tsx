@@ -36,77 +36,30 @@ export interface MessageReactionsProps {
  * - Applies different styling for own vs others' messages
  */
 export function MessageReactions({ reactions, isOwnMessage, onReactionClick, isOverlay = false }: MessageReactionsProps) {
-  console.log('🎯 [MessageReactions] COMPONENT RENDER DIAGNOSTIC:', {
-    isOverlay,
-    isOwnMessage,
-    reactionsReceived: reactions,
-    reactionKeys: Object.keys(reactions),
-    reactionCount: Object.keys(reactions).length,
-    hasOnReactionClick: !!onReactionClick
-  })
-
   /**
    * Filter out reactions with zero count and convert to array
    * This ensures we only show reactions that actually have users
    */
   const reactionEntries = Object.entries(reactions).filter(([, reaction]) => reaction.count > 0)
   
-  console.log('🎯 [MessageReactions] FILTERED ENTRIES:', {
-    isOverlay,
-    originalEntries: Object.entries(reactions).length,
-    filteredEntries: reactionEntries.length,
-    entries: reactionEntries.map(([emoji, reaction]) => ({
-      emoji,
-      count: reaction.count,
-      users: reaction.users,
-      hasReacted: reaction.hasReacted
-    }))
-  })
-  
   // Don't render anything if no reactions exist
   if (reactionEntries.length === 0) {
-    console.log('🎯 [MessageReactions] NOT RENDERING - No valid entries:', {
-      isOverlay,
-      reason: 'reactionEntries.length === 0'
-    })
     return null
   }
 
   if (isOverlay) {
-    console.log('🎯 [MessageReactions] RENDERING OVERLAY MODE:', {
-      entriesCount: reactionEntries.length,
-      entries: reactionEntries.map(([emoji]) => emoji)
-    })
-    
     // WhatsApp-style overlay reactions: bare emojis only
     return (
-      <div 
-        className="flex items-center gap-1"
-        style={{
-          // DIAGNOSTIC: Make overlay container very visible
-          backgroundColor: 'rgba(0, 255, 0, 0.7)',
-          border: '3px solid blue',
-          padding: '4px',
-          borderRadius: '8px'
-        }}
-      >
-        {reactionEntries.map(([emoji, reaction]) => {
-          console.log('🎯 [MessageReactions] RENDERING OVERLAY BUBBLE:', {
-            emoji,
-            count: reaction.count,
-            hasReacted: reaction.hasReacted
-          })
-          
-          return (
-            <OverlayReactionBubble
-              key={emoji}
-              emoji={emoji}
-              reaction={reaction}
-              isOwnMessage={isOwnMessage}
-              onClick={() => onReactionClick?.(emoji, reaction.hasReacted || false)}
-            />
-          )
-        })}
+      <div className="flex items-center gap-1">
+        {reactionEntries.map(([emoji, reaction]) => (
+          <OverlayReactionBubble
+            key={emoji}
+            emoji={emoji}
+            reaction={reaction}
+            isOwnMessage={isOwnMessage}
+            onClick={() => onReactionClick?.(emoji, reaction.hasReacted || false)}
+          />
+        ))}
       </div>
     )
   }
@@ -163,46 +116,25 @@ function OverlayReactionBubble({ emoji, reaction, onClick }: ReactionBubbleProps
   /** Whether the current user has reacted with this emoji */
   const hasReacted = reaction.hasReacted || false
   
-  console.log('🎯 [OverlayReactionBubble] RENDERING:', {
-    emoji,
-    count: reaction.count,
-    users: reaction.users,
-    hasReacted,
-    hasOnClick: !!onClick
-  })
-  
   return (
     <button
       onClick={onClick}
       className={clsx(
         // Bare emoji with minimal styling - no background
-        'transition-all duration-200 hover:scale-125 p-0.5',
+        'transition-all duration-200 hover:scale-110 text-lg',
         {
           // User has reacted: slightly more prominent
           'opacity-100 filter drop-shadow-sm': hasReacted,
           // User hasn't reacted: subtle appearance
-          'opacity-75 hover:opacity-100': !hasReacted,
+          'opacity-80 hover:opacity-100': !hasReacted,
         }
       )}
-      style={{
-        // DIAGNOSTIC: Make emoji very visible
-        backgroundColor: 'rgba(255, 255, 0, 0.8)',
-        border: '2px solid red',
-        borderRadius: '50%',
-        minWidth: '30px',
-        minHeight: '30px',
-        fontSize: '16px'
-      }}
       title={hasReacted ? `Remove your ${emoji} reaction` : `React with ${emoji}`}
       aria-label={hasReacted ? `Remove your ${emoji} reaction` : `React with ${emoji}`}
     >
-      {/* Bare emoji character - no background or border */}
-      <span className="text-base" role="img" aria-label={emoji}>
+      {/* Just the bare emoji character */}
+      <span role="img" aria-label={emoji}>
         {emoji}
-      </span>
-      {/* DIAGNOSTIC: Show count next to emoji */}
-      <span style={{ fontSize: '10px', color: 'black', fontWeight: 'bold' }}>
-        {reaction.count}
       </span>
     </button>
   )
